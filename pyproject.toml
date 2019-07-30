@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "cognite-replicator"
+version = "0.1.0"
+description = "This is the Cognite Replicator for solution architects working to replicate data across tenants."
+license = "Apache-2.0"
+authors = ["Nina Odegard <nina.odegard@cognite.com>"]
+readme = "README.md"
+repository = "https://github.com/cognitedata/cognite-replicator"
+
+[tool.poetry.dependencies]
+python = "^3.6"
+
+[tool.poetry.dev-dependencies]
+pytest = "^3.0"
+
+[tool.poetry.dependencies]
+cognite-sdk = "^1.0.2"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
