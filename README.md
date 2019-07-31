@@ -13,7 +13,7 @@ In order to start using the Replicator, you need:
     Instead, set the API key as an environment variable or as a secret if using Databricks.
 
 This is how you set the API key as an environment variable on Mac OS and Linux:
-```python
+```bash
 $ export SRC_API_KEY=<your source API key>
 $ export DST_API_KEY=<your destination API key>
 ```
