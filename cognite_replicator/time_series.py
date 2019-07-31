@@ -1,6 +1,6 @@
 import time
 import logging
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from cognite.client import CogniteClient
 from cognite.client.data_classes import TimeSeries
@@ -13,6 +13,7 @@ def create_time_series(
     src_dst_ids_assets: Dict[int, int],
     project_src: str,
     runtime: int,
+    depth: Optional[int] = -1,
 ) -> TimeSeries:
     """
     Make a new copy of the time series to be replicated based on a source time series.
@@ -22,11 +23,17 @@ def create_time_series(
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
+        depth: Optional argument that is included to mimic the signature of create in order to allow for
+               cleaner bulk processing.
 
     Returns:
         The replicated time series to be created in the destination.
 
     """
+
+    assert depth == -1
+
+    logging.debug(f"Creating a new time series based on source time series id {src_ts.id}")
 
     return TimeSeries(
         external_id=src_ts.external_id,
@@ -50,6 +57,7 @@ def update_time_series(
     src_dst_ids_assets: Dict[int, int],
     project_src: str,
     runtime: int,
+    depth: Optional[int] = -1,
 ) -> TimeSeries:
     """
     Makes an updated version of the destination time series based on the corresponding source time series.
@@ -61,11 +69,19 @@ def update_time_series(
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
+        depth: Optional argument that is included to mimic the signature of create in order to allow for
+               cleaner bulk processing.
 
     Returns:
         The updated time series object for the replication destination.
 
     """
+
+    assert depth == -1
+
+    logging.debug(
+        f"Updating existing time series {dst_ts.id} based on source time series id {src_ts.id}"
+    )
 
     dst_ts.external_id = src_ts.external_id
     dst_ts.name = src_ts.name
@@ -87,7 +103,7 @@ def filter_service_account_ts(ts_src: List[TimeSeries]) -> List[TimeSeries]:
     """
     Filter out the service account metrics time series so they won't be copied.
 
-    Parameters:
+    Args:
         ts_src: A list of all the source time series.
 
     Returns:
@@ -109,7 +125,7 @@ def copy_ts(
     """
     Creates/updates time series objects and then attempts to create and update these time series in the destination.
 
-    Parameters:
+    Args:
         src_ts: A list of the time series that are in the source.
         src_id_dst_ts: A dictionary of a time series source id to it's matching destination object.
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
@@ -147,14 +163,14 @@ def copy_ts(
 
 def replicate(
     project_src: str,
-    client_src,
+    client_src: CogniteClient,
     project_dst: str,
     client_dst: CogniteClient,
     batch_size: int,
     num_threads: int,
 ):
     """
-    Replicates all the assets from the source project into the destination project.
+    Replicates all the time series from the source project into the destination project.
 
     Args:
         project_src: The name of the project the object is being replicated from.

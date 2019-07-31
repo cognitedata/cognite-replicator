@@ -1,16 +1,19 @@
 import time
 import logging
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from cognite.client import CogniteClient
 from cognite.client.data_classes import Event
 
-# from . import replication
-import replication
+from . import replication
 
 
 def create_event(
-    src_event: Event, src_dst_ids_assets: Dict[int, int], project_src: str, runtime: int
+    src_event: Event,
+    src_dst_ids_assets: Dict[int, int],
+    project_src: str,
+    runtime: int,
+    depth: Optional[int] = -1,
 ) -> Event:
     """
     Makes a new copy of the event to be replicated based on a source event.
@@ -20,11 +23,15 @@ def create_event(
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
+        depth: Optional argument that is included to mimic the signature of create in order to allow for
+               cleaner bulk processing.
 
     Returns:
         The replicated event to be created in the destination.
 
     """
+
+    assert depth == -1
 
     logging.debug(f"Creating a new event based on source event id {src_event.id}")
 
@@ -51,6 +58,7 @@ def update_event(
     src_dst_ids_assets: Dict[int, int],
     project_src: str,
     runtime: int,
+    depth: Optional[int] = -1,
 ) -> Event:
     """
     Makes an updated version of the destination event based on the corresponding source event.
@@ -61,11 +69,15 @@ def update_event(
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
+        depth: Optional argument that is included to mimic the signature of create in order to allow for
+               cleaner bulk processing.
 
     Returns:
         The updated event object for the replication destination.
 
     """
+
+    assert depth == -1
 
     logging.debug(
         f"Updating existing event {dst_event.id} based on source event id {src_event.id}"
@@ -153,7 +165,7 @@ def replicate(
     num_threads: int,
 ):
     """
-    Replicates all the assets from the source project into the destination project.
+    Replicates all the events from the source project into the destination project.
 
     Args:
         project_src: The name of the project the object is being replicated from.

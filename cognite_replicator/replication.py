@@ -6,7 +6,7 @@ from cognite.client import CogniteClient
 from cognite.client.data_classes.assets import Asset
 from cognite.client.data_classes import Event, TimeSeries
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.WARNING)
 
 
 def make_id_object_dict(
@@ -134,36 +134,31 @@ def make_objects_batch(
 
     create_objects = []
     update_objects = []
+    unchanged_objects = []
 
     for src_obj in src_objects:
         if src_obj.id in [*src_id_dst_obj]:
-            if depth == -1:
+            dst_obj = src_id_dst_obj[src_obj.id]
+            if src_obj.last_updated_time > dst_obj.metadata["_replicatedTime"]:
                 dst_obj = update(
                     src_obj,
-                    src_id_dst_obj[src_obj.id],
-                    src_dst_ids_assets,
-                    project_src,
-                    replicated_runtime,
-                )
-            else:
-                dst_obj = update(
-                    src_obj,
-                    src_id_dst_obj[src_obj.id],
+                    dst_obj,
                     src_dst_ids_assets,
                     project_src,
                     replicated_runtime,
                     depth,
                 )
-            update_objects.append(dst_obj)
-        else:
-            if depth == -1:
-                new_asset = create(
-                    src_obj, src_dst_ids_assets, project_src, replicated_runtime
-                )
+                update_objects.append(dst_obj)
             else:
-                new_asset = create(
-                    src_obj, src_dst_ids_assets, project_src, replicated_runtime, depth
-                )
+                unchanged_objects.append(dst_obj)
+        else:
+            new_asset = create(
+                src_obj,
+                src_dst_ids_assets,
+                project_src,
+                replicated_runtime,
+                depth,
+            )
             create_objects.append(new_asset)
 
     return create_objects, update_objects
@@ -193,7 +188,7 @@ def retry(
             try:
                 ret = function(objects)
             except Exception as e:
-                logging.info(e)
+                logging.warning(e)
                 if i < tries:
                     continue
                 else:
