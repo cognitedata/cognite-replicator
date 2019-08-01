@@ -1,5 +1,6 @@
 import threading
 import logging
+import requests
 from typing import List, Dict, Tuple, Union, Optional
 
 from cognite.client import CogniteClient
@@ -31,7 +32,7 @@ def make_id_object_dict(
     }
 
 
-def existing_mapping(*objects: List[Asset], ids={}) -> Dict[int, int]:
+def existing_mapping(*objects: List[Asset], ids: Dict[int, int] = None) -> Dict[int, int]:
     """
     Updates a dictionary with all the source id to destination id pairs for the objects that have been replicated.
 
@@ -43,6 +44,9 @@ def existing_mapping(*objects: List[Asset], ids={}) -> Dict[int, int]:
         The updated dictionary with the ids from new objects that have been replicated.
 
     """
+
+    if not ids:
+        ids = {}
 
     for obj in objects:
         if obj.metadata and obj.metadata["_replicatedInternalId"]:
@@ -110,7 +114,7 @@ def make_objects_batch(
     replicated_runtime: int,
     depth: Optional[int] = -1,
 ) -> Tuple[
-    List[Union[Asset, Event, TimeSeries]], List[Union[Asset, Event, TimeSeries]]
+    List[Union[Asset, Event, TimeSeries]], List[Union[Asset, Event, TimeSeries]], List[Union[Asset, Event, TimeSeries]]
 ]:
     """
     Create a batch of new objects from a list of source objects or update existing destination objects to their
@@ -129,6 +133,7 @@ def make_objects_batch(
     Returns:
         create_objects: A list of all the new objects to be posted to CDF.
         update_objects: A list of all the updated objects to be updated in CDF.
+        unchanged_objects: A list of all the objects that don't need to be updated.
 
     """
 
@@ -139,7 +144,7 @@ def make_objects_batch(
     for src_obj in src_objects:
         if src_obj.id in [*src_id_dst_obj]:
             dst_obj = src_id_dst_obj[src_obj.id]
-            if src_obj.last_updated_time > dst_obj.metadata["_replicatedTime"]:
+            if src_obj.last_updated_time > int(dst_obj.metadata["_replicatedTime"]):
                 dst_obj = update(
                     src_obj,
                     dst_obj,
@@ -161,7 +166,7 @@ def make_objects_batch(
             )
             create_objects.append(new_asset)
 
-    return create_objects, update_objects
+    return create_objects, update_objects, unchanged_objects
 
 
 def retry(
@@ -182,18 +187,14 @@ def retry(
 
     ret: List[Union[Asset, Event, TimeSeries]] = []
     if objects:
-        tries = 4
-        for i in range(1, tries):
+        tries = 3
+        for i in range(tries):
             logging.info("Current try: %d" % i)
             try:
                 ret = function(objects)
-            except Exception as e:
-                logging.warning(e)
-                if i < tries:
-                    continue
-                else:
-                    raise
-            break
+                break
+            except requests.exceptions.ReadTimeout as e:
+                logging.warning(f"Retrying due to {e}")
 
     return ret
 
@@ -236,7 +237,7 @@ def thread(
             threading.Thread(
                 target=copy,
                 args=(
-                    src_objects[i : i + cs],
+                    src_objects[i: i + cs],
                     src_id_dst_obj,
                     src_dst_ids_assets,
                     project_src,
@@ -249,14 +250,10 @@ def thread(
 
     assert i == len(src_objects)
 
-    count = 0
-    for t in threads:
+    for count, t in enumerate(threads, start=1):
         t.start()
-        count += 1
         logging.info(f"Started thread: {count}")
 
-    count = 0
-    for t in threads:
+    for count, t in enumerate(threads, start=1):
         t.join()
-        count += 1
         logging.info(f"Joined thread: {count}")

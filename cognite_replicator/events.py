@@ -127,7 +127,7 @@ def copy_events(
     """
 
     logging.debug(f"Starting to replicate {len(src_events)} events.")
-    create_events, update_events = replication.make_objects_batch(
+    create_events, update_events, unchanged_events = replication.make_objects_batch(
         src_objects=src_events,
         src_id_dst_obj=src_id_dst_event,
         src_dst_ids_assets=src_dst_ids_assets,
