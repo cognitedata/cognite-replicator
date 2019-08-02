@@ -152,19 +152,17 @@ def copy_ts(
 
     if create_ts:
         logging.info(f"Creating {len(create_ts)} time series.")
-        created_ts = replication.retry(create_ts, client.time_series.create)
+        created_ts = replication.retry(client.time_series.create, create_ts)
         logging.info(f"Successfully created {len(created_ts)} time series.")
 
     if update_ts:
         logging.info(f"Updating {len(update_ts)} time series.")
-        updated_ts = replication.retry(update_ts, client.time_series.update)
+        updated_ts = replication.retry(client.time_series.update, update_ts)
         logging.info(f"Successfully updated {len(updated_ts)} time series.")
 
 
 def replicate(
-    project_src: str,
     client_src: CogniteClient,
-    project_dst: str,
     client_dst: CogniteClient,
     batch_size: int,
     num_threads: int,
@@ -173,14 +171,15 @@ def replicate(
     Replicates all the time series from the source project into the destination project.
 
     Args:
-        project_src: The name of the project the object is being replicated from.
         client_src: The client corresponding to the source project.
-        project_dst: The name of the project the object is being replicated to.
         client_dst: The client corresponding to the destination project.
         batch_size: The biggest batch size to post chunks in.
         num_threads: The number of threads to be used.
 
     """
+
+    project_src = client_src.config.project
+    project_dst = client_dst.config.project
 
     ts_src = client_src.time_series.list(limit=None)
     ts_dst = client_dst.time_series.list(limit=None)
@@ -239,3 +238,4 @@ def replicate(
         f"Finished copying and updating {len(ts_src)} events from "
         f"source ({project_src}) to destination ({project_dst})."
     )
+

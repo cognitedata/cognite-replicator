@@ -143,12 +143,12 @@ def copy_events(
 
     if create_events:
         logging.debug(f"Attempting to create {len(create_events)} events.")
-        create_events = replication.retry(create_events, client.events.create)
+        create_events = replication.retry(client.events.create, create_events)
         logging.debug(f"Successfully created {len(create_events)} events.")
 
     if update_events:
         logging.debug(f"Attempting to update {len(update_events)} events.")
-        update_events = replication.retry(update_events, client.events.update)
+        update_events = replication.retry(client.events.update, update_events)
         logging.debug(f"Successfully updated {len(update_events)} events.")
 
     logging.info(
@@ -157,9 +157,7 @@ def copy_events(
 
 
 def replicate(
-    project_src: str,
     client_src: CogniteClient,
-    project_dst: str,
     client_dst: CogniteClient,
     batch_size: int,
     num_threads: int,
@@ -168,14 +166,15 @@ def replicate(
     Replicates all the events from the source project into the destination project.
 
     Args:
-        project_src: The name of the project the object is being replicated from.
         client_src: The client corresponding to the source project.
-        project_dst: The name of the project the object is being replicated to.
         client_dst: The client corresponding to the destination project.
         batch_size: The biggest batch size to post chunks in.
         num_threads: The number of threads to be used.
 
     """
+
+    project_src = client_src.config.project
+    project_dst = client_dst.config.project
 
     events_src = client_src.events.list(limit=None)
     events_dst = client_dst.events.list(limit=None)
