@@ -1,18 +1,16 @@
-import threading
 import logging
+import threading
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import requests
-from typing import List, Dict, Tuple, Union, Optional
-
 from cognite.client import CogniteClient
-from cognite.client.data_classes.assets import Asset
 from cognite.client.data_classes import Event, TimeSeries
+from cognite.client.data_classes.assets import Asset
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.WARNING)
+logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.WARNING)  # TODO: need to be moved somewhere else
 
 
-def make_id_object_dict(
-    objects: List[Union[Asset, Event, TimeSeries]]
-) -> Dict[int, Union[Asset, Event, TimeSeries]]:
+def make_id_object_map(objects: List[Union[Asset, Event, TimeSeries]]) -> Dict[int, Union[Asset, Event, TimeSeries]]:
     """
     Makes a dictionary with the source object id as the key and the object as the value for objects
     that have been replicated.
@@ -22,9 +20,7 @@ def make_id_object_dict(
 
     Returns:
         A dictionary of source object id to destination object for objects that have been replicated.
-
     """
-
     return {
         int(obj.metadata["_replicatedInternalId"]): obj
         for obj in objects
@@ -42,9 +38,7 @@ def existing_mapping(*objects: List[Asset], ids: Dict[int, int] = None) -> Dict[
 
     Returns:
         The updated dictionary with the ids from new objects that have been replicated.
-
     """
-
     if not ids:
         ids = {}
 
@@ -65,14 +59,8 @@ def get_asset_ids(ids: List[int], src_dst_ids_assets: Dict[int, int]) -> List[in
 
     Returns:
         A list of the destination asset ids for the destination object.
-
     """
-
-    return [
-        src_dst_ids_assets[src_asset_id]
-        for src_asset_id in ids
-        if src_asset_id in src_dst_ids_assets
-    ]
+    return [src_dst_ids_assets[src_asset_id] for src_asset_id in ids if src_asset_id in src_dst_ids_assets]
 
 
 def new_metadata(
@@ -94,10 +82,8 @@ def new_metadata(
 
     Returns:
         The metadata dictionary for the replicated destination object based on the source object.
-
     """
-
-    metadata = dict(obj.metadata if obj.metadata else dict())
+    metadata: Dict[str, Any] = dict(obj.metadata if obj.metadata else {})
     metadata["_replicatedSource"] = project_src
     metadata["_replicatedTime"] = replicated_runtime
     metadata["_replicatedInternalId"] = obj.id
@@ -106,13 +92,13 @@ def new_metadata(
 
 def make_objects_batch(
     src_objects: List[Union[Asset, Event, TimeSeries]],
-    src_id_dst_obj: Dict[int, Union[Asset, Event, TimeSeries]],
+    src_id_dst_map: Dict[int, Union[Asset, Event, TimeSeries]],
     src_dst_ids_assets: Dict[int, int],
     create,
     update,
     project_src: str,
     replicated_runtime: int,
-    depth: Optional[int] = -1,
+    depth: Optional[int] = None,
 ) -> Tuple[
     List[Union[Asset, Event, TimeSeries]], List[Union[Asset, Event, TimeSeries]], List[Union[Asset, Event, TimeSeries]]
 ]:
@@ -122,7 +108,7 @@ def make_objects_batch(
 
     Args:
         src_objects: A list of objects to be replicated from a source.
-        src_id_dst_obj: A dictionary of source object ids to the matching destination object.
+        src_id_dst_map: A dictionary of source object ids to the matching destination object.
         create: The function to be used in order to create all the objects in CDF.
         update: The function to be used in order to update the existing objects in CDF.
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
@@ -134,44 +120,30 @@ def make_objects_batch(
         create_objects: A list of all the new objects to be posted to CDF.
         update_objects: A list of all the updated objects to be updated in CDF.
         unchanged_objects: A list of all the objects that don't need to be updated.
-
     """
 
     create_objects = []
     update_objects = []
     unchanged_objects = []
 
+    kwargs = {"depth": depth} if depth is not None else {}  # Only used on assets
+
     for src_obj in src_objects:
-        if src_obj.id in [*src_id_dst_obj]:
-            dst_obj = src_id_dst_obj[src_obj.id]
+        dst_obj = src_id_dst_map.get(src_obj.id)
+        if dst_obj:
             if src_obj.last_updated_time > int(dst_obj.metadata["_replicatedTime"]):
-                dst_obj = update(
-                    src_obj,
-                    dst_obj,
-                    src_dst_ids_assets,
-                    project_src,
-                    replicated_runtime,
-                    depth,
-                )
+                dst_obj = update(src_obj, dst_obj, src_dst_ids_assets, project_src, replicated_runtime, **kwargs)
                 update_objects.append(dst_obj)
             else:
                 unchanged_objects.append(dst_obj)
         else:
-            new_asset = create(
-                src_obj,
-                src_dst_ids_assets,
-                project_src,
-                replicated_runtime,
-                depth,
-            )
+            new_asset = create(src_obj, src_dst_ids_assets, project_src, replicated_runtime, **kwargs)
             create_objects.append(new_asset)
 
     return create_objects, update_objects, unchanged_objects
 
 
-def retry(
-    objects: List[Union[Asset, Event, TimeSeries]], function
-) -> List[Union[Asset, Event, TimeSeries]]:
+def retry(objects: List[Union[Asset, Event, TimeSeries]], function) -> List[Union[Asset, Event, TimeSeries]]:
     """
     Attempt to either create/update the objects, if it fails retry creating/updating the objects. This will retry up
     to three times.
@@ -237,7 +209,7 @@ def thread(
             threading.Thread(
                 target=copy,
                 args=(
-                    src_objects[i: i + cs],
+                    src_objects[i : i + cs],
                     src_id_dst_obj,
                     src_dst_ids_assets,
                     project_src,

@@ -1,6 +1,6 @@
-import time
 import logging
-from typing import List, Dict
+import time
+from typing import Dict, List
 
 from cognite.client import CogniteClient
 from cognite.client.data_classes.assets import Asset
@@ -8,19 +8,15 @@ from cognite.client.data_classes.assets import Asset
 from . import replication
 
 
-def create_asset(
-    src_asset: Asset,
-    src_dst_ids: Dict[int, int],
-    project_src: str,
-    runtime: int,
-    depth: int,
+def build_asset_create(
+    src_asset: Asset, src_id_dst_map: Dict[int, int], project_src: str, runtime: int, depth: int
 ) -> Asset:
     """
     Makes a new copy of the asset to be replicated based on the source asset.
 
     Args:
         src_asset: The asset from the source to be replicated to destination.
-        src_dst_ids: A dictionary of all the mappings of source asset id to destination asset id.
+        src_id_dst_map: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
         depth: The depth of the asset within the asset hierarchy.
@@ -29,7 +25,6 @@ def create_asset(
         The replicated asset to be created in the destination.
 
     """
-
     logging.debug(f"Creating a new asset based on source event id {src_asset.id}")
 
     return Asset(
@@ -38,17 +33,12 @@ def create_asset(
         description=src_asset.description,
         metadata=replication.new_metadata(src_asset, project_src, runtime),
         source=src_asset.source,
-        parent_id=src_dst_ids[src_asset.parent_id] if depth > 0 else None,
+        parent_id=src_id_dst_map[src_asset.parent_id] if depth > 0 else None,
     )
 
 
-def update_asset(
-    src_asset: Asset,
-    dst_asset: Asset,
-    src_dst_ids: Dict[int, int],
-    project_src: str,
-    runtime: int,
-    depth: int,
+def build_asset_update(
+    src_asset: Asset, dst_asset: Asset, src_id_dst_map: Dict[int, int], project_src: str, runtime: int, depth: int
 ) -> Asset:
     """
     Makes an updated version of the destination asset based on the corresponding source asset.
@@ -56,7 +46,7 @@ def update_asset(
     Args:
         src_asset: The asset from the source to be replicated to destination.
         dst_asset: The asset from the destination that needs to be updated to reflect changes made to its source asset.
-        src_dst_ids: **A dictionary of all the mappings of source asset id to destination asset id.
+        src_id_dst_map: **A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
         depth: **The depth of the asset within the asset hierarchy.
@@ -66,17 +56,14 @@ def update_asset(
         The updated asset object for the replication destination.
 
     """
-
-    logging.debug(
-        f"Updating existing event {dst_asset.id} based on source event id {src_asset.id}"
-    )
+    logging.debug(f"Updating existing event {dst_asset.id} based on source event id {src_asset.id}")
 
     dst_asset.external_id = src_asset.external_id
     dst_asset.name = src_asset.name
     dst_asset.description = src_asset.description
     dst_asset.metadata = replication.new_metadata(src_asset, project_src, runtime)
     dst_asset.source = src_asset.source
-    # existing.parent_id = src_dst_ids[src_asset.parent_id] if depth > 0 else None  # when asset hierarchy is mutable
+    # existing.parent_id = src_id_dst_map[src_asset.parent_id] if depth > 0 else None  # when asset hierarchy is mutable
     return dst_asset
 
 
@@ -92,7 +79,6 @@ def find_children(assets: List[Asset], parents: List[Asset]) -> List[Asset]:
         A list of all the assets that are children to the parents.
 
     """
-
     parent_ids = [parent.id for parent in parents] if parents != [None] else parents
     return [asset for asset in assets if asset.parent_id in parent_ids]
 
@@ -112,24 +98,21 @@ def create_hierarchy(
         client: The client corresponding to the destination project.
 
     """
-
     depth = 0
-
     parents = [None]
     children = find_children(src_assets, parents)
-    children_exist = True if children else False
 
     src_dst_ids: Dict[int, int] = {}
-    src_id_dst_asset = replication.make_id_object_dict(dst_assets)
+    src_id_dst_asset = replication.make_id_object_map(dst_assets)
 
-    while children_exist:
+    while children:
         logging.info(f"Starting depth {depth}, with {len(children)} assets.")
         create_assets, update_assets, unchanged_assets = replication.make_objects_batch(
             src_objects=children,
             src_id_dst_obj=src_id_dst_asset,
             src_dst_ids_assets=src_dst_ids,
-            create=create_asset,
-            update=update_asset,
+            create=build_asset_create,
+            update=build_asset_update,
             project_src=project_src,
             replicated_runtime=runtime,
             depth=depth,
@@ -140,9 +123,7 @@ def create_hierarchy(
         logging.info(f"Attempting to update {len(update_assets)} assets.")
         updated_assets = replication.retry(update_assets, client.assets.update)
 
-        src_dst_ids = replication.existing_mapping(
-            *created_assets, *updated_assets, *unchanged_assets, ids=src_dst_ids
-        )
+        src_dst_ids = replication.existing_mapping(*created_assets, *updated_assets, *unchanged_assets, ids=src_dst_ids)
         logging.debug(f"Dictionary of current asset mappings: {src_dst_ids}")
 
         num_assets = len(created_assets) + len(updated_assets)
@@ -153,49 +134,37 @@ def create_hierarchy(
 
         depth += 1
         children = find_children(src_assets, children)
-        children_exist = True if children else False
 
     return src_dst_ids
 
 
-def replicate(
-    project_src: str, client_src: CogniteClient, project_dst: str, client_dst: CogniteClient,
-):
+def replicate(client_src: CogniteClient, client_dst: CogniteClient):
     """
     Replicates all the assets from the source project into the destination project.
 
     Args:
-        project_src: The name of the project the object is being replicated from.
         client_src: The client corresponding to the source project.
-        project_dst: The name of the project the object is being replicated to.
         client_dst: The client corresponding to the destination project.
 
     """
+    project_src = client_src.config.project
+    project_dst = client_dst.config.project
 
     assets_src = client_src.assets.list(limit=None)
     assets_dst = client_dst.assets.list(limit=None)
-    logging.info(
-        f"There are {len(assets_src)} existing assets in source ({project_src})."
-    )
-    logging.info(
-        f"There are {len(assets_dst)} existing assets in destination ({project_dst})."
-    )
+    logging.info(f"There are {len(assets_src)} existing assets in source ({project_src}).")
+    logging.info(f"There are {len(assets_dst)} existing assets in destination ({project_dst}).")
 
     replicated_runtime = int(time.time()) * 1000
-    logging.info(
-        f"These copied/updated assets will have a replicated run time of: {replicated_runtime}."
-    )
+    logging.info(f"These copied/updated assets will have a replicated run time of: {replicated_runtime}.")
 
     logging.info(
         f"Starting to copy and update {len(assets_src)} assets from "
         f"source ({project_src}) to destination ({project_dst})."
     )
-    src_dst_ids_assets = create_hierarchy(
-        assets_src, assets_dst, project_src, replicated_runtime, client_dst
-    )
+    src_dst_ids_assets = create_hierarchy(assets_src, assets_dst, project_src, replicated_runtime, client_dst)
 
     logging.info(
         f"Finished copying and updating {len(src_dst_ids_assets)} assets from "
         f"source ({project_src}) to destination ({project_dst})."
     )
-
