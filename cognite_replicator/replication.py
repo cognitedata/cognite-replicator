@@ -116,7 +116,7 @@ def make_objects_batch(
     replicated_runtime: int,
     depth: Optional[int] = -1,
 ) -> Tuple[
-    List[Union[Asset, Event, TimeSeries]], List[Union[Asset, Event, TimeSeries]]
+    List[Union[Asset, Event, TimeSeries]], List[Union[Asset, Event, TimeSeries]], List[Union[Asset, Event, TimeSeries]]
 ]:
     """
     Create a batch of new objects from a list of source objects or update existing destination objects to their
@@ -135,6 +135,7 @@ def make_objects_batch(
     Returns:
         create_objects: A list of all the new objects to be posted to CDF.
         update_objects: A list of all the updated objects to be updated in CDF.
+        unchanged_objects: A list of all the objects that don't need to be updated.
 
     """
 
@@ -167,7 +168,7 @@ def make_objects_batch(
             )
             create_objects.append(new_asset)
 
-    return create_objects, update_objects
+    return create_objects, update_objects, unchanged_objects
 
 
 def retry(
@@ -188,8 +189,8 @@ def retry(
 
     ret: List[Union[Asset, Event, TimeSeries, Row]] = []
     if objects:
-        tries = 4
-        for i in range(1, tries):
+        tries = 3
+        for i in range(tries):
             logging.info("Current try: %d" % i)
             try:
                 ret = function(objects, **kwargs)
@@ -238,7 +239,7 @@ def thread(
             threading.Thread(
                 target=copy,
                 args=(
-                    src_objects[i : i + cs],
+                    src_objects[i: i + cs],
                     src_id_dst_obj,
                     src_dst_ids_assets,
                     project_src,

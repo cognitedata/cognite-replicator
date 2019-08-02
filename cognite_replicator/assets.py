@@ -124,7 +124,7 @@ def create_hierarchy(
 
     while children_exist:
         logging.info(f"Starting depth {depth}, with {len(children)} assets.")
-        create_assets, update_assets = replication.make_objects_batch(
+        create_assets, update_assets, unchanged_assets = replication.make_objects_batch(
             src_objects=children,
             src_id_dst_obj=src_id_dst_asset,
             src_dst_ids_assets=src_dst_ids,
@@ -141,7 +141,7 @@ def create_hierarchy(
         updated_assets = replication.retry(client.assets.update, update_assets)
 
         src_dst_ids = replication.existing_mapping(
-            *created_assets, *updated_assets, ids=src_dst_ids
+            *created_assets, *updated_assets, *unchanged_assets, ids=src_dst_ids
         )
         logging.debug(f"Dictionary of current asset mappings: {src_dst_ids}")
 
