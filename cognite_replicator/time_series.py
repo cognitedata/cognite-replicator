@@ -33,7 +33,9 @@ def create_time_series(
 
     assert depth == -1
 
-    logging.debug(f"Creating a new time series based on source time series id {src_ts.id}")
+    logging.debug(
+        f"Creating a new time series based on source time series id {src_ts.id}"
+    )
 
     return TimeSeries(
         external_id=src_ts.external_id,
