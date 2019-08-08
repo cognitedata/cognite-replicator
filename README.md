@@ -60,5 +60,5 @@ events.replicate(PROJECT_SRC, CLIENT_SRC, PROJECT_DST, CLIENT_DST, BATCH_SIZE, N
 ```python
 from cognite_replicator import time_series
 
-time_series.replicate(PROJECT_SRC, CLIENT_SRC, PROJECT_DST, CLIENT_DST,  BATCH_SIZE, NUM_THREADS)
+time_series.replicate(PROJECT_SRC, CLIENT_SRC, PROJECT_DST, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
 ```
