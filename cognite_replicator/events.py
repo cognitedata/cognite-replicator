@@ -38,10 +38,10 @@ def create_event(
     return Event(
         external_id=src_event.external_id,
         start_time=src_event.start_time
-        if src_event.start_time and src_event.start_time < src_event.end_time
+        if src_event.start_time and src_event.end_time and src_event.start_time < src_event.end_time
         else src_event.end_time,
         end_time=src_event.end_time
-        if src_event.end_time and src_event.start_time > src_event.end_time
+        if src_event.start_time and src_event.end_time and src_event.start_time > src_event.end_time
         else src_event.end_time,
         type=src_event.type,
         subtype=src_event.subtype,
@@ -86,12 +86,12 @@ def update_event(
     dst_event.external_id = src_event.external_id
     dst_event.start_time = (
         src_event.start_time
-        if src_event.start_time and src_event.start_time < src_event.end_time
+        if src_event.start_time and src_event.end_time and src_event.start_time < src_event.end_time
         else src_event.end_time
     )
     dst_event.end_time = (
         src_event.end_time
-        if src_event.end_time and src_event.start_time > src_event.end_time
+        if src_event.start_time and src_event.end_time and src_event.start_time > src_event.end_time
         else src_event.end_time
     )
     dst_event.type = src_event.type
