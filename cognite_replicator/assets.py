@@ -136,9 +136,9 @@ def create_hierarchy(
         )
 
         logging.info(f"Attempting to create {len(create_assets)} assets.")
-        created_assets = replication.retry(create_assets, client.assets.create)
+        created_assets = replication.retry(client.assets.create, create_assets)
         logging.info(f"Attempting to update {len(update_assets)} assets.")
-        updated_assets = replication.retry(update_assets, client.assets.update)
+        updated_assets = replication.retry(client.assets.update, update_assets)
 
         src_dst_ids = replication.existing_mapping(
             *created_assets, *updated_assets, *unchanged_assets, ids=src_dst_ids
@@ -159,18 +159,19 @@ def create_hierarchy(
 
 
 def replicate(
-    project_src: str, client_src: CogniteClient, project_dst: str, client_dst: CogniteClient,
+    client_src: CogniteClient, client_dst: CogniteClient,
 ):
     """
     Replicates all the assets from the source project into the destination project.
 
     Args:
-        project_src: The name of the project the object is being replicated from.
         client_src: The client corresponding to the source project.
-        project_dst: The name of the project the object is being replicated to.
         client_dst: The client corresponding to the destination project.
 
     """
+
+    project_src = client_src.config.project
+    project_dst = client_dst.config.project
 
     assets_src = client_src.assets.list(limit=None)
     assets_dst = client_dst.assets.list(limit=None)
