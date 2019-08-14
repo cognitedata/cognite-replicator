@@ -1,6 +1,6 @@
-import time
 import logging
-from typing import List, Dict
+import time
+from typing import Dict, List
 
 from cognite.client import CogniteClient
 from cognite.client.data_classes import Event
@@ -26,10 +26,10 @@ def create_event(src_event: Event, src_dst_ids_assets: Dict[int, int], project_s
     return Event(
         external_id=src_event.external_id,
         start_time=src_event.start_time
-        if src_event.start_time and src_event.start_time < src_event.end_time
+        if src_event.start_time and src_event.end_time and src_event.start_time < src_event.end_time
         else src_event.end_time,
         end_time=src_event.end_time
-        if src_event.end_time and src_event.start_time > src_event.end_time
+        if src_event.start_time and src_event.end_time and src_event.start_time > src_event.end_time
         else src_event.end_time,
         type=src_event.type,
         subtype=src_event.subtype,
@@ -61,11 +61,13 @@ def update_event(
     dst_event.external_id = src_event.external_id
     dst_event.start_time = (
         src_event.start_time
-        if src_event.start_time and src_event.start_time < src_event.end_time
+        if src_event.start_time and src_event.end_time and src_event.start_time < src_event.end_time
         else src_event.end_time
     )
     dst_event.end_time = (
-        src_event.end_time if src_event.end_time and src_event.start_time > src_event.end_time else src_event.end_time
+        src_event.end_time
+        if src_event.start_time and src_event.end_time and src_event.start_time > src_event.end_time
+        else src_event.end_time
     )
     dst_event.type = src_event.type
     dst_event.subtype = src_event.subtype
@@ -96,8 +98,8 @@ def copy_events(
         client: The client corresponding to the destination project.
 
     """
-
     logging.debug(f"Starting to replicate {len(src_events)} events.")
+
     create_events, update_events, unchanged_events = replication.make_objects_batch(
         src_objects=src_events,
         src_id_dst_obj=src_id_dst_event,
@@ -112,37 +114,30 @@ def copy_events(
 
     if create_events:
         logging.debug(f"Attempting to create {len(create_events)} events.")
-        create_events = replication.retry(create_events, client.events.create)
+        create_events = replication.retry(client.events.create, create_events)
         logging.debug(f"Successfully created {len(create_events)} events.")
 
     if update_events:
         logging.debug(f"Attempting to update {len(update_events)} events.")
-        update_events = replication.retry(update_events, client.events.update)
+        update_events = replication.retry(client.events.update, update_events)
         logging.debug(f"Successfully updated {len(update_events)} events.")
 
     logging.info(f"Created {len(create_events)} new events and updated {len(update_events)} existing events.")
 
 
-def replicate(
-    project_src: str,
-    client_src: CogniteClient,
-    project_dst: str,
-    client_dst: CogniteClient,
-    batch_size: int,
-    num_threads: int,
-):
+def replicate(client_src: CogniteClient, client_dst: CogniteClient, batch_size: int, num_threads: int):
     """
     Replicates all the events from the source project into the destination project.
 
     Args:
-        project_src: The name of the project the object is being replicated from.
         client_src: The client corresponding to the source project.
-        project_dst: The name of the project the object is being replicated to.
         client_dst: The client corresponding to the destination project.
         batch_size: The biggest batch size to post chunks in.
         num_threads: The number of threads to be used.
 
     """
+    project_src = client_src.config.project
+    project_dst = client_dst.config.project
 
     events_src = client_src.events.list(limit=None)
     events_dst = client_dst.events.list(limit=None)

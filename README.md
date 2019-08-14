@@ -35,6 +35,8 @@ from cognite_replicator import assets
 PROJECT_SRC = "Name of source tenant"
 PROJECT_DST = "Name of destination tenant"
 CLIENT_NAME = "cognite-replicator"
+BATCH_SIZE = 10000 # this is the max size of a batch to be posted
+NUM_THREADS= 10 # this is the max number of threads to be used
 
 CLIENT_SRC = CogniteClient(api_key=SRC_API_KEY, project=PROJECT_SRC, client_name=CLIENT_NAME)
 CLIENT_DST = CogniteClient(api_key=DST_API_KEY, project=PROJECT_DST, client_name=CLIENT_NAME, timeout=90)
@@ -51,12 +53,12 @@ assets.replicate(PROJECT_SRC, CLIENT_SRC, PROJECT_DST, CLIENT_DST)
 ```python
 from cognite_replicator import events
 
-events.replicate(PROJECT_SRC, CLIENT_SRC, PROJECT_DST, CLIENT_DST)
+events.replicate(PROJECT_SRC, CLIENT_SRC, PROJECT_DST, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
 ```
 
 ### Replicate Time Series
 ```python
 from cognite_replicator import time_series
 
-time_series.replicate(PROJECT_SRC, CLIENT_SRC, PROJECT_DST, CLIENT_DST)
+time_series.replicate(PROJECT_SRC, CLIENT_SRC, PROJECT_DST, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
 ```

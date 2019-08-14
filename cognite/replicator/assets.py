@@ -96,7 +96,6 @@ def create_hierarchy(
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
         client: The client corresponding to the destination project.
-
     """
     depth = 0
     parents = [None]
@@ -119,9 +118,9 @@ def create_hierarchy(
         )
 
         logging.info(f"Attempting to create {len(create_assets)} assets.")
-        created_assets = replication.retry(create_assets, client.assets.create)
+        created_assets = replication.retry(client.assets.create, create_assets)
         logging.info(f"Attempting to update {len(update_assets)} assets.")
-        updated_assets = replication.retry(update_assets, client.assets.update)
+        updated_assets = replication.retry(client.assets.update, update_assets)
 
         src_dst_ids = replication.existing_mapping(*created_assets, *updated_assets, *unchanged_assets, ids=src_dst_ids)
         logging.debug(f"Dictionary of current asset mappings: {src_dst_ids}")
@@ -145,7 +144,6 @@ def replicate(client_src: CogniteClient, client_dst: CogniteClient):
     Args:
         client_src: The client corresponding to the source project.
         client_dst: The client corresponding to the destination project.
-
     """
     project_src = client_src.config.project
     project_dst = client_dst.config.project

@@ -6,6 +6,7 @@ import requests
 from cognite.client import CogniteClient
 from cognite.client.data_classes import Event, TimeSeries
 from cognite.client.data_classes.assets import Asset
+from cognite.client.data_classes.raw import Row
 
 logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.WARNING)  # TODO: need to be moved somewhere else
 
@@ -143,27 +144,28 @@ def make_objects_batch(
     return create_objects, update_objects, unchanged_objects
 
 
-def retry(objects: List[Union[Asset, Event, TimeSeries]], function) -> List[Union[Asset, Event, TimeSeries]]:
+def retry(
+    function, objects: List[Union[Asset, Event, TimeSeries, Row]], **kwargs
+) -> List[Union[Asset, Event, TimeSeries]]:
     """
     Attempt to either create/update the objects, if it fails retry creating/updating the objects. This will retry up
     to three times.
 
     Args:
-        objects: A list of all the new objects or updated objects.
         function: The function that will be applied to objects, either creating_objects or updating_objects.
+        objects: A list of all the new objects or updated objects.
 
     Returns:
         A list of all the objects that were created or updated in CDF.
 
     """
-
-    ret: List[Union[Asset, Event, TimeSeries]] = []
+    ret: List[Union[Asset, Event, TimeSeries, Row]] = []
     if objects:
         tries = 3
         for i in range(tries):
             logging.info("Current try: %d" % i)
             try:
-                ret = function(objects)
+                ret = function(objects, **kwargs)
                 break
             except requests.exceptions.ReadTimeout as e:
                 logging.warning(f"Retrying due to {e}")
