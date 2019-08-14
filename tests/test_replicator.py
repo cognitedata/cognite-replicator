@@ -1,4 +1,4 @@
-from cognite_replicator import __version__
+from cognite.replicator import __version__
 
 
 def test_version():

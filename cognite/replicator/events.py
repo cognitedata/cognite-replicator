@@ -1,6 +1,6 @@
-import time
 import logging
-from typing import List, Dict, Optional
+import time
+from typing import Dict, List
 
 from cognite.client import CogniteClient
 from cognite.client.data_classes import Event
@@ -8,13 +8,7 @@ from cognite.client.data_classes import Event
 from . import replication
 
 
-def create_event(
-    src_event: Event,
-    src_dst_ids_assets: Dict[int, int],
-    project_src: str,
-    runtime: int,
-    depth: Optional[int] = -1,
-) -> Event:
+def create_event(src_event: Event, src_dst_ids_assets: Dict[int, int], project_src: str, runtime: int) -> Event:
     """
     Makes a new copy of the event to be replicated based on a source event.
 
@@ -23,16 +17,10 @@ def create_event(
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
-        depth: Optional argument that is included to mimic the signature of create in order to allow for
-               cleaner bulk processing.
 
     Returns:
         The replicated event to be created in the destination.
-
     """
-
-    assert depth == -1
-
     logging.debug(f"Creating a new event based on source event id {src_event.id}")
 
     return Event(
@@ -53,12 +41,7 @@ def create_event(
 
 
 def update_event(
-    src_event: Event,
-    dst_event: Event,
-    src_dst_ids_assets: Dict[int, int],
-    project_src: str,
-    runtime: int,
-    depth: Optional[int] = -1,
+    src_event: Event, dst_event: Event, src_dst_ids_assets: Dict[int, int], project_src: str, runtime: int
 ) -> Event:
     """
     Makes an updated version of the destination event based on the corresponding source event.
@@ -69,19 +52,11 @@ def update_event(
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
-        depth: Optional argument that is included to mimic the signature of create in order to allow for
-               cleaner bulk processing.
 
     Returns:
         The updated event object for the replication destination.
-
     """
-
-    assert depth == -1
-
-    logging.debug(
-        f"Updating existing event {dst_event.id} based on source event id {src_event.id}"
-    )
+    logging.debug(f"Updating existing event {dst_event.id} based on source event id {src_event.id}")
 
     dst_event.external_id = src_event.external_id
     dst_event.start_time = (
@@ -98,9 +73,7 @@ def update_event(
     dst_event.subtype = src_event.subtype
     dst_event.description = src_event.description
     dst_event.metadata = replication.new_metadata(src_event, project_src, runtime)
-    dst_event.asset_ids = replication.get_asset_ids(
-        src_event.asset_ids, src_dst_ids_assets
-    )
+    dst_event.asset_ids = replication.get_asset_ids(src_event.asset_ids, src_dst_ids_assets)
     dst_event.source = src_event.source
     return dst_event
 
@@ -125,8 +98,8 @@ def copy_events(
         client: The client corresponding to the destination project.
 
     """
-
     logging.debug(f"Starting to replicate {len(src_events)} events.")
+
     create_events, update_events, unchanged_events = replication.make_objects_batch(
         src_objects=src_events,
         src_id_dst_obj=src_id_dst_event,
@@ -137,9 +110,7 @@ def copy_events(
         replicated_runtime=runtime,
     )
 
-    logging.info(
-        f"Creating {len(create_events)} new events and updating {len(update_events)} existing events."
-    )
+    logging.info(f"Creating {len(create_events)} new events and updating {len(update_events)} existing events.")
 
     if create_events:
         logging.debug(f"Attempting to create {len(create_events)} events.")
@@ -151,17 +122,10 @@ def copy_events(
         update_events = replication.retry(client.events.update, update_events)
         logging.debug(f"Successfully updated {len(update_events)} events.")
 
-    logging.info(
-        f"Created {len(create_events)} new events and updated {len(update_events)} existing events."
-    )
+    logging.info(f"Created {len(create_events)} new events and updated {len(update_events)} existing events.")
 
 
-def replicate(
-    client_src: CogniteClient,
-    client_dst: CogniteClient,
-    batch_size: int,
-    num_threads: int,
-):
+def replicate(client_src: CogniteClient, client_dst: CogniteClient, batch_size: int, num_threads: int):
     """
     Replicates all the events from the source project into the destination project.
 
@@ -172,20 +136,15 @@ def replicate(
         num_threads: The number of threads to be used.
 
     """
-
     project_src = client_src.config.project
     project_dst = client_dst.config.project
 
     events_src = client_src.events.list(limit=None)
     events_dst = client_dst.events.list(limit=None)
-    logging.info(
-        f"There are {len(events_src)} existing assets in source ({project_src})."
-    )
-    logging.info(
-        f"There are {len(events_dst)} existing assets in destination ({project_dst})."
-    )
+    logging.info(f"There are {len(events_src)} existing assets in source ({project_src}).")
+    logging.info(f"There are {len(events_dst)} existing assets in destination ({project_dst}).")
 
-    src_id_dst_event = replication.make_id_object_dict(events_dst)
+    src_id_dst_event = replication.make_id_object_map(events_dst)
 
     assets_dst = client_dst.assets.list(limit=None)
     src_dst_ids_assets = replication.existing_mapping(*assets_dst)
@@ -195,9 +154,7 @@ def replicate(
     )
 
     replicated_runtime = int(time.time()) * 1000
-    logging.info(
-        f"These copied/updated events will have a replicated run time of: {replicated_runtime}."
-    )
+    logging.info(f"These copied/updated events will have a replicated run time of: {replicated_runtime}.")
 
     logging.info(
         f"Starting to copy and update {len(events_src)} events from "

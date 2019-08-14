@@ -1,6 +1,6 @@
-import time
 import logging
-from typing import List, Dict, Optional
+import time
+from typing import Dict, List
 
 from cognite.client import CogniteClient
 from cognite.client.data_classes import TimeSeries
@@ -9,11 +9,7 @@ from . import replication
 
 
 def create_time_series(
-    src_ts: TimeSeries,
-    src_dst_ids_assets: Dict[int, int],
-    project_src: str,
-    runtime: int,
-    depth: Optional[int] = -1,
+    src_ts: TimeSeries, src_dst_ids_assets: Dict[int, int], project_src: str, runtime: int
 ) -> TimeSeries:
     """
     Make a new copy of the time series to be replicated based on a source time series.
@@ -23,19 +19,11 @@ def create_time_series(
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
-        depth: Optional argument that is included to mimic the signature of create in order to allow for
-               cleaner bulk processing.
 
     Returns:
         The replicated time series to be created in the destination.
-
     """
-
-    assert depth == -1
-
-    logging.debug(
-        f"Creating a new time series based on source time series id {src_ts.id}"
-    )
+    logging.debug(f"Creating a new time series based on source time series id {src_ts.id}")
 
     return TimeSeries(
         external_id=src_ts.external_id,
@@ -43,9 +31,7 @@ def create_time_series(
         is_string=src_ts.is_string,
         metadata=replication.new_metadata(src_ts, project_src, runtime),
         unit=src_ts.unit,
-        asset_id=replication.get_asset_ids([src_ts.asset_id], src_dst_ids_assets)[0]
-        if src_ts.asset_id
-        else None,
+        asset_id=replication.get_asset_ids([src_ts.asset_id], src_dst_ids_assets)[0] if src_ts.asset_id else None,
         is_step=src_ts.is_step,
         description=src_ts.description,
         security_categories=src_ts.security_categories,
@@ -54,12 +40,7 @@ def create_time_series(
 
 
 def update_time_series(
-    src_ts: TimeSeries,
-    dst_ts: TimeSeries,
-    src_dst_ids_assets: Dict[int, int],
-    project_src: str,
-    runtime: int,
-    depth: Optional[int] = -1,
+    src_ts: TimeSeries, dst_ts: TimeSeries, src_dst_ids_assets: Dict[int, int], project_src: str, runtime: int
 ) -> TimeSeries:
     """
     Makes an updated version of the destination time series based on the corresponding source time series.
@@ -71,37 +52,25 @@ def update_time_series(
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
-        depth: Optional argument that is included to mimic the signature of create in order to allow for
-               cleaner bulk processing.
 
     Returns:
         The updated time series object for the replication destination.
-
     """
-
-    assert depth == -1
-
-    logging.debug(
-        f"Updating existing time series {dst_ts.id} based on source time series id {src_ts.id}"
-    )
+    logging.debug(f"Updating existing time series {dst_ts.id} based on source time series id {src_ts.id}")
 
     dst_ts.external_id = src_ts.external_id
     dst_ts.name = src_ts.name
     dst_ts.is_string = src_ts.is_string
     dst_ts.metadata = replication.new_metadata(src_ts, project_src, runtime)
     dst_ts.unit = src_ts.unit
-    dst_ts.asset_id = (
-        replication.get_asset_ids([src_ts.asset_id], src_dst_ids_assets)[0]
-        if src_ts.asset_id
-        else None
-    )
+    dst_ts.asset_id = replication.get_asset_ids([src_ts.asset_id], src_dst_ids_assets)[0] if src_ts.asset_id else None
     dst_ts.is_step = src_ts.is_step
     dst_ts.description = src_ts.description
     dst_ts.security_categories = src_ts.security_categories
     return dst_ts
 
 
-def filter_service_account_ts(ts_src: List[TimeSeries]) -> List[TimeSeries]:
+def filter_away_service_account_ts(ts_src: List[TimeSeries]) -> List[TimeSeries]:
     """
     Filter out the service account metrics time series so they won't be copied.
 
@@ -110,9 +79,7 @@ def filter_service_account_ts(ts_src: List[TimeSeries]) -> List[TimeSeries]:
 
     Returns:
         A list of time series that are not service account metrics.
-
     """
-
     return [ts for ts in ts_src if "service_account_metrics" not in ts.name]
 
 
@@ -136,7 +103,6 @@ def copy_ts(
         client: The client corresponding to the destination project.
 
     """
-
     logging.info(f"Starting to replicate {len(src_ts)} time series.")
     create_ts, update_ts, unchanged_ts = replication.make_objects_batch(
         src_objects=src_ts,
@@ -148,9 +114,7 @@ def copy_ts(
         replicated_runtime=runtime,
     )
 
-    logging.info(
-        f"Creating {len(create_ts)} new time series and updating {len(update_ts)} existing time series."
-    )
+    logging.info(f"Creating {len(create_ts)} new time series and updating {len(update_ts)} existing time series.")
 
     if create_ts:
         logging.info(f"Creating {len(create_ts)} time series.")
@@ -163,12 +127,7 @@ def copy_ts(
         logging.info(f"Successfully updated {len(updated_ts)} time series.")
 
 
-def replicate(
-    client_src: CogniteClient,
-    client_dst: CogniteClient,
-    batch_size: int,
-    num_threads: int,
-):
+def replicate(client_src: CogniteClient, client_dst: CogniteClient, batch_size: int, num_threads: int):
     """
     Replicates all the time series from the source project into the destination project.
 
@@ -186,11 +145,9 @@ def replicate(
     ts_src = client_src.time_series.list(limit=None)
     ts_dst = client_dst.time_series.list(limit=None)
     logging.info(f"There are {len(ts_src)} existing assets in source ({project_src}).")
-    logging.info(
-        f"There are {len(ts_dst)} existing assets in destination ({project_dst})."
-    )
+    logging.info(f"There are {len(ts_dst)} existing assets in destination ({project_dst}).")
 
-    src_id_dst_ts = replication.make_id_object_dict(ts_dst)
+    src_id_dst_ts = replication.make_id_object_map(ts_dst)
 
     assets_dst = client_dst.assets.list(limit=None)
     src_dst_ids_assets = replication.existing_mapping(*assets_dst)
@@ -199,16 +156,14 @@ def replicate(
         f"that have been replicated then it will be linked."
     )
 
-    ts_src_not_service = filter_service_account_ts(ts_src)
+    ts_src_not_service = filter_away_service_account_ts(ts_src)
     logging.info(
         f"There are {(len(ts_src) - len(ts_src_not_service))} service"
         f"account metric time series that will not be copied."
     )
 
     replicated_runtime = int(time.time()) * 1000
-    logging.info(
-        f"These copied/updated time series will have a replicated run time of: {replicated_runtime}."
-    )
+    logging.info(f"These copied/updated time series will have a replicated run time of: {replicated_runtime}.")
 
     logging.info(
         f"Starting to copy and update {len(ts_src)} events from "
@@ -240,4 +195,3 @@ def replicate(
         f"Finished copying and updating {len(ts_src)} events from "
         f"source ({project_src}) to destination ({project_dst})."
     )
-

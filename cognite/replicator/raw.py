@@ -1,8 +1,8 @@
 import logging
-from typing import List, Dict, Union, Tuple
+from typing import Dict, List, Tuple, Union
 
 from cognite.client import CogniteClient
-from cognite.client.data_classes.raw import Database, Table, Row
+from cognite.client.data_classes.raw import Database, Row, Table
 
 from . import replication
 
@@ -30,9 +30,7 @@ def get_not_created_names(
     return src_names, not_created
 
 
-def create_databases_tables(
-    client_src: CogniteClient, client_dst: CogniteClient
-) -> Dict[str, List[str]]:
+def create_databases_tables(client_src: CogniteClient, client_dst: CogniteClient) -> Dict[str, List[str]]:
     """
     Creates the databases and tables in the destination and makes a dictionary with the database name as the key and
     a list of the table names as the value.
@@ -45,7 +43,6 @@ def create_databases_tables(
         A dictionary mapping database names to a list of it's table names.
 
     """
-
     db_list_src = client_src.raw.databases.list(limit=None)
     db_list_dst = client_dst.raw.databases.list(limit=None)
 
@@ -85,16 +82,10 @@ def insert_rows(rows: List[Row], db_name: str, tb_name: str, client: CogniteClie
         The output of insert.
 
     """
-
     return client.raw.rows.insert(db_name=db_name, table_name=tb_name, row=rows)
 
 
-def copy_rows(
-    client_src: CogniteClient,
-    client_dst: CogniteClient,
-    db_tb_dict: Dict[str, List[str]],
-    chunk_size: int,
-):
+def copy_rows(client_src: CogniteClient, client_dst: CogniteClient, db_tb_dict: Dict[str, List[str]], chunk_size: int):
     """
     Goes through the databases and their tables in order to fetch the rows from source and post them to
     destination in chunks.
@@ -106,12 +97,9 @@ def copy_rows(
       chunk_size: The size of the chunks to fetch and post rows in.
 
     """
-
     for db_name, tb_list in db_tb_dict.items():
         for tb_name in tb_list:
-            for row_list in client_src.raw.rows(
-                db_name=db_name, table_name=tb_name, chunk_size=chunk_size
-            ):
+            for row_list in client_src.raw.rows(db_name=db_name, table_name=tb_name, chunk_size=chunk_size):
                 new_rows = {row.key: row.columns for row in row_list}
                 kwargs = {"db_name": db_name, "tb_name": tb_name, "client": client_dst}
                 replication.retry(insert_rows, new_rows, **kwargs)
@@ -128,13 +116,10 @@ def replicate(client_src: CogniteClient, client_dst: CogniteClient, chunk_size: 
         chunk_size: The biggest chunk size to fetch and post in.
 
     """
-
     project_src = client_src.config.project
     project_dst = client_dst.config.project
 
-    logging.info(
-        f"Starting to copy raw from source ({project_src}) to destination ({project_dst})."
-    )
+    logging.info(f"Starting to copy raw from source ({project_src}) to destination ({project_dst}).")
 
     db_tb = create_databases_tables(client_src, client_dst)
     logging.info(
@@ -144,7 +129,4 @@ def replicate(client_src: CogniteClient, client_dst: CogniteClient, chunk_size: 
 
     copy_rows(client_src, client_dst, db_tb, chunk_size)
 
-    logging.info(
-        f"Finished copying raw from source ({project_src}) to destination ({project_dst})."
-    )
-
+    logging.info(f"Finished copying raw from source ({project_src}) to destination ({project_dst}).")

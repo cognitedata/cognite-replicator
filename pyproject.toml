@@ -12,6 +12,7 @@ cognite-sdk = "^1.0.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^3.0"
+pyest-cov = "*"
 
 [build-system]
 requires = ["poetry>=0.12"]
