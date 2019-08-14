@@ -1,7 +1,3 @@
-from . import assets
-from . import events
-from . import time_series
-from . import replication
+from . import assets, events, replication, time_series
 
-
-__version__ = '0.1.0'
+__version__ = "0.2.0"

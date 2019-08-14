@@ -5,7 +5,7 @@ from cognite.replicator.assets import build_asset_create
 
 
 def test_build_asset_create():
-    asset = Asset(id=3, name="holy grenade", metadata)
+    asset = Asset(id=3, name="holy grenade", metadata={})
     runtime = time.time() * 1000
     created = build_asset_create(asset, {}, "source_tenant", runtime, 0)
     assert "holy grenade" == created.name

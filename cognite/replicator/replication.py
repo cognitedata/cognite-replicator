@@ -3,6 +3,7 @@ import threading
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import requests
+
 from cognite.client import CogniteClient
 from cognite.client.data_classes import Event, TimeSeries
 from cognite.client.data_classes.assets import Asset
