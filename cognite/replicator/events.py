@@ -125,7 +125,7 @@ def copy_events(
     logging.info(f"Created {len(create_events)} new events and updated {len(update_events)} existing events.")
 
 
-def replicate(client_src: CogniteClient, client_dst: CogniteClient, batch_size: int, num_threads: int):
+def replicate(client_src: CogniteClient, client_dst: CogniteClient, batch_size: int, num_threads: int = 1):
     """
     Replicates all the events from the source project into the destination project.
 

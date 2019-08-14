@@ -1,12 +1,11 @@
 # Cognite Python Replicator
-Cognite Replicator is a Python package for replicating data across Cognite Data Fusion (CDF) tenants. This package is
-built on top of the Cognite Python SDK. Currently this package supports replicating assets, events, and time series
-metadata.
+Cognite Replicator is a Python package for replicating data across Cognite Data Fusion (CDF) projects. This package is
+built on top of the Cognite Python SDK.
 
 ## Prerequisites
 In order to start using the Replicator, you need:
 * Python3 (>= 3.6)
-* Cognite Python SDK (>=1.0.2)
+* Cognite Python SDK
 * Two API keys, one for your source tenant and one for your destination tenant.
     * Read x to learn more about what capabilities these keys should have.
     * Never include the API key directly in the code or upload the key to github.
@@ -44,21 +43,28 @@ CLIENT_DST = CogniteClient(api_key=DST_API_KEY, project=PROJECT_DST, client_name
 
 ### Replicate Assets
 ```python
-from cognite_replicator import assets
+from cognite.replicator import assets
 
-assets.replicate(PROJECT_SRC, CLIENT_SRC, PROJECT_DST, CLIENT_DST)
+assets.replicate(CLIENT_SRC, CLIENT_DST)
 ```
 
 ### Replicate Events
 ```python
-from cognite_replicator import events
+from cognite.replicator import events
 
-events.replicate(PROJECT_SRC, CLIENT_SRC, PROJECT_DST, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
+events.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
 ```
 
 ### Replicate Time Series
 ```python
-from cognite_replicator import time_series
+from cognite.replicator import time_series
 
-time_series.replicate(PROJECT_SRC, CLIENT_SRC, PROJECT_DST, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
+time_series.replicate(CLIENT_SRC, PROJECT_DST, BATCH_SIZE, NUM_THREADS)
+```
+
+## Testing
+We are using pytest framework. To run the test suite (after poetry and dependencies are installed):
+
+```python
+poetry run pytest --cov cognite
 ```

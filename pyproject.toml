@@ -5,10 +5,13 @@ description = "Python package for replicating data across CDF tenants"
 license = "Apache-2.0"
 authors = ["Nina Odegard <nina.odegard@cognite.com>"]
 readme = "README.md"
+packages = [
+    {include = "cognite/replicator"}
+]
 
 [tool.poetry.dependencies]
 python = "^3.6"
-cognite-sdk = "^1.0.2"
+cognite-sdk = "^1.0.4"
 
 [tool.poetry.dev-dependencies]
 pytest = "^3.0"

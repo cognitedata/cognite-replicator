@@ -127,7 +127,7 @@ def copy_ts(
         logging.info(f"Successfully updated {len(updated_ts)} time series.")
 
 
-def replicate(client_src: CogniteClient, client_dst: CogniteClient, batch_size: int, num_threads: int):
+def replicate(client_src: CogniteClient, client_dst: CogniteClient, batch_size: int, num_threads: int = 1):
     """
     Replicates all the time series from the source project into the destination project.
 
@@ -136,9 +136,7 @@ def replicate(client_src: CogniteClient, client_dst: CogniteClient, batch_size: 
         client_dst: The client corresponding to the destination project.
         batch_size: The biggest batch size to post chunks in.
         num_threads: The number of threads to be used.
-
     """
-
     project_src = client_src.config.project
     project_dst = client_dst.config.project
 
