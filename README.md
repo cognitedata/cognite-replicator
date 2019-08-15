@@ -21,6 +21,8 @@ $ export DST_API_KEY=<your destination API key>
 The replicator is currently distribuated as Python wheels.
 TODO: Sofie describe how to add them to a databricks cluster
 
+Go into your cluster and choose 'Install New' and choose your library type to be 'Python Whl'. By clicking on the area 'Drop WHL here' you can navigate to the folder where you have your cognite-replicator folder. Inside the cognite-replicator folder, you go to the folder called 'dist' and choose the .whl file.
+
 ## Usage
 
 ### Setup
