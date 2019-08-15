@@ -18,10 +18,8 @@ $ export DST_API_KEY=<your destination API key>
 ```
 
 ## Installation
-
-
-## Documentation
-
+The replicator is currently distribuated as Python wheels.
+TODO: Sofie describe how to add them to a databricks cluster
 
 ## Usage
 
@@ -62,7 +60,25 @@ from cognite.replicator import time_series
 time_series.replicate(CLIENT_SRC, PROJECT_DST, BATCH_SIZE, NUM_THREADS)
 ```
 
-## Testing
+## Development
+We are using [Poetry](https://poetry.eustace.io/) to manage dependencies and building the library.
+
+Install poetry:
+```bash
+curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
+```
+
+To install dependencies:
+```bash
+poetry install
+```
+
+To build the wheel:
+```bash
+poetry build
+```
+
+### Testing
 We are using pytest framework. To run the test suite (after poetry and dependencies are installed):
 
 ```python
