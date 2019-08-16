@@ -137,13 +137,75 @@ def create_hierarchy(
     return src_dst_ids
 
 
-def replicate(client_src: CogniteClient, client_dst: CogniteClient):
+def remove_not_replicated_in_dst(client_dst: CogniteClient) -> List[Asset]:
+    """
+      Deleting all the assets in the destination that do not have the "_replicatedSource" in metadata, which means that is was not copied from the source, but created in the destination.
+
+      Parameters:
+         client_dst: The client corresponding to the destination project.
+
+
+    """
+
+    dst_list = client_dst.assets.list(limit=None)
+    file_list = client_dst.assets.list(metadata={"_replicatedSource": PROJECT_SRC}, limit=None)
+
+    print(f"Number of assets that was not made in the source:  {len(dst_list) - len(file_list)}")
+
+    not_copied_list = list()
+    copied_list = list()
+    for asset in dst_list:
+        if asset.metadata and asset.metadata["_replicatedSource"]:
+            copied_list.append(asset.id)
+
+        else:
+            not_copied_list.append(asset.id)
+
+    client_dst.assets.delete(id=not_copied_list)
+    return
+
+
+def remove_replicated_if_not_in_src(client_src: CogniteClient, client_dst: CogniteClient) -> List[Asset]:
+    """
+      Compare the destination and source assets and delete the ones that are no longer in the source.
+
+      Parameters:
+        client_src: The client corresponding to the source project.
+        client_dst: The client corresponding to the destination. project.
+
+
+    """
+    src_ids = {asset.id for asset in client_src.assets.list(limit=None)}
+
+    dst_id_list = {}
+    for asset in client_dst.assets.list(limit=None):
+        if asset.metadata and asset.metadata["_replicatedInternalId"]:
+            dst_id_list[int(asset.metadata["_replicatedInternalId"])] = asset.id
+
+    diff_list = [dst_id for src_dst_id, dst_id in dst_id_list.items() if src_dst_id not in src_ids]
+    client_dst.assets.delete(id=diff_list)
+    print(f"Number of assets that was deleted in the source ({PROJECT_SRC}): {len(diff_list)}")
+
+    return
+
+
+def replicate(
+    client_src: CogniteClient,
+    client_dst: CogniteClient,
+    delete_replicated_if_not_in_src: bool = False,
+    delete_not_replicated_in_dst: bool = False,
+):
     """
     Replicates all the assets from the source project into the destination project.
 
     Args:
         client_src: The client corresponding to the source project.
         client_dst: The client corresponding to the destination project.
+        delete_replicated_if_not_in_src: If True, will delete replicated assets that are in the destination,
+        but no longer in the source project (Default=False).
+        delete_not_replicated_in_dst: If True, will delete assets from the destination if they were not replicated
+        from the source (Default=False).
+
     """
     project_src = client_src.config.project
     project_dst = client_dst.config.project
@@ -166,3 +228,8 @@ def replicate(client_src: CogniteClient, client_dst: CogniteClient):
         f"Finished copying and updating {len(src_dst_ids_assets)} assets from "
         f"source ({project_src}) to destination ({project_dst})."
     )
+
+    if delete_replicated_if_not_in_src:
+        remove_replicated_if_not_in_src(client_src, client_dst)
+    if delete_not_replicated_in_dst:
+        remove_not_replicated_in_dst(client_dst)
