@@ -20,7 +20,7 @@ $ export DST_API_KEY=<your destination API key>
 ## Installation
 The replicator is currently distribuated as Python wheels.
 
-Go into your cluster and choose 'Install New' and choose your library type to be 'Python Whl'. By clicking on the area 'Drop WHL here' you can navigate to the folder where you have your cognite-replicator folder. Inside the cognite-replicator folder, you go to the folder called 'dist' and choose the .whl file.
+On this GitHub-page under **release** can you find the `.whl` file. By clicking on the file, you will automatically download the file. Then go into Databricks and into your cluster. Click on **Libraries** and **Install New**.  Choose your library type to be a **Python Whl**. By clicking on the area **Drop WHL here** you can navigate to where you have your `.whl`-file (most likely in your dowloads folder). Choose the `.whl` file, let the new library install and you are ready to replicate!
 
 ## Usage
 
