@@ -139,7 +139,7 @@ def remove_not_replicated_in_dst(client_dst: CogniteClient) -> List[Event]:
     dst_list = client_dst.events.list(limit=None)
     file_list = client_dst.events.list(metadata={"_replicatedSource": PROJECT_SRC}, limit=None)
 
-    print(f"Number of events that was not made in the source:  {len(dst_list) - len(file_list)}")
+    diff_num = len(dst_list) - len(file_list)
 
     not_copied_list = list()
     copied_list = list()
@@ -151,7 +151,7 @@ def remove_not_replicated_in_dst(client_dst: CogniteClient) -> List[Event]:
             not_copied_list.append(event.id)
 
     client_dst.events.delete(id=not_copied_list)
-    return
+    return diff_num
 
 
 def remove_replicated_if_not_in_src(client_src: CogniteClient, client_dst: CogniteClient) -> List[Event]:
@@ -175,9 +175,8 @@ def remove_replicated_if_not_in_src(client_src: CogniteClient, client_dst: Cogni
 
     diff_list = [dst_id for src_dst_id, dst_id in dst_id_list.items() if src_dst_id not in src_ids]
     client_dst.events.delete(id=diff_list)
-    print(f"Number of events that was deleted in the source ({PROJECT_SRC}): {len(diff_list)}")
 
-    return
+    return diff_list
 
 
 def replicate(
@@ -255,5 +254,13 @@ def replicate(
 
     if delete_replicated_if_not_in_src:
         remove_replicated_if_not_in_src(client_src, client_dst)
+        logging.info(
+            f"Deleted {len(asset_delete)} assets in destination ({project_dst})"
+            f" because they were no longer in source ({project_src})   "
+        )
     if delete_not_replicated_in_dst:
         remove_not_replicated_in_dst(client_dst)
+        logging.info(
+            f"Deleted {asset_delete} assets in destination ({project_dst}) because"
+            f"they were not replicated from source ({project_src})   "
+        )
