@@ -150,7 +150,7 @@ def remove_not_replicated_in_dst(client_dst: CogniteClient) -> List[Asset]:
     dst_list = client_dst.assets.list(limit=None)
     file_list = client_dst.assets.list(metadata={"_replicatedSource": PROJECT_SRC}, limit=None)
 
-    print(f"Number of assets that was not made in the source:  {len(dst_list) - len(file_list)}")
+    diff_num = len(dst_list) - len(file_list)
 
     not_copied_list = list()
     copied_list = list()
@@ -162,7 +162,7 @@ def remove_not_replicated_in_dst(client_dst: CogniteClient) -> List[Asset]:
             not_copied_list.append(asset.id)
 
     client_dst.assets.delete(id=not_copied_list)
-    return
+    return diff_num
 
 
 def remove_replicated_if_not_in_src(client_src: CogniteClient, client_dst: CogniteClient) -> List[Asset]:
@@ -186,7 +186,7 @@ def remove_replicated_if_not_in_src(client_src: CogniteClient, client_dst: Cogni
     client_dst.assets.delete(id=diff_list)
     print(f"Number of assets that was deleted in the source ({PROJECT_SRC}): {len(diff_list)}")
 
-    return
+    return diff_list
 
 
 def replicate(
@@ -230,6 +230,14 @@ def replicate(
     )
 
     if delete_replicated_if_not_in_src:
-        remove_replicated_if_not_in_src(client_src, client_dst)
+        asset_delete = remove_replicated_if_not_in_src(client_src, client_dst)
+        logging.info(
+            f"Deleted {len(asset_delete)} assets in destination ({project_dst})"
+            f" because they were no longer in source ({project_src})   "
+        )
     if delete_not_replicated_in_dst:
-        remove_not_replicated_in_dst(client_dst)
+        asset_delete = remove_not_replicated_in_dst(client_dst)
+        logging.info(
+            f"Deleted {asset_delete} assets in destination ({project_dst}) because"
+            f"they were not replicated from source ({project_src})   "
+        )
