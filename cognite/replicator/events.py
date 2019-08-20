@@ -130,19 +130,12 @@ def remove_not_replicated_in_dst(client_dst: CogniteClient) -> List[Event]:
 
         """
 
-    dst_list = client_dst.events.list(limit=None)
-
-    not_copied_list = list()
-    copied_list = list()
-    for event in dst_list:
-        if event.metadata and event.metadata["_replicatedSource"]:
-            copied_list.append(event.id)
-
-        else:
-            not_copied_list.append(event.id)
-
-    client_dst.events.delete(id=not_copied_list)
-    return not_copied_list
+    event_ids_to_remove = []
+    for event in client_dst.events.list(limit=None):
+        if not event.metadata or not event.metadata["_replicatedSource"]:
+            event_ids_to_remove.append(event.id)
+    client_dst.events.delete(id=event_ids_to_remove)
+    return event_ids_to_remove
 
 
 def remove_replicated_if_not_in_src(client_src: CogniteClient, client_dst: CogniteClient) -> List[Event]:
