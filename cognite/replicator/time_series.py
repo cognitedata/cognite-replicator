@@ -131,19 +131,12 @@ def remove_not_replicated_in_dst(client_dst: CogniteClient) -> List[TimeSeries]:
 
     """
 
-    dst_list = client_dst.time_series.list(limit=None)
-
-    not_copied_list = list()
-    copied_list = list()
-    for ts in dst_list:
-        if ts.metadata and ts.metadata["_replicatedSource"]:
-            copied_list.append(ts.id)
-
-        else:
-            not_copied_list.append(ts.id)
-
-    client_dst.time_series.delete(id=not_copied_list)
-    return not_copied_list
+    ts_ids_to_remove = []
+    for ts in client_dst.time_series.list(limit=None):
+        if not ts.metadata or not ts.metadata["_replicatedSource"]:
+            ts_ids_to_remove.append(ts.id)
+    client_dst.time_series.delete(id=ts_ids_to_remove)
+    return ts_ids_to_remove
 
 
 def remove_replicated_if_not_in_src(client_src: CogniteClient, client_dst: CogniteClient) -> List[TimeSeries]:
@@ -188,6 +181,10 @@ def replicate(
         client_dst: The client corresponding to the destination project.
         batch_size: The biggest batch size to post chunks in.
         num_threads: The number of threads to be used.
+        delete_replicated_if_not_in_src: If True, will delete replicated assets that are in the destination,
+        but no longer in the source project (Default=False).
+        delete_not_replicated_in_dst: If True, will delete assets from the destination if they were not replicated
+        from the source (Default=False).
     """
     project_src = client_src.config.project
     project_dst = client_dst.config.project
