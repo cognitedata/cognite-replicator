@@ -158,7 +158,7 @@ def remove_replicated_if_not_in_src(src_assets: List[Asset], client_dst: Cognite
     Compare the destination and source assets and delete the ones that are no longer in the source.
 
     Parameters:
-        src_assets: The client corresponding to the source project.
+        src_assets: The list of assets from the src destination.
         client_dst: The client corresponding to the destination. project.
     """
     src_asset_ids = {asset.id for asset in src_assets}
