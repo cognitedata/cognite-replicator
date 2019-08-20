@@ -101,13 +101,13 @@ def copy_events(
     logging.debug(f"Starting to replicate {len(src_events)} events.")
 
     create_events, update_events, unchanged_events = replication.make_objects_batch(
-        src_objects=src_events,
-        src_id_dst_obj=src_id_dst_event,
-        src_dst_ids_assets=src_dst_ids_assets,
-        create=create_event,
-        update=update_event,
-        project_src=project_src,
-        replicated_runtime=runtime,
+        src_events,
+        src_id_dst_event,
+        src_dst_ids_assets,
+        create_event,
+        update_event,
+        project_src,
+        runtime,
     )
 
     logging.info(f"Creating {len(create_events)} new events and updating {len(update_events)} existing events.")

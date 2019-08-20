@@ -107,13 +107,13 @@ def create_hierarchy(
     while children:
         logging.info(f"Starting depth {depth}, with {len(children)} assets.")
         create_assets, update_assets, unchanged_assets = replication.make_objects_batch(
-            src_objects=children,
-            src_id_dst_obj=src_id_dst_asset,
-            src_dst_ids_assets=src_dst_ids,
-            create=build_asset_create,
-            update=build_asset_update,
-            project_src=project_src,
-            replicated_runtime=runtime,
+            children,
+            src_id_dst_asset,
+            src_dst_ids,
+            build_asset_create,
+            build_asset_update,
+            project_src,
+            runtime,
             depth=depth,
         )
 
