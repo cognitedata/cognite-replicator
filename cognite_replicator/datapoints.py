@@ -1,13 +1,21 @@
 #!/usr/bin/env python3
 
 """
-This script serves the purpose of replicating new datapoints from a source tenant to a destination tenant that has the same asset.
+This script serves the purpose of replicating new datapoints from a source tenant to a destination tenant that holds corresponding time series.
 
 REQUIREMENTS: SAME external_id IN SRC AND DST TENANT, PROJECT_SRC, PROJECT_DST, CLIENT_NAME, SOURCE_API_KEY, DESTINATION_API_KEY
 OPTIONAL: DATAPOINT_LIMIT (DEFAULT=10 000), keep_asset_connection (DEFAULT=True), timing (DEFAULT=False)
 
 Todo: add logging to stackdriver, add multiprocessing
 """
+import logging
+import time
+from datetime import datetime, timedelta
+from typing import Dict, List, Tuple, Union
+
+from cognite.client import CogniteClient
+from cognite.client.data_classes import TimeSeries
+from cognite.client.data_classes.assets import Asset
 
 # SECRET_SCOPE: Name your Databricks secret scope here.
 SECRET_SCOPE = "tao_default"
@@ -18,22 +26,24 @@ PROJECT_DST = "gcproject"
 # CLIENT_NAME: This is a user-defined string intended to give the client a unique identifier.
 CLIENT_NAME = "cognite-databricks-replicator-assets"
 
-source_key = open("publicdata.key", "r")
-destination_key = open("gcproject.key", "r")
+SRC_API_KEY = open("publicdata.key", "r")
+DST_API_KEY = open("gcproject.key", "r")
 
-import logging
-import time
-from datetime import datetime, timedelta
-from typing import Dict, List, Tuple, Union
+# Todo: multiprocessing.
+# BATCH_SIZE = 10000  # this is the max size of a batch to be posted
+# NUM_THREADS = 10  # this is the max number of threads to be used
 
-from cognite.client import CogniteClient
-from cognite.client.data_classes import TimeSeries
-from cognite.client.data_classes.assets import Asset
+CLIENT_SRC = CogniteClient(
+    api_key=SRC_API_KEY, project=PROJECT_SRC, client_name=CLIENT_NAME
+)
+CLIENT_DST = CogniteClient(
+    api_key=DST_API_KEY, project=PROJECT_DST, client_name=CLIENT_NAME, timeout=90
+)
 
 logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
 
 
-def datapoint_replication(
+def replicate(
     CLIENT_SRC, CLIENT_DST, keep_asset_connection=True, dp_limit=10000, timing=False
 ):
 
@@ -119,16 +129,7 @@ def datapoint_replication(
 
 if __name__ == "__main__":
 
-    CLIENT_SRC = CogniteClient(
-        api_key=str(source_key.read()), project=PROJECT_SRC, client_name=CLIENT_NAME
-    )
-    CLIENT_DST = CogniteClient(
-        api_key=str(destination_key.read()),
-        project=PROJECT_DST,
-        client_name=CLIENT_NAME,
-        timeout=90,
-    )
-    datapoint_replication(CLIENT_SRC, CLIENT_DST, keep_asset_connection=True)
+    replicate(CLIENT_SRC, CLIENT_DST, keep_asset_connection=True)
 
-    source_key.close()
-    destination_key.close()
+    SRC_API_KEY.close()
+    DST_API_KEY.close()

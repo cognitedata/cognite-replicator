@@ -31,6 +31,8 @@ $ export DST_API_KEY=<your destination API key>
 from cognite.client import CogniteClient
 from cognite_replicator import replication
 from cognite_replicator import assets
+from cognite.client.data_classes import TimeSeries
+from cognite.client.data_classes.assets import Asset
 
 PROJECT_SRC = "Name of source tenant"
 PROJECT_DST = "Name of destination tenant"
@@ -61,4 +63,11 @@ events.replicate(PROJECT_SRC, CLIENT_SRC, PROJECT_DST, CLIENT_DST, BATCH_SIZE, N
 from cognite_replicator import time_series
 
 time_series.replicate(PROJECT_SRC, CLIENT_SRC, PROJECT_DST, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
+```
+
+### Replicate Datapoints
+```python
+from cognite_replicator import datapoints
+
+datapoints.replicate(CLIENT_SRC, CLIENT_DST)
 ```
