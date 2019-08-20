@@ -127,7 +127,65 @@ def copy_ts(
         logging.info(f"Successfully updated {len(updated_ts)} time series.")
 
 
-def replicate(client_src: CogniteClient, client_dst: CogniteClient, batch_size: int, num_threads: int = 1):
+def remove_not_replicated_in_dst(client_dst: CogniteClient) -> List[TimeSeries]:
+    """
+      Deleting all the time series in the destination that do not have the "_replicatedSource" in metadata, which means that is was not copied from the source, but created in the destination.
+
+      Parameters:
+         client_dst: The client corresponding to the destination project.
+
+
+    """
+
+    dst_list = client_dst.time_series.list(limit=None)
+
+    not_copied_list = list()
+    copied_list = list()
+    for ts in dst_list:
+        if ts.metadata and ts.metadata["_replicatedSource"]:
+            copied_list.append(ts.id)
+
+        else:
+            not_copied_list.append(ts.id)
+
+    client_dst.time_series.delete(id=not_copied_list)
+    return not_copied_list
+
+
+def remove_replicated_if_not_in_src(client_src: CogniteClient, client_dst: CogniteClient) -> List[TimeSeries]:
+    """
+      Compare the destination and source time series and delete the ones that are no longer in the source.
+
+      Parameters:
+        client_src: The client corresponding to the source project.
+        client_dst: The client corresponding to the destination. project.
+
+
+    """
+
+    src_ids = {ts.id for ts in client_src.time_series.list(limit=None)}
+
+    ts_dst_list = client_dst.time_series.list(limit=None)
+    dst_id_list = {
+        int(ts.metadata["_replicatedInternalId"]): ts.id
+        for ts in ts_dst_list
+        if ts.metadata and ts.metadata["_replicatedInternalId"]
+    }
+
+    diff_list = [dst_id for src_dst_id, dst_id in dst_id_list.items() if src_dst_id not in src_ids]
+    client_dst.time_series.delete(id=diff_list)
+
+    return diff_list
+
+
+def replicate(
+    client_src: CogniteClient,
+    client_dst: CogniteClient,
+    batch_size: int,
+    num_threads: int = 1,
+    delete_replicated_if_not_in_src: bool = False,
+    delete_not_replicated_in_dst: bool = False,
+):
     """
     Replicates all the time series from the source project into the destination project.
 
@@ -193,3 +251,16 @@ def replicate(client_src: CogniteClient, client_dst: CogniteClient, batch_size: 
         f"Finished copying and updating {len(ts_src)} events from "
         f"source ({project_src}) to destination ({project_dst})."
     )
+
+    if delete_replicated_if_not_in_src:
+        asset_delete = remove_replicated_if_not_in_src(client_src, client_dst)
+        logging.info(
+            f"Deleted {len(asset_delete)} assets in destination ({project_dst})"
+            f" because they were no longer in source ({project_src})   "
+        )
+    if delete_not_replicated_in_dst:
+        asset_delete = remove_not_replicated_in_dst(client_dst)
+        logging.info(
+            f"Deleted {len(asset_delete)} assets in destination ({project_dst}) because"
+            f"they were not replicated from source ({project_src})   "
+        )

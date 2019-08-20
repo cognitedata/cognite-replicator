@@ -125,7 +125,65 @@ def copy_events(
     logging.info(f"Created {len(create_events)} new events and updated {len(update_events)} existing events.")
 
 
-def replicate(client_src: CogniteClient, client_dst: CogniteClient, batch_size: int, num_threads: int = 1):
+def remove_not_replicated_in_dst(client_dst: CogniteClient) -> List[Event]:
+
+    """
+          Deleting all the events in the destination that do not have the "_replicatedSource" in metadata, which means that is was not copied from the source, but created in the destination.
+
+          Parameters:
+             client_dst: The client corresponding to the destination project.
+
+
+        """
+
+    dst_list = client_dst.events.list(limit=None)
+
+    not_copied_list = list()
+    copied_list = list()
+    for event in dst_list:
+        if event.metadata and event.metadata["_replicatedSource"]:
+            copied_list.append(event.id)
+
+        else:
+            not_copied_list.append(event.id)
+
+    client_dst.events.delete(id=not_copied_list)
+    return not_copied_list
+
+
+def remove_replicated_if_not_in_src(client_src: CogniteClient, client_dst: CogniteClient) -> List[Event]:
+
+    """
+          Compare the destination and source events and delete the ones that are no longer in the source.
+
+          Parameters:
+            client_src: The client corresponding to the source project.
+            client_dst: The client corresponding to the destination. project.
+
+
+        """
+
+    src_ids = {event.id for event in client_src.events.list(limit=None)}
+
+    dst_id_list = {}
+    for event in client_dst.events.list(limit=None):
+        if event.metadata and event.metadata["_replicatedInternalId"]:
+            dst_id_list[int(event.metadata["_replicatedInternalId"])] = event.id
+
+    diff_list = [dst_id for src_dst_id, dst_id in dst_id_list.items() if src_dst_id not in src_ids]
+    client_dst.events.delete(id=diff_list)
+
+    return diff_list
+
+
+def replicate(
+    client_src: CogniteClient,
+    client_dst: CogniteClient,
+    batch_size: int,
+    num_threads: int = 1,
+    delete_replicated_if_not_in_src: bool = False,
+    delete_not_replicated_in_dst: bool = False,
+):
     """
     Replicates all the events from the source project into the destination project.
 
@@ -134,6 +192,10 @@ def replicate(client_src: CogniteClient, client_dst: CogniteClient, batch_size: 
         client_dst: The client corresponding to the destination project.
         batch_size: The biggest batch size to post chunks in.
         num_threads: The number of threads to be used.
+        delete_replicated_if_not_in_src: If True, will delete replicated events that are in the destination,
+        but no longer in the source project (Default=False).
+        delete_not_replicated_in_dst: If True, will delete events from the destination if they were not replicated
+        from the source (Default=False).
 
     """
     project_src = client_src.config.project
@@ -186,3 +248,16 @@ def replicate(client_src: CogniteClient, client_dst: CogniteClient, batch_size: 
         f"Finished copying and updating {len(events_src)} events from "
         f"source ({project_src}) to destination ({project_dst})."
     )
+
+    if delete_replicated_if_not_in_src:
+        remove_replicated_if_not_in_src(client_src, client_dst)
+        logging.info(
+            f"Deleted {len(asset_delete)} assets in destination ({project_dst})"
+            f" because they were no longer in source ({project_src})   "
+        )
+    if delete_not_replicated_in_dst:
+        remove_not_replicated_in_dst(client_dst)
+        logging.info(
+            f"Deleted {len(asset_delete)} assets in destination ({project_dst}) because"
+            f"they were not replicated from source ({project_src})   "
+        )
