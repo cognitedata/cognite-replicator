@@ -101,7 +101,6 @@ def copy_ts(
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
         client: The client corresponding to the destination project.
-
     """
     logging.info(f"Starting to replicate {len(src_ts)} time series.")
     create_ts, update_ts, unchanged_ts = replication.make_objects_batch(
@@ -123,16 +122,15 @@ def copy_ts(
 
 def remove_not_replicated_in_dst(client_dst: CogniteClient) -> List[TimeSeries]:
     """
-      Deleting all the time series in the destination that do not have the "_replicatedSource" in metadata, which means that is was not copied from the source, but created in the destination.
+    Deleting all the time series in the destination that do not have the "_replicatedSource" in metadata,
+    which means that is was not copied from the source, but created in the destination.
 
-      Parameters:
-         client_dst: The client corresponding to the destination project.
-
-
+    Parameters:
+        client_dst: The client corresponding to the destination project.
     """
-
+    dst_ts = client_dst.time_series.list(limit=None)
     ts_ids_to_remove = []
-    for ts in client_dst.time_series.list(limit=None):
+    for ts in filter_away_service_account_ts(dst_ts):
         if not ts.metadata or not ts.metadata["_replicatedSource"]:
             ts_ids_to_remove.append(ts.id)
     client_dst.time_series.delete(id=ts_ids_to_remove)
@@ -141,13 +139,11 @@ def remove_not_replicated_in_dst(client_dst: CogniteClient) -> List[TimeSeries]:
 
 def remove_replicated_if_not_in_src(client_src: CogniteClient, client_dst: CogniteClient) -> List[TimeSeries]:
     """
-      Compare the destination and source time series and delete the ones that are no longer in the source.
+    Compare the destination and source time series and delete the ones that are no longer in the source.
 
-      Parameters:
+    Parameters:
         client_src: The client corresponding to the source project.
         client_dst: The client corresponding to the destination. project.
-
-
     """
 
     src_ids = {ts.id for ts in client_src.time_series.list(limit=None)}
