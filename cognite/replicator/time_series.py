@@ -105,13 +105,13 @@ def copy_ts(
     """
     logging.info(f"Starting to replicate {len(src_ts)} time series.")
     create_ts, update_ts, unchanged_ts = replication.make_objects_batch(
-        src_objects=src_ts,
-        src_id_dst_obj=src_id_dst_ts,
-        src_dst_ids_assets=src_dst_ids_assets,
-        create=create_time_series,
-        update=update_time_series,
-        project_src=project_src,
-        replicated_runtime=runtime,
+        src_ts,
+        src_id_dst_ts,
+        src_dst_ids_assets,
+        create_time_series,
+        update_time_series,
+        project_src,
+        runtime,
     )
 
     logging.info(f"Creating {len(create_ts)} new time series and updating {len(update_ts)} existing time series.")
