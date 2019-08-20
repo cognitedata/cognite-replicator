@@ -3,7 +3,7 @@
 """
 This script serves the purpose of replicating new datapoints from a source tenant to a destination tenant that has the same asset.
 
-REQUIREMENTS: SAME external? IN SRC AND DST TENANT, PROJECT_SRC, PROJECT_DST, CLIENT_NAME, SOURCE_API_KEY, DESTINATION_API_KEY
+REQUIREMENTS: SAME external_id IN SRC AND DST TENANT, PROJECT_SRC, PROJECT_DST, CLIENT_NAME, SOURCE_API_KEY, DESTINATION_API_KEY
 OPTIONAL: DATAPOINT_LIMIT (DEFAULT=10 000), keep_asset_connection (DEFAULT=True), timing (DEFAULT=False)
 
 Todo: add logging to stackdriver, add multiprocessing
@@ -97,7 +97,7 @@ def datapoint_replication(
                 )
                 logging.debug(f"Number of datapoints: {len(datapoints)}")
                 new_objects = [(o.timestamp, o.value) for o in datapoints]
-                res = CLIENT_DST.datapoints.insert(new_objects, external_id=src_ext_id)
+                CLIENT_DST.datapoints.insert(new_objects, external_id=src_ext_id)
                 # Update latest datapoint in destination for initializing next replication
                 latest_destination_dp = CLIENT_DST.datapoints.retrieve_latest(
                     external_id=src_ext_id
