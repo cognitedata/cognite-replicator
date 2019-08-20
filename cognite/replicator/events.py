@@ -101,13 +101,7 @@ def copy_events(
     logging.debug(f"Starting to replicate {len(src_events)} events.")
 
     create_events, update_events, unchanged_events = replication.make_objects_batch(
-        src_events,
-        src_id_dst_event,
-        src_dst_ids_assets,
-        create_event,
-        update_event,
-        project_src,
-        runtime,
+        src_events, src_id_dst_event, src_dst_ids_assets, create_event, update_event, project_src, runtime
     )
 
     logging.info(f"Creating {len(create_events)} new events and updating {len(update_events)} existing events.")
@@ -203,8 +197,8 @@ def replicate(
 
     events_src = client_src.events.list(limit=None)
     events_dst = client_dst.events.list(limit=None)
-    logging.info(f"There are {len(events_src)} existing assets in source ({project_src}).")
-    logging.info(f"There are {len(events_dst)} existing assets in destination ({project_dst}).")
+    logging.info(f"There are {len(events_src)} existing events in source ({project_src}).")
+    logging.info(f"There are {len(events_dst)} existing events in destination ({project_dst}).")
 
     src_id_dst_event = replication.make_id_object_map(events_dst)
 
@@ -250,14 +244,14 @@ def replicate(
     )
 
     if delete_replicated_if_not_in_src:
-        remove_replicated_if_not_in_src(client_src, client_dst)
+        deleted_ids = remove_replicated_if_not_in_src(client_src, client_dst)
         logging.info(
-            f"Deleted {len(asset_delete)} assets in destination ({project_dst})"
+            f"Deleted {len(deleted_ids)} events in destination ({project_dst})"
             f" because they were no longer in source ({project_src})   "
         )
     if delete_not_replicated_in_dst:
-        remove_not_replicated_in_dst(client_dst)
+        deleted_ids = remove_not_replicated_in_dst(client_dst)
         logging.info(
-            f"Deleted {len(asset_delete)} assets in destination ({project_dst}) because"
+            f"Deleted {len(deleted_ids)} events in destination ({project_dst}) because"
             f"they were not replicated from source ({project_src})   "
         )

@@ -105,13 +105,7 @@ def copy_ts(
     """
     logging.info(f"Starting to replicate {len(src_ts)} time series.")
     create_ts, update_ts, unchanged_ts = replication.make_objects_batch(
-        src_ts,
-        src_id_dst_ts,
-        src_dst_ids_assets,
-        create_time_series,
-        update_time_series,
-        project_src,
-        runtime,
+        src_ts, src_id_dst_ts, src_dst_ids_assets, create_time_series, update_time_series, project_src, runtime
     )
 
     logging.info(f"Creating {len(create_ts)} new time series and updating {len(update_ts)} existing time series.")
@@ -200,8 +194,8 @@ def replicate(
 
     ts_src = client_src.time_series.list(limit=None)
     ts_dst = client_dst.time_series.list(limit=None)
-    logging.info(f"There are {len(ts_src)} existing assets in source ({project_src}).")
-    logging.info(f"There are {len(ts_dst)} existing assets in destination ({project_dst}).")
+    logging.info(f"There are {len(ts_src)} existing time series in source ({project_src}).")
+    logging.info(f"There are {len(ts_dst)} existing time series in destination ({project_dst}).")
 
     src_id_dst_ts = replication.make_id_object_map(ts_dst)
 
@@ -222,7 +216,7 @@ def replicate(
     logging.info(f"These copied/updated time series will have a replicated run time of: {replicated_runtime}.")
 
     logging.info(
-        f"Starting to copy and update {len(ts_src)} events from "
+        f"Starting to copy and update {len(ts_src)} time series from "
         f"source ({project_src}) to destination ({project_dst})."
     )
 
@@ -248,19 +242,19 @@ def replicate(
         )
 
     logging.info(
-        f"Finished copying and updating {len(ts_src)} events from "
+        f"Finished copying and updating {len(ts_src)} time series from "
         f"source ({project_src}) to destination ({project_dst})."
     )
 
     if delete_replicated_if_not_in_src:
-        asset_delete = remove_replicated_if_not_in_src(client_src, client_dst)
+        deleted_ids = remove_replicated_if_not_in_src(client_src, client_dst)
         logging.info(
-            f"Deleted {len(asset_delete)} assets in destination ({project_dst})"
+            f"Deleted {len(deleted_ids)} time series destination ({project_dst})"
             f" because they were no longer in source ({project_src})   "
         )
     if delete_not_replicated_in_dst:
-        asset_delete = remove_not_replicated_in_dst(client_dst)
+        deleted_ids = remove_not_replicated_in_dst(client_dst)
         logging.info(
-            f"Deleted {len(asset_delete)} assets in destination ({project_dst}) because"
+            f"Deleted {len(deleted_ids)} time series in destination ({project_dst}) because"
             f"they were not replicated from source ({project_src})   "
         )
