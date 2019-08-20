@@ -1,6 +1,6 @@
-import time
 import logging
-from typing import List, Dict, Optional
+import time
+from typing import Dict, List
 
 from cognite.client import CogniteClient
 from cognite.client.data_classes import Event
@@ -8,13 +8,7 @@ from cognite.client.data_classes import Event
 from . import replication
 
 
-def create_event(
-    src_event: Event,
-    src_dst_ids_assets: Dict[int, int],
-    project_src: str,
-    runtime: int,
-    depth: Optional[int] = -1,
-) -> Event:
+def create_event(src_event: Event, src_dst_ids_assets: Dict[int, int], project_src: str, runtime: int) -> Event:
     """
     Makes a new copy of the event to be replicated based on a source event.
 
@@ -23,16 +17,10 @@ def create_event(
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
-        depth: Optional argument that is included to mimic the signature of create in order to allow for
-               cleaner bulk processing.
 
     Returns:
         The replicated event to be created in the destination.
-
     """
-
-    assert depth == -1
-
     logging.debug(f"Creating a new event based on source event id {src_event.id}")
 
     return Event(
@@ -53,12 +41,7 @@ def create_event(
 
 
 def update_event(
-    src_event: Event,
-    dst_event: Event,
-    src_dst_ids_assets: Dict[int, int],
-    project_src: str,
-    runtime: int,
-    depth: Optional[int] = -1,
+    src_event: Event, dst_event: Event, src_dst_ids_assets: Dict[int, int], project_src: str, runtime: int
 ) -> Event:
     """
     Makes an updated version of the destination event based on the corresponding source event.
@@ -69,19 +52,11 @@ def update_event(
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
-        depth: Optional argument that is included to mimic the signature of create in order to allow for
-               cleaner bulk processing.
 
     Returns:
         The updated event object for the replication destination.
-
     """
-
-    assert depth == -1
-
-    logging.debug(
-        f"Updating existing event {dst_event.id} based on source event id {src_event.id}"
-    )
+    logging.debug(f"Updating existing event {dst_event.id} based on source event id {src_event.id}")
 
     dst_event.external_id = src_event.external_id
     dst_event.start_time = (
@@ -98,9 +73,7 @@ def update_event(
     dst_event.subtype = src_event.subtype
     dst_event.description = src_event.description
     dst_event.metadata = replication.new_metadata(src_event, project_src, runtime)
-    dst_event.asset_ids = replication.get_asset_ids(
-        src_event.asset_ids, src_dst_ids_assets
-    )
+    dst_event.asset_ids = replication.get_asset_ids(src_event.asset_ids, src_dst_ids_assets)
     dst_event.source = src_event.source
     return dst_event
 
@@ -125,68 +98,115 @@ def copy_events(
         client: The client corresponding to the destination project.
 
     """
-
     logging.debug(f"Starting to replicate {len(src_events)} events.")
+
     create_events, update_events, unchanged_events = replication.make_objects_batch(
-        src_objects=src_events,
-        src_id_dst_obj=src_id_dst_event,
-        src_dst_ids_assets=src_dst_ids_assets,
-        create=create_event,
-        update=update_event,
-        project_src=project_src,
-        replicated_runtime=runtime,
+        src_events,
+        src_id_dst_event,
+        src_dst_ids_assets,
+        create_event,
+        update_event,
+        project_src,
+        runtime,
     )
 
-    logging.info(
-        f"Creating {len(create_events)} new events and updating {len(update_events)} existing events."
-    )
+    logging.info(f"Creating {len(create_events)} new events and updating {len(update_events)} existing events.")
 
     if create_events:
         logging.debug(f"Attempting to create {len(create_events)} events.")
-        create_events = replication.retry(create_events, client.events.create)
+        create_events = replication.retry(client.events.create, create_events)
         logging.debug(f"Successfully created {len(create_events)} events.")
 
     if update_events:
         logging.debug(f"Attempting to update {len(update_events)} events.")
-        update_events = replication.retry(update_events, client.events.update)
+        update_events = replication.retry(client.events.update, update_events)
         logging.debug(f"Successfully updated {len(update_events)} events.")
 
-    logging.info(
-        f"Created {len(create_events)} new events and updated {len(update_events)} existing events."
-    )
+    logging.info(f"Created {len(create_events)} new events and updated {len(update_events)} existing events.")
+
+
+def remove_not_replicated_in_dst(client_dst: CogniteClient) -> List[Event]:
+
+    """
+          Deleting all the events in the destination that do not have the "_replicatedSource" in metadata, which means that is was not copied from the source, but created in the destination.
+
+          Parameters:
+             client_dst: The client corresponding to the destination project.
+
+
+        """
+
+    dst_list = client_dst.events.list(limit=None)
+
+    not_copied_list = list()
+    copied_list = list()
+    for event in dst_list:
+        if event.metadata and event.metadata["_replicatedSource"]:
+            copied_list.append(event.id)
+
+        else:
+            not_copied_list.append(event.id)
+
+    client_dst.events.delete(id=not_copied_list)
+    return not_copied_list
+
+
+def remove_replicated_if_not_in_src(client_src: CogniteClient, client_dst: CogniteClient) -> List[Event]:
+
+    """
+          Compare the destination and source events and delete the ones that are no longer in the source.
+
+          Parameters:
+            client_src: The client corresponding to the source project.
+            client_dst: The client corresponding to the destination. project.
+
+
+        """
+
+    src_ids = {event.id for event in client_src.events.list(limit=None)}
+
+    dst_id_list = {}
+    for event in client_dst.events.list(limit=None):
+        if event.metadata and event.metadata["_replicatedInternalId"]:
+            dst_id_list[int(event.metadata["_replicatedInternalId"])] = event.id
+
+    diff_list = [dst_id for src_dst_id, dst_id in dst_id_list.items() if src_dst_id not in src_ids]
+    client_dst.events.delete(id=diff_list)
+
+    return diff_list
 
 
 def replicate(
-    project_src: str,
     client_src: CogniteClient,
-    project_dst: str,
     client_dst: CogniteClient,
     batch_size: int,
-    num_threads: int,
+    num_threads: int = 1,
+    delete_replicated_if_not_in_src: bool = False,
+    delete_not_replicated_in_dst: bool = False,
 ):
     """
     Replicates all the events from the source project into the destination project.
 
     Args:
-        project_src: The name of the project the object is being replicated from.
         client_src: The client corresponding to the source project.
-        project_dst: The name of the project the object is being replicated to.
         client_dst: The client corresponding to the destination project.
         batch_size: The biggest batch size to post chunks in.
         num_threads: The number of threads to be used.
+        delete_replicated_if_not_in_src: If True, will delete replicated events that are in the destination,
+        but no longer in the source project (Default=False).
+        delete_not_replicated_in_dst: If True, will delete events from the destination if they were not replicated
+        from the source (Default=False).
 
     """
+    project_src = client_src.config.project
+    project_dst = client_dst.config.project
 
     events_src = client_src.events.list(limit=None)
     events_dst = client_dst.events.list(limit=None)
-    logging.info(
-        f"There are {len(events_src)} existing assets in source ({project_src})."
-    )
-    logging.info(
-        f"There are {len(events_dst)} existing assets in destination ({project_dst})."
-    )
+    logging.info(f"There are {len(events_src)} existing assets in source ({project_src}).")
+    logging.info(f"There are {len(events_dst)} existing assets in destination ({project_dst}).")
 
-    src_id_dst_event = replication.make_id_object_dict(events_dst)
+    src_id_dst_event = replication.make_id_object_map(events_dst)
 
     assets_dst = client_dst.assets.list(limit=None)
     src_dst_ids_assets = replication.existing_mapping(*assets_dst)
@@ -196,9 +216,7 @@ def replicate(
     )
 
     replicated_runtime = int(time.time()) * 1000
-    logging.info(
-        f"These copied/updated events will have a replicated run time of: {replicated_runtime}."
-    )
+    logging.info(f"These copied/updated events will have a replicated run time of: {replicated_runtime}.")
 
     logging.info(
         f"Starting to copy and update {len(events_src)} events from "
@@ -230,3 +248,16 @@ def replicate(
         f"Finished copying and updating {len(events_src)} events from "
         f"source ({project_src}) to destination ({project_dst})."
     )
+
+    if delete_replicated_if_not_in_src:
+        remove_replicated_if_not_in_src(client_src, client_dst)
+        logging.info(
+            f"Deleted {len(asset_delete)} assets in destination ({project_dst})"
+            f" because they were no longer in source ({project_src})   "
+        )
+    if delete_not_replicated_in_dst:
+        remove_not_replicated_in_dst(client_dst)
+        logging.info(
+            f"Deleted {len(asset_delete)} assets in destination ({project_dst}) because"
+            f"they were not replicated from source ({project_src})   "
+        )

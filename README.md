@@ -1,12 +1,11 @@
 # Cognite Python Replicator
-Cognite Replicator is a Python package for replicating data across Cognite Data Fusion (CDF) tenants. This package is
-built on top of the Cognite Python SDK. Currently this package supports replicating assets, events, and time series
-metadata.
+Cognite Replicator is a Python package for replicating data across Cognite Data Fusion (CDF) projects. This package is
+built on top of the Cognite Python SDK.
 
 ## Prerequisites
 In order to start using the Replicator, you need:
 * Python3 (>= 3.6)
-* Cognite Python SDK (>=1.0.2)
+* Cognite Python SDK
 * Two API keys, one for your source tenant and one for your destination tenant.
     * Read x to learn more about what capabilities these keys should have.
     * Never include the API key directly in the code or upload the key to github.
@@ -19,20 +18,17 @@ $ export DST_API_KEY=<your destination API key>
 ```
 
 ## Installation
+The replicator is currently distribuated as Python wheels.
 
-
-## Documentation
-
+On this GitHub-page under **release** can you find the `.whl` file. By clicking on the file, you will automatically download the file. Then go into Databricks and into your cluster. Click on **Libraries** and **Install New**.  Choose your library type to be a **Python Whl**. By clicking on the area **Drop WHL here** you can navigate to where you have your `.whl`-file (most likely in your dowloads folder). Choose the `.whl` file, let the new library install and you are ready to replicate!
 
 ## Usage
 
 ### Setup
 ```python
 from cognite.client import CogniteClient
-from cognite_replicator import replication
-from cognite_replicator import assets
-from cognite.client.data_classes import TimeSeries
-from cognite.client.data_classes.assets import Asset
+from cognite.replicator import replication
+from cognite.replicator import assets
 
 PROJECT_SRC = "Name of source tenant"
 PROJECT_DST = "Name of destination tenant"
@@ -46,28 +42,54 @@ CLIENT_DST = CogniteClient(api_key=DST_API_KEY, project=PROJECT_DST, client_name
 
 ### Replicate Assets
 ```python
-from cognite_replicator import assets
+from cognite.replicator import assets
 
-assets.replicate(PROJECT_SRC, CLIENT_SRC, PROJECT_DST, CLIENT_DST)
+assets.replicate(CLIENT_SRC, CLIENT_DST)
 ```
 
 ### Replicate Events
 ```python
-from cognite_replicator import events
+from cognite.replicator import events
 
-events.replicate(PROJECT_SRC, CLIENT_SRC, PROJECT_DST, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
+events.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
 ```
 
 ### Replicate Time Series
 ```python
-from cognite_replicator import time_series
+from cognite.replicator import time_series
 
-time_series.replicate(PROJECT_SRC, CLIENT_SRC, PROJECT_DST, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
+time_series.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
 ```
 
 ### Replicate Datapoints
 ```python
-from cognite_replicator import datapoints
+from cognite.replicator import datapoints
 
 datapoints.replicate(CLIENT_SRC, CLIENT_DST)
 ```
+
+## Development
+We are using [Poetry](https://poetry.eustace.io/) to manage dependencies and building the library.
+
+Install poetry:
+```bash
+curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
+```
+
+To install dependencies:
+```bash
+poetry install
+```
+
+To build the wheel:
+```bash
+poetry build
+```
+
+### Testing
+We are using pytest framework. To run the test suite (after poetry and dependencies are installed):
+
+```python
+poetry run pytest --cov cognite
+```
+
