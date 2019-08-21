@@ -232,3 +232,38 @@ def thread(
     for count, t in enumerate(threads, start=1):
         t.join()
         logging.info(f"Joined thread: {count}")
+
+
+def find_objects_to_delete_not_replicated_in_dst(dst_objects: List[Union[Asset, Event, TimeSeries]]) -> List[Asset]:
+    """
+    Deleting all the assets in the destination that do not have the "_replicatedSource" in metadata, which
+    means that is was not copied from the source, but created in the destination.
+
+    Parameters:
+        dst_objects: The list of objects from the dst destination.
+    """
+    obj_ids_to_remove = []
+    for obj in dst_objects:
+        if not obj.metadata or not obj.metadata["_replicatedSource"]:
+            obj_ids_to_remove.append(obj.id)
+    return obj_ids_to_remove
+
+
+def find_objects_to_delete_if_not_in_src(
+    src_objects: List[Union[Asset, Event, TimeSeries]], dst_objects: List[Union[Asset, Event, TimeSeries]]
+) -> List[Union[Asset, Event, TimeSeries]]:
+    """
+    Compare the destination and source assets and delete the ones that are no longer in the source.
+
+    Parameters:
+        src_objects: The list of objects from the src destination.
+        dst_objects: The list of objects from the dst destination.
+    """
+    src_obj_ids = {obj.id for obj in src_objects}
+
+    obj_ids_to_remove = []
+    for obj in dst_objects:
+        if obj.metadata and obj.metadata["_replicatedInternalId"]:
+            if int(obj.metadata["_replicatedInternalId"]) not in src_obj_ids:
+                obj_ids_to_remove.append(obj.id)
+    return obj_ids_to_remove

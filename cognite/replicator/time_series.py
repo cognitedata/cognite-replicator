@@ -120,47 +120,6 @@ def copy_ts(
         logging.info(f"Successfully updated {len(updated_ts)} time series.")
 
 
-def remove_not_replicated_in_dst(client_dst: CogniteClient) -> List[TimeSeries]:
-    """
-    Deleting all the time series in the destination that do not have the "_replicatedSource" in metadata,
-    which means that is was not copied from the source, but created in the destination.
-
-    Parameters:
-        client_dst: The client corresponding to the destination project.
-    """
-    dst_ts = client_dst.time_series.list(limit=None)
-    ts_ids_to_remove = []
-    for ts in filter_away_service_account_ts(dst_ts):
-        if not ts.metadata or not ts.metadata["_replicatedSource"]:
-            ts_ids_to_remove.append(ts.id)
-    client_dst.time_series.delete(id=ts_ids_to_remove)
-    return ts_ids_to_remove
-
-
-def remove_replicated_if_not_in_src(client_src: CogniteClient, client_dst: CogniteClient) -> List[TimeSeries]:
-    """
-    Compare the destination and source time series and delete the ones that are no longer in the source.
-
-    Parameters:
-        client_src: The client corresponding to the source project.
-        client_dst: The client corresponding to the destination. project.
-    """
-
-    src_ids = {ts.id for ts in client_src.time_series.list(limit=None)}
-
-    ts_dst_list = client_dst.time_series.list(limit=None)
-    dst_id_list = {
-        int(ts.metadata["_replicatedInternalId"]): ts.id
-        for ts in ts_dst_list
-        if ts.metadata and ts.metadata["_replicatedInternalId"]
-    }
-
-    diff_list = [dst_id for src_dst_id, dst_id in dst_id_list.items() if src_dst_id not in src_ids]
-    client_dst.time_series.delete(id=diff_list)
-
-    return diff_list
-
-
 def replicate(
     client_src: CogniteClient,
     client_dst: CogniteClient,
@@ -240,14 +199,16 @@ def replicate(
     )
 
     if delete_replicated_if_not_in_src:
-        deleted_ids = remove_replicated_if_not_in_src(client_src, client_dst)
+        ids_to_delete = replication.find_objects_to_delete_if_not_in_src(ts_src, ts_dst)
+        client_dst.time_series.delete(id=ids_to_delete)
         logging.info(
-            f"Deleted {len(deleted_ids)} time series destination ({project_dst})"
+            f"Deleted {len(ids_to_delete)} time series destination ({project_dst})"
             f" because they were no longer in source ({project_src})   "
         )
     if delete_not_replicated_in_dst:
-        deleted_ids = remove_not_replicated_in_dst(client_dst)
+        ids_to_delete = replication.find_objects_to_delete_not_replicated_in_dst(ts_dst)
+        client_dst.time_series.delete(id=ids_to_delete)
         logging.info(
-            f"Deleted {len(deleted_ids)} time series in destination ({project_dst}) because"
+            f"Deleted {len(ids_to_delete)} time series in destination ({project_dst}) because"
             f"they were not replicated from source ({project_src})   "
         )
