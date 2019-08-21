@@ -153,20 +153,23 @@ def remove_not_replicated_in_dst(client_dst: CogniteClient) -> List[Asset]:
     return asset_ids_to_remove
 
 
-def remove_replicated_if_not_in_src(src_assets: List[Asset], client_dst: CogniteClient) -> List[Asset]:
+def remove_replicated_if_not_in_src(
+    client_dst: CogniteClient, src_assets: List[Asset], dst_assets: List[Asset]
+) -> List[Asset]:
     """
     Compare the destination and source assets and delete the ones that are no longer in the source.
 
     Parameters:
+        client_dst: The client corresponding to the destination project.
         src_assets: The list of assets from the src destination.
-        client_dst: The client corresponding to the destination. project.
+        dst_assets: The list of assets from the dst destination.
     """
     src_asset_ids = {asset.id for asset in src_assets}
 
     asset_ids_to_remove = []
-    for asset in client_dst.assets.list(limit=None):
+    for asset in dst_assets:
         if asset.metadata and asset.metadata["_replicatedInternalId"]:
-            if int(asset.metadata["_replicatedInternalId"]) in src_asset_ids:
+            if int(asset.metadata["_replicatedInternalId"]) not in src_asset_ids:
                 asset_ids_to_remove.append(asset.id)
 
     client_dst.assets.delete(id=asset_ids_to_remove)
