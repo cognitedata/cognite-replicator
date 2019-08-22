@@ -244,7 +244,7 @@ def find_objects_to_delete_not_replicated_in_dst(dst_objects: List[Union[Asset, 
     """
     obj_ids_to_remove = []
     for obj in dst_objects:
-        if not obj.metadata or not obj.metadata["_replicatedSource"]:
+        if not obj.metadata or not obj.metadata.get("_replicatedSource"):
             obj_ids_to_remove.append(obj.id)
     return obj_ids_to_remove
 
@@ -259,11 +259,12 @@ def find_objects_to_delete_if_not_in_src(
         src_objects: The list of objects from the src destination.
         dst_objects: The list of objects from the dst destination.
     """
+
     src_obj_ids = {obj.id for obj in src_objects}
 
     obj_ids_to_remove = []
     for obj in dst_objects:
-        if obj.metadata and obj.metadata["_replicatedInternalId"]:
+        if obj.metadata and obj.metadata.get("_replicatedInternalId"):
             if int(obj.metadata["_replicatedInternalId"]) not in src_obj_ids:
                 obj_ids_to_remove.append(obj.id)
     return obj_ids_to_remove
