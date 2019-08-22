@@ -3,10 +3,9 @@
 """
 This script serves the purpose of replicating new datapoints from a source tenant to a destination tenant that holds corresponding time series.
 
-REQUIREMENTS: SAME external_id IN SRC AND DST TENANT, PROJECT_SRC, PROJECT_DST, CLIENT_NAME, SOURCE_API_KEY, DESTINATION_API_KEY
-OPTIONAL: DATAPOINT_LIMIT (DEFAULT=10 000), keep_asset_connection (DEFAULT=True), timing (DEFAULT=False)
+REQUIREMENTS: SAME external_id IN SRC AND DST TENANT, CLIENT_SRC, CLIENT DST, SOURCE_API_KEY, DESTINATION_API_KEY
+OPTIONAL: DATAPOINT_LIMIT (DEFAULT=10 000 000), keep_asset_connection (DEFAULT=True)
 
-Todo: add logging to stackdriver, add multiprocessing
 """
 import logging
 import time
@@ -16,49 +15,13 @@ from typing import Dict, List, Tuple, Union
 from cognite.client import CogniteClient
 from cognite.client.data_classes import TimeSeries
 from cognite.client.data_classes.assets import Asset
-
-# SECRET_SCOPE: Name your Databricks secret scope here.
-SECRET_SCOPE = "tao_default"
-# PROJECT_SRC: Name the source project here, this should also match the corresponding source key given the Databricks secret scope.
-PROJECT_SRC = "publicdata"
-# PROJECT_DST: Name the destination project here, this should also match the corresponding destination key given the Databricks secret scope.
-PROJECT_DST = "gcproject"
-# CLIENT_NAME: This is a user-defined string intended to give the client a unique identifier.
-CLIENT_NAME = "cognite-databricks-replicator-assets"
-
-SRC_API_KEY = open("publicdata.key", "r")
-DST_API_KEY = open("gcproject.key", "r")
-
-# Todo: multiprocessing.
-# BATCH_SIZE = 10000  # this is the max size of a batch to be posted
-# NUM_THREADS = 10  # this is the max number of threads to be used
-
-CLIENT_SRC = CogniteClient(
-    api_key=SRC_API_KEY, project=PROJECT_SRC, client_name=CLIENT_NAME
-)
-CLIENT_DST = CogniteClient(
-    api_key=DST_API_KEY, project=PROJECT_DST, client_name=CLIENT_NAME, timeout=90
-)
+import multiprocessing as mp
 
 logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
 
-
-def replicate(
-    CLIENT_SRC, CLIENT_DST, keep_asset_connection=True, dp_limit=10000, timing=False
-):
-
-    logging.info(f"Asset_connection is set to :{str(keep_asset_connection)}")
-    ts_src = CLIENT_SRC.time_series.list(limit=0)
-    logging.info(f"Number of time series in source: {len(ts_src)}")
-    ts_dst = CLIENT_DST.time_series.list(limit=0)
-    logging.info(f"Number of time series in destination: {len(ts_dst)}")
-
-    src_ext_id_list = [ts_id.external_id for ts_id in ts_src]
-    logging.debug(f"{src_ext_id_list}")
-    dst_ext_id_list = [ts_id.external_id for ts_id in ts_dst]
-    logging.debug(f"List of external id's in destination: {dst_ext_id_list}")
-
-    for src_ext_id in src_ext_id_list:
+def retrieve_insert(i,src_ext_id_list_parts,dst_ext_id_list,CLIENT_SRC, CLIENT_DST, keep_asset_connection, num_threads):
+    
+    for src_ext_id in src_ext_id_list_parts[i]:
         if src_ext_id in dst_ext_id_list:
             # SOURCE
             latest_src_dp = CLIENT_SRC.datapoints.retrieve_latest(
@@ -70,7 +33,7 @@ def replicate(
                 )
                 continue
 
-            logging.debug(f"Latest timestamp source : {latest_src_dp[0].timestamp}")
+            logging.debug(f"Latest timestamp source with ext_id {src_ext_id}: {latest_src_dp[0].timestamp}")
             latest_src_time = latest_src_dp[0].timestamp
 
             # DESTINATION
@@ -84,52 +47,47 @@ def replicate(
                 )
             elif latest_destination_dp:
                 latest_dst_time = latest_destination_dp[0].timestamp
-                logging.debug(f"Latest timestamp dst : {latest_dst_time}")
 
             # Retrieve and insert missing datapoints
             logging.info(
-                f"Retrieving datapoints between {latest_dst_time} and {latest_src_time}\n-----------------------"
+                f"Thread {i} is retrieving datapoints between {latest_dst_time} and {latest_src_time}\n-----------------------"
             )
+            
             datapoints = CLIENT_SRC.datapoints.retrieve(
                 external_id=src_ext_id,
                 start=latest_dst_time,
                 end=latest_src_time,
-                limit=dp_limit,
+                limit=10000000
             )
-            logfile = open("timinglog.txt", "w+")
-            while len(datapoints) == dp_limit:
-                start = time.time()
-                datapoints = CLIENT_SRC.datapoints.retrieve(
-                    external_id=src_ext_id,
-                    start=latest_dst_time,
-                    end=latest_src_time,
-                    limit=dp_limit,
-                )
-                logging.debug(f"Number of datapoints: {len(datapoints)}")
-                new_objects = [(o.timestamp, o.value) for o in datapoints]
-                CLIENT_DST.datapoints.insert(new_objects, external_id=src_ext_id)
-                # Update latest datapoint in destination for initializing next replication
-                latest_destination_dp = CLIENT_DST.datapoints.retrieve_latest(
-                    external_id=src_ext_id
-                )
-                logging.debug(
-                    f"Latest datapoint (destination): {latest_destination_dp}"
-                )
-                if timing:
-                    end = time.time()
-                    diff = end - start
-                    logfile.write(
-                        f"Transfering {str(dp_limit)} datapoints took {str(diff)} time\n"
-                    )
-            if len(datapoints) > dp_limit:
-                raise Exception(
-                    f"The number of datapoints is {len(datapoints)}, this exceeds the limit of: {dp_limit}"
-                )
+            logging.info(f"Number of datapoints: {len(datapoints)}")
+            new_objects = [(o.timestamp, o.value) for o in datapoints]
+            CLIENT_DST.datapoints.insert(new_objects, external_id=src_ext_id)
+            # Update latest datapoint in destination for initializing next replication
+            latest_destination_dp = CLIENT_DST.datapoints.retrieve_latest(
+                external_id=src_ext_id
+            )
+    
 
 
-if __name__ == "__main__":
+def replicate(
+    CLIENT_SRC, CLIENT_DST, keep_asset_connection=True, num_threads=10
+):
 
-    replicate(CLIENT_SRC, CLIENT_DST, keep_asset_connection=True)
+    logging.info(f"Asset_connection is set to :{str(keep_asset_connection)}")
+    ts_src = CLIENT_SRC.time_series.list(limit=None)
+    logging.info(f"Number of time series in source: {len(ts_src)}")
+    ts_dst = CLIENT_DST.time_series.list(limit=None)
+    logging.info(f"Number of time series in destination: {len(ts_dst)}")
 
-    SRC_API_KEY.close()
-    DST_API_KEY.close()
+    src_ext_id_list = [ts_id.external_id for ts_id in ts_src]
+    logging.debug(f"{src_ext_id_list}")
+    dst_ext_id_list = [ts_id.external_id for ts_id in ts_dst]
+    logging.debug(f"List of external id's in destination: {dst_ext_id_list}")
+    step = len(ts_src) // num_threads
+    src_ext_id_list_parts = [src_ext_id_list[x:x+step] for x in range(0, len(src_ext_id_list), step)]
+    jobs = []
+    for i in range(num_threads):
+        p = mp.Process(target=retrieve_insert, args=(i,src_ext_id_list_parts,dst_ext_id_list,CLIENT_SRC, CLIENT_DST, keep_asset_connection, num_threads))
+        jobs.append(p)
+        p.start()
+        p.join
