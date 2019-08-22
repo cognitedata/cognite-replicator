@@ -101,13 +101,7 @@ def copy_events(
     logging.debug(f"Starting to replicate {len(src_events)} events.")
 
     create_events, update_events, unchanged_events = replication.make_objects_batch(
-        src_events,
-        src_id_dst_event,
-        src_dst_ids_assets,
-        create_event,
-        update_event,
-        project_src,
-        runtime,
+        src_events, src_id_dst_event, src_dst_ids_assets, create_event, update_event, project_src, runtime
     )
 
     logging.info(f"Creating {len(create_events)} new events and updating {len(update_events)} existing events.")
@@ -123,57 +117,6 @@ def copy_events(
         logging.debug(f"Successfully updated {len(update_events)} events.")
 
     logging.info(f"Created {len(create_events)} new events and updated {len(update_events)} existing events.")
-
-
-def remove_not_replicated_in_dst(client_dst: CogniteClient) -> List[Event]:
-
-    """
-          Deleting all the events in the destination that do not have the "_replicatedSource" in metadata, which means that is was not copied from the source, but created in the destination.
-
-          Parameters:
-             client_dst: The client corresponding to the destination project.
-
-
-        """
-
-    dst_list = client_dst.events.list(limit=None)
-
-    not_copied_list = list()
-    copied_list = list()
-    for event in dst_list:
-        if event.metadata and event.metadata["_replicatedSource"]:
-            copied_list.append(event.id)
-
-        else:
-            not_copied_list.append(event.id)
-
-    client_dst.events.delete(id=not_copied_list)
-    return not_copied_list
-
-
-def remove_replicated_if_not_in_src(client_src: CogniteClient, client_dst: CogniteClient) -> List[Event]:
-
-    """
-          Compare the destination and source events and delete the ones that are no longer in the source.
-
-          Parameters:
-            client_src: The client corresponding to the source project.
-            client_dst: The client corresponding to the destination. project.
-
-
-        """
-
-    src_ids = {event.id for event in client_src.events.list(limit=None)}
-
-    dst_id_list = {}
-    for event in client_dst.events.list(limit=None):
-        if event.metadata and event.metadata["_replicatedInternalId"]:
-            dst_id_list[int(event.metadata["_replicatedInternalId"])] = event.id
-
-    diff_list = [dst_id for src_dst_id, dst_id in dst_id_list.items() if src_dst_id not in src_ids]
-    client_dst.events.delete(id=diff_list)
-
-    return diff_list
 
 
 def replicate(
@@ -203,8 +146,8 @@ def replicate(
 
     events_src = client_src.events.list(limit=None)
     events_dst = client_dst.events.list(limit=None)
-    logging.info(f"There are {len(events_src)} existing assets in source ({project_src}).")
-    logging.info(f"There are {len(events_dst)} existing assets in destination ({project_dst}).")
+    logging.info(f"There are {len(events_src)} existing events in source ({project_src}).")
+    logging.info(f"There are {len(events_dst)} existing events in destination ({project_dst}).")
 
     src_id_dst_event = replication.make_id_object_map(events_dst)
 
@@ -250,14 +193,16 @@ def replicate(
     )
 
     if delete_replicated_if_not_in_src:
-        remove_replicated_if_not_in_src(client_src, client_dst)
+        ids_to_delete = replication.find_objects_to_delete_if_not_in_src(events_src, events_dst)
+        client_dst.events.delete(id=ids_to_delete)
         logging.info(
-            f"Deleted {len(asset_delete)} assets in destination ({project_dst})"
+            f"Deleted {len(ids_to_delete)} events in destination ({project_dst})"
             f" because they were no longer in source ({project_src})   "
         )
     if delete_not_replicated_in_dst:
-        remove_not_replicated_in_dst(client_dst)
+        ids_to_delete = replication.find_objects_to_delete_not_replicated_in_dst(events_dst)
+        client_dst.events.delete(id=ids_to_delete)
         logging.info(
-            f"Deleted {len(asset_delete)} assets in destination ({project_dst}) because"
+            f"Deleted {len(ids_to_delete)} events in destination ({project_dst}) because"
             f"they were not replicated from source ({project_src})   "
         )

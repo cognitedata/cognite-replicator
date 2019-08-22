@@ -101,17 +101,10 @@ def copy_ts(
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
         client: The client corresponding to the destination project.
-
     """
     logging.info(f"Starting to replicate {len(src_ts)} time series.")
     create_ts, update_ts, unchanged_ts = replication.make_objects_batch(
-        src_ts,
-        src_id_dst_ts,
-        src_dst_ids_assets,
-        create_time_series,
-        update_time_series,
-        project_src,
-        runtime,
+        src_ts, src_id_dst_ts, src_dst_ids_assets, create_time_series, update_time_series, project_src, runtime
     )
 
     logging.info(f"Creating {len(create_ts)} new time series and updating {len(update_ts)} existing time series.")
@@ -125,57 +118,6 @@ def copy_ts(
         logging.info(f"Updating {len(update_ts)} time series.")
         updated_ts = replication.retry(client.time_series.update, update_ts)
         logging.info(f"Successfully updated {len(updated_ts)} time series.")
-
-
-def remove_not_replicated_in_dst(client_dst: CogniteClient) -> List[TimeSeries]:
-    """
-      Deleting all the time series in the destination that do not have the "_replicatedSource" in metadata, which means that is was not copied from the source, but created in the destination.
-
-      Parameters:
-         client_dst: The client corresponding to the destination project.
-
-
-    """
-
-    dst_list = client_dst.time_series.list(limit=None)
-
-    not_copied_list = list()
-    copied_list = list()
-    for ts in dst_list:
-        if ts.metadata and ts.metadata["_replicatedSource"]:
-            copied_list.append(ts.id)
-
-        else:
-            not_copied_list.append(ts.id)
-
-    client_dst.time_series.delete(id=not_copied_list)
-    return not_copied_list
-
-
-def remove_replicated_if_not_in_src(client_src: CogniteClient, client_dst: CogniteClient) -> List[TimeSeries]:
-    """
-      Compare the destination and source time series and delete the ones that are no longer in the source.
-
-      Parameters:
-        client_src: The client corresponding to the source project.
-        client_dst: The client corresponding to the destination. project.
-
-
-    """
-
-    src_ids = {ts.id for ts in client_src.time_series.list(limit=None)}
-
-    ts_dst_list = client_dst.time_series.list(limit=None)
-    dst_id_list = {
-        int(ts.metadata["_replicatedInternalId"]): ts.id
-        for ts in ts_dst_list
-        if ts.metadata and ts.metadata["_replicatedInternalId"]
-    }
-
-    diff_list = [dst_id for src_dst_id, dst_id in dst_id_list.items() if src_dst_id not in src_ids]
-    client_dst.time_series.delete(id=diff_list)
-
-    return diff_list
 
 
 def replicate(
@@ -194,14 +136,18 @@ def replicate(
         client_dst: The client corresponding to the destination project.
         batch_size: The biggest batch size to post chunks in.
         num_threads: The number of threads to be used.
+        delete_replicated_if_not_in_src: If True, will delete replicated assets that are in the destination,
+        but no longer in the source project (Default=False).
+        delete_not_replicated_in_dst: If True, will delete assets from the destination if they were not replicated
+        from the source (Default=False).
     """
     project_src = client_src.config.project
     project_dst = client_dst.config.project
 
     ts_src = client_src.time_series.list(limit=None)
     ts_dst = client_dst.time_series.list(limit=None)
-    logging.info(f"There are {len(ts_src)} existing assets in source ({project_src}).")
-    logging.info(f"There are {len(ts_dst)} existing assets in destination ({project_dst}).")
+    logging.info(f"There are {len(ts_src)} existing time series in source ({project_src}).")
+    logging.info(f"There are {len(ts_dst)} existing time series in destination ({project_dst}).")
 
     src_id_dst_ts = replication.make_id_object_map(ts_dst)
 
@@ -222,7 +168,7 @@ def replicate(
     logging.info(f"These copied/updated time series will have a replicated run time of: {replicated_runtime}.")
 
     logging.info(
-        f"Starting to copy and update {len(ts_src)} events from "
+        f"Starting to copy and update {len(ts_src)} time series from "
         f"source ({project_src}) to destination ({project_dst})."
     )
 
@@ -248,19 +194,21 @@ def replicate(
         )
 
     logging.info(
-        f"Finished copying and updating {len(ts_src)} events from "
+        f"Finished copying and updating {len(ts_src)} time series from "
         f"source ({project_src}) to destination ({project_dst})."
     )
 
     if delete_replicated_if_not_in_src:
-        asset_delete = remove_replicated_if_not_in_src(client_src, client_dst)
+        ids_to_delete = replication.find_objects_to_delete_if_not_in_src(ts_src, ts_dst)
+        client_dst.time_series.delete(id=ids_to_delete)
         logging.info(
-            f"Deleted {len(asset_delete)} assets in destination ({project_dst})"
+            f"Deleted {len(ids_to_delete)} time series destination ({project_dst})"
             f" because they were no longer in source ({project_src})   "
         )
     if delete_not_replicated_in_dst:
-        asset_delete = remove_not_replicated_in_dst(client_dst)
+        ids_to_delete = replication.find_objects_to_delete_not_replicated_in_dst(ts_dst)
+        client_dst.time_series.delete(id=ids_to_delete)
         logging.info(
-            f"Deleted {len(asset_delete)} assets in destination ({project_dst}) because"
+            f"Deleted {len(ids_to_delete)} time series in destination ({project_dst}) because"
             f"they were not replicated from source ({project_src})   "
         )

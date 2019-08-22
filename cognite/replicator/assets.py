@@ -137,42 +137,6 @@ def create_hierarchy(
     return src_dst_ids
 
 
-def remove_not_replicated_in_dst(client_dst: CogniteClient) -> List[Asset]:
-    """
-    Deleting all the assets in the destination that do not have the "_replicatedSource" in metadata, which
-    means that is was not copied from the source, but created in the destination.
-
-    Parameters:
-        client_dst: The client corresponding to the destination project.
-    """
-    asset_ids_to_remove = []
-    for asset in client_dst.assets.list(limit=None):
-        if not asset.metadata or not asset.metadata["_replicatedSource"]:
-            asset_ids_to_remove.append(asset.id)
-    client_dst.assets.delete(id=asset_ids_to_remove)
-    return asset_ids_to_remove
-
-
-def remove_replicated_if_not_in_src(src_assets: List[Asset], client_dst: CogniteClient) -> List[Asset]:
-    """
-    Compare the destination and source assets and delete the ones that are no longer in the source.
-
-    Parameters:
-        src_assets: The list of assets from the src destination.
-        client_dst: The client corresponding to the destination. project.
-    """
-    src_asset_ids = {asset.id for asset in src_assets}
-
-    asset_ids_to_remove = []
-    for asset in client_dst.assets.list(limit=None):
-        if asset.metadata and asset.metadata["_replicatedInternalId"]:
-            if int(asset.metadata["_replicatedInternalId"]) in src_asset_ids:
-                asset_ids_to_remove.append(asset.id)
-
-    client_dst.assets.delete(id=asset_ids_to_remove)
-    return asset_ids_to_remove
-
-
 def replicate(
     client_src: CogniteClient,
     client_dst: CogniteClient,
@@ -213,14 +177,16 @@ def replicate(
     )
 
     if delete_replicated_if_not_in_src:
-        deleted_ids = remove_replicated_if_not_in_src(assets_src, client_dst)
+        ids_to_delete = replication.find_objects_to_delete_if_not_in_src(assets_src, assets_dst)
+        client_dst.assets.delete(id=ids_to_delete)
         logging.info(
-            f"Deleted {len(deleted_ids)} assets in destination ({project_dst})"
+            f"Deleted {len(ids_to_delete)} assets in destination ({project_dst})"
             f" because they were no longer in source ({project_src})   "
         )
     if delete_not_replicated_in_dst:
-        deleted_ids = remove_not_replicated_in_dst(client_dst)
+        ids_to_delete = replication.find_objects_to_delete_not_replicated_in_dst(assets_dst)
+        client_dst.assets.delete(id=ids_to_delete)
         logging.info(
-            f"Deleted {len(deleted_ids)} assets in destination ({project_dst}) because"
+            f"Deleted {len(ids_to_delete)} assets in destination ({project_dst}) because"
             f"they were not replicated from source ({project_src})   "
         )
