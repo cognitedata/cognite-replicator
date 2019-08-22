@@ -56,8 +56,7 @@ def retrieve_insert(i,src_ext_id_list_parts,dst_ext_id_list,CLIENT_SRC, CLIENT_D
             datapoints = CLIENT_SRC.datapoints.retrieve(
                 external_id=src_ext_id,
                 start=latest_dst_time,
-                end=latest_src_time,
-                limit=10000000
+                end=latest_src_time
             )
             logging.info(f"Number of datapoints: {len(datapoints)}")
             new_objects = [(o.timestamp, o.value) for o in datapoints]
@@ -67,7 +66,6 @@ def retrieve_insert(i,src_ext_id_list_parts,dst_ext_id_list,CLIENT_SRC, CLIENT_D
                 external_id=src_ext_id
             )
     
-
 
 def replicate(
     CLIENT_SRC, CLIENT_DST, keep_asset_connection=True, num_threads=10
