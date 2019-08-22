@@ -2,6 +2,7 @@ import time
 
 from cognite.client.data_classes.assets import Asset
 from cognite.replicator.assets import build_asset_create
+from cognite.replicator.assets import find_children
 
 
 def test_build_asset_create():

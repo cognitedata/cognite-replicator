@@ -98,7 +98,7 @@ def create_hierarchy(
         client: The client corresponding to the destination project.
     """
     depth = 0
-    parents = [None]
+    parents = [None]  # root nodes parent id is None
     children = find_children(src_assets, parents)
 
     src_dst_ids: Dict[int, int] = {}
