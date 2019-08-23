@@ -1,3 +1,4 @@
+# Copyright 2019 Cognite AS
 import logging
 from typing import Dict, List, Tuple, Union
 

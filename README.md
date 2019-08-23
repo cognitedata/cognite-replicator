@@ -1,4 +1,6 @@
 # Cognite Python Replicator
+Copyright 2019 Cognite AS
+
 Cognite Replicator is a Python package for replicating data across Cognite Data Fusion (CDF) projects. This package is
 built on top of the Cognite Python SDK.
 
