@@ -16,7 +16,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.6"
-cognite-sdk = "^1.0.4"
+cognite-sdk = "^1.1.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^3.0"
