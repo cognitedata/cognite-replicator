@@ -133,7 +133,7 @@ def make_objects_batch(
     for src_obj in src_objects:
         dst_obj = src_id_dst_map.get(src_obj.id)
         if dst_obj:
-            if src_obj.last_updated_time > int(dst_obj.metadata["_replicatedTime"]):
+            if not src_obj.last_updated_time or src_obj.last_updated_time > int(dst_obj.metadata["_replicatedTime"]):
                 dst_obj = update(src_obj, dst_obj, src_dst_ids_assets, project_src, replicated_runtime, **kwargs)
                 update_objects.append(dst_obj)
             else:
