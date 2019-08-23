@@ -19,3 +19,19 @@ def test_build_asset_create():
     src_id_dst_map = {2: 5}
     second = build_asset_create(asset, src_id_dst_map, "source_tenant", runtime, 2)
     assert 5 == second.parent_id
+
+
+def test_find_children():
+    assets = [
+        Asset(id=3, name="holy grenade", metadata={}),
+        Asset(id=7, name="not holy grenade", parent_id=3, metadata={}),
+        Asset(id=5, name="in-holy grenade", parent_id=7, metadata={"source": "None"}),
+    ]
+    parents = find_children(assets, [None])
+    children1 = find_children(assets, parents)
+    children2 = find_children(assets, children1)
+    assert parents[0].id == 3
+    assert children1[0].id == 7
+    assert children2[0].id == 5
+    assert children1[0].parent_id == 3
+    assert children2[0].parent_id == 7
