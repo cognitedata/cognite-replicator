@@ -41,18 +41,19 @@ def test_find_children():
 def test_build_asset_update():
     assets_src = [
         Asset(id=3, name="Dog", external_id="Woff Woff", metadata={}, description="Humans best friend"),
-        Asset(id=7, name="Cat", external_id="Miau Miau", metadata={}),
-        Asset(id=5, name="Cow", metadata={}),
+        Asset(id=7, name="Cat", parent_id=3, external_id="Miau Miau", metadata={}),
+        Asset(id=5, name="Cow", parent_id=7, metadata={}),
     ]
     assets_dst = [
-        Asset(id=333, name="Copy-Dog", metadata={}),
-        Asset(id=777, name="Copy-Cat", parent_id=3, metadata={}),
-        Asset(id=555, name="Copy-Cow", parent_id=7, metadata={"source": "None"}),
+        Asset(id=333, name="Copy-Dog", metadata={"_replicatedInternalId": 3}),
+        Asset(id=777, name="Copy-Cat", parent_id=333, metadata={"_replicatedInternalId": 7}),
+        Asset(id=555, name="Copy-Cow", parent_id=777, metadata={"_replicatedInternalId": 5, "source": "None"}),
     ]
     runtime = time.time() * 1000
-    dst_asset_0 = build_asset_update(assets_src[0], assets_dst[0], [], "Flying Circus", runtime, depth=1)
-    dst_asset_1 = build_asset_update(assets_src[1], assets_dst[1], [], "Flying Circus", runtime, depth=1)
-    dst_asset_2 = build_asset_update(assets_src[2], assets_dst[2], [], "Flying Circus", runtime, depth=1)
+    id_mapping = {3: 333, 7: 777, 5: 555}
+    dst_asset_0 = build_asset_update(assets_src[0], assets_dst[0], id_mapping, "Flying Circus", runtime, depth=0)
+    dst_asset_1 = build_asset_update(assets_src[1], assets_dst[1], id_mapping, "Flying Circus", runtime, depth=1)
+    dst_asset_2 = build_asset_update(assets_src[2], assets_dst[2], id_mapping, "Flying Circus", runtime, depth=1)
     assert dst_asset_0.metadata["_replicatedSource"] == "Flying Circus"
     assert dst_asset_1.metadata["_replicatedSource"] == "Flying Circus"
     assert dst_asset_2.metadata["_replicatedSource"] == "Flying Circus"
@@ -60,6 +61,14 @@ def test_build_asset_update():
     assert dst_asset_1.metadata["_replicatedInternalId"] == assets_src[1].id
     assert dst_asset_2.metadata["_replicatedInternalId"] == assets_src[2].id
     assert dst_asset_0.description == assets_src[0].description
+    assert dst_asset_1.parent_id == 333
+    assert dst_asset_2.parent_id == 777
+
+    assets_src[2].parent_id = 3
+    dst_asset_changed_2 = build_asset_update(
+        assets_src[2], assets_dst[2], id_mapping, "Flying Circus", runtime, depth=1
+    )
+    assert dst_asset_changed_2.parent_id == 333
 
 
 def test_create_hierarchy():
@@ -72,7 +81,7 @@ def test_create_hierarchy():
             Asset(id=7, name="Prince", parent_id=3, external_id="Future King", metadata={}),
             Asset(id=5, name="Princess", parent_id=3, metadata={}),
         ]
-        #src_emptydst_ids = create_hierarchy(assets_src, [], "Evens Kingdom", runtime, client)
+        # src_emptydst_ids = create_hierarchy(assets_src, [], "Evens Kingdom", runtime, client)
         assets_dst = [
             Asset(
                 id=333,
@@ -91,4 +100,4 @@ def test_create_hierarchy():
             Asset(id=101, name="Adopted", metadata={}),
         ]
 
-        src_dst_ids = create_hierarchy(assets_src, assets_dst, "Evens Kingdom", runtime, client)
+#        src_dst_ids = create_hierarchy(assets_src, assets_dst, "Evens Kingdom", runtime, client)
