@@ -64,7 +64,7 @@ def build_asset_update(
     dst_asset.description = src_asset.description
     dst_asset.metadata = replication.new_metadata(src_asset, project_src, runtime)
     dst_asset.source = src_asset.source
-    # existing.parent_id = src_id_dst_map[src_asset.parent_id] if depth > 0 else None  # when asset hierarchy is mutable
+    dst_asset.parent_id = src_id_dst_map[src_asset.parent_id] if depth > 0 else None  # when asset hierarchy is mutable
     return dst_asset
 
 

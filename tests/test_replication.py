@@ -7,9 +7,9 @@ from cognite.replicator.replication import existing_mapping
 
 def test_make_id_object_map():
     assets = [Asset(id=3, metadata={"_replicatedInternalId": 55}), Asset(id=2)]
-    map = make_id_object_map(assets)
-    assert 1 == len(map)
-    assert 3 == map[55].id
+    mapping = make_id_object_map(assets)
+    assert 1 == len(mapping)
+    assert 3 == mapping[55].id
 
 
 def test_existing_mapping():

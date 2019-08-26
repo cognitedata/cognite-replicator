@@ -50,12 +50,12 @@ def test_build_asset_update():
         Asset(id=555, name="Copy-Cow", parent_id=7, metadata={"source": "None"}),
     ]
     runtime = time.time() * 1000
-    dst_asset_0 = build_asset_update(assets_src[0], assets_dst[0], [], "McDonald's Kennel", runtime, depth=1)
-    dst_asset_1 = build_asset_update(assets_src[1], assets_dst[1], [], "McDonald's CatHouse", runtime, depth=1)
-    dst_asset_2 = build_asset_update(assets_src[2], assets_dst[2], [], "McDonald's Farm", runtime, depth=1)
-    assert dst_asset_0.metadata["_replicatedSource"] == "McDonald's Kennel"
-    assert dst_asset_1.metadata["_replicatedSource"] == "McDonald's CatHouse"
-    assert dst_asset_2.metadata["_replicatedSource"] == "McDonald's Farm"
+    dst_asset_0 = build_asset_update(assets_src[0], assets_dst[0], [], "Flying Circus", runtime, depth=1)
+    dst_asset_1 = build_asset_update(assets_src[1], assets_dst[1], [], "Flying Circus", runtime, depth=1)
+    dst_asset_2 = build_asset_update(assets_src[2], assets_dst[2], [], "Flying Circus", runtime, depth=1)
+    assert dst_asset_0.metadata["_replicatedSource"] == "Flying Circus"
+    assert dst_asset_1.metadata["_replicatedSource"] == "Flying Circus"
+    assert dst_asset_2.metadata["_replicatedSource"] == "Flying Circus"
     assert dst_asset_0.metadata["_replicatedInternalId"] == assets_src[0].id
     assert dst_asset_1.metadata["_replicatedInternalId"] == assets_src[1].id
     assert dst_asset_2.metadata["_replicatedInternalId"] == assets_src[2].id
