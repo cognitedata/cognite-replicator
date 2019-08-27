@@ -1,9 +1,8 @@
 import time
 
 from cognite.client.data_classes.assets import Asset
-from cognite.replicator.assets import build_asset_create, build_asset_update
-from cognite.replicator.assets import find_children, create_hierarchy
 from cognite.client.testing import mock_cognite_client
+from cognite.replicator.assets import build_asset_create, build_asset_update, create_hierarchy, find_children
 
 
 def test_build_asset_create():

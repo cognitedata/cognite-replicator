@@ -19,10 +19,26 @@ python = "^3.6"
 cognite-sdk = "^1.1.1"
 
 [tool.poetry.dev-dependencies]
-pytest = "^3.0"
-pytest-cov = "^2.7"
-black = {version = "^18.3-alpha.0", allows-prereleases = true}
+pre-commit = "^1.18"
+pytest = "^5.1.1"
+pytest-cov = "^2.7.1"
+black = {version = "^19.3b0", allows-prereleases = true}
 isort = "^4.3"
+
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
+
+[tool.black]
+line-length = 120
+target-version = ['py36', 'py37', 'py38']
+include = '\.pyi?$'
+exclude = '''
+/(
+  | \.git
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | dist
+)/
+'''
