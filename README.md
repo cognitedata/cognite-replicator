@@ -29,8 +29,7 @@ On this GitHub-page under **release** can you find the `.whl` file. By clicking 
 ### Setup
 ```python
 from cognite.client import CogniteClient
-from cognite.replicator import replication
-from cognite.replicator import assets
+from cognite.replicator import assets, events, replication, time_series
 
 PROJECT_SRC = "Name of source tenant"
 PROJECT_DST = "Name of destination tenant"
@@ -44,21 +43,18 @@ CLIENT_DST = CogniteClient(api_key=DST_API_KEY, project=PROJECT_DST, client_name
 
 ### Replicate Assets
 ```python
-from cognite.replicator import assets
 
 assets.replicate(CLIENT_SRC, CLIENT_DST)
 ```
 
 ### Replicate Events
 ```python
-from cognite.replicator import events
 
 events.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
 ```
 
 ### Replicate Time Series
 ```python
-from cognite.replicator import time_series
 
 time_series.replicate(CLIENT_SRC, PROJECT_DST, BATCH_SIZE, NUM_THREADS)
 ```
@@ -83,6 +79,8 @@ poetry build
 
 ### Testing
 We are using pytest framework. To run the test suite (after poetry and dependencies are installed):
+
+### Pipeline
 
 ```python
 poetry run pytest --cov cognite
