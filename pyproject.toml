@@ -7,7 +7,7 @@ authors = [
     "Nina Odegard <nina.odegard@cognite.com>",
     "Sofie Haug <sofie.haug@cognite.com>",
     "Torbjørn Opheim <torbjorn.opheim@cognite.com>",
-    "Even Wiik Thomassen <even.thomassen@cognite.com"
+    "Even Wiik Thomassen <even.thomassen@cognite.com>"
 ]
 readme = "README.md"
 packages = [
