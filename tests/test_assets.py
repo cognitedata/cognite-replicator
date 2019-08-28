@@ -70,7 +70,7 @@ def test_build_asset_update():
     assert dst_asset_changed_2.parent_id == 333
 
 
-def test_create_hierarchy():
+def test_create_hierarchy_without_dst_list():
     with mock_cognite_client() as client:
         runtime = time.time() * 1000
         assets_src = [
@@ -80,24 +80,31 @@ def test_create_hierarchy():
             Asset(id=7, name="Prince", parent_id=3, external_id="Future King", metadata={}),
             Asset(id=5, name="Princess", parent_id=3, metadata={}),
         ]
-        # src_emptydst_ids = create_hierarchy(assets_src, [], "Evens Kingdom", runtime, client)
-        assets_dst = [
-            Asset(
-                id=333,
-                name="Copy-Queen",
-                external_id="Queen in the Kingdom",
-                metadata={"_replicatedInternalId": 3, "_replicatedTime": 1},
-                description="Married to the King",
-            ),
-            Asset(
-                id=777,
-                name="Copy-Prince",
-                external_id="Future King",
-                metadata={"_replicatedInternalId": 7, "_replicatedTime": 1},
-            ),
-            Asset(id=555, name="Copy-Princess", metadata={"_replicatedInternalId": 5, "_replicatedTime": 1}),
-            Asset(id=101, name="Adopted", metadata={}),
-        ]
+        # src_empty_dst_ids = create_hierarchy(assets_src, [], "Evens Kingdom", runtime, client)
 
+def test_create_hierarchy_with_dst_list():
+    assets_src = [
+        Asset(
+            id=3, name="Queen", external_id="Queen in the Kingdom", metadata={}, description="Married to the King"
+        ),
+        Asset(id=7, name="Prince", parent_id=3, external_id="Future King", metadata={}),
+        Asset(id=5, name="Princess", parent_id=3, metadata={}),
+    ]
 
-#        src_dst_ids = create_hierarchy(assets_src, assets_dst, "Evens Kingdom", runtime, client)
+    assets_dst = [
+        Asset(
+            id=333,
+            name="Copy-Queen",
+            external_id="Queen in the Kingdom",
+            metadata={"_replicatedInternalId": 3, "_replicatedTime": 1},
+            description="Married to the King",
+        ),
+        Asset(
+            id=777,
+            name="Copy-Prince",
+            external_id="Future King",
+            metadata={"_replicatedInternalId": 7, "_replicatedTime": 1},
+        ),
+        Asset(id=555, name="Copy-Princess", metadata={"_replicatedInternalId": 5, "_replicatedTime": 1}),
+        Asset(id=101, name="Adopted", metadata={}),
+    ]
