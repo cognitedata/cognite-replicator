@@ -1,5 +1,5 @@
-from cognite.replicator.time_series import filter_away_service_account_ts
 from cognite.client.data_classes import TimeSeries
+from cognite.replicator.time_series import filter_away_service_account_ts
 
 
 def test_filter_away_service_account_ts():
