@@ -23,7 +23,7 @@ Changes are grouped as follows
 - 
 
 ### Added
-- 
+- Command line arguments for running the replicators. Try 'poetry run replicator'
 
 ### Fixed
 - 

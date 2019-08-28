@@ -9,8 +9,6 @@ from cognite.client.data_classes import Event, TimeSeries
 from cognite.client.data_classes.assets import Asset
 from cognite.client.data_classes.raw import Row
 
-logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.WARNING)  # TODO: need to be moved somewhere else
-
 
 def make_id_object_map(objects: List[Union[Asset, Event, TimeSeries]]) -> Dict[int, Union[Asset, Event, TimeSeries]]:
     """

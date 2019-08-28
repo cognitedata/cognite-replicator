@@ -122,7 +122,7 @@ def copy_events(
 def replicate(
     client_src: CogniteClient,
     client_dst: CogniteClient,
-    batch_size: int,
+    batch_size: int = 10000,
     num_threads: int = 1,
     delete_replicated_if_not_in_src: bool = False,
     delete_not_replicated_in_dst: bool = False,
@@ -139,7 +139,6 @@ def replicate(
         but no longer in the source project (Default=False).
         delete_not_replicated_in_dst: If True, will delete events from the destination if they were not replicated
         from the source (Default=False).
-
     """
     project_src = client_src.config.project
     project_dst = client_dst.config.project
