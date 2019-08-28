@@ -1,4 +1,3 @@
-# Copyright 2019 Cognite AS
 import logging
 import threading
 from typing import Any, Dict, List, Optional, Tuple, Union
