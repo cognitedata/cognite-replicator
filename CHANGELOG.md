@@ -12,23 +12,12 @@ Changes are grouped as follows
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities.
 
-## [Planned]
-- Fill in planed changes 
-- 
-- 
-
 ## [Unreleased]
-
-### Changed
-- 
 
 ### Added
 - Command line arguments for running the replicators. Try 'poetry run replicator'
 
 ### Fixed
-- 
+- Use pre-commit hooks to run black and unit tests
 
 ## [0.2.2] - 2019-27-08
-
-
-
