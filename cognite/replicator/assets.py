@@ -1,4 +1,3 @@
-# Copyright 2019 Cognite AS
 import logging
 import time
 from typing import Dict, List

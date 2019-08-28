@@ -1,8 +1,10 @@
 from cognite.client.data_classes.assets import Asset
-from cognite.replicator.replication import make_id_object_map
-from cognite.replicator.replication import find_objects_to_delete_not_replicated_in_dst
-from cognite.replicator.replication import find_objects_to_delete_if_not_in_src
-from cognite.replicator.replication import existing_mapping
+from cognite.replicator.replication import (
+    existing_mapping,
+    find_objects_to_delete_if_not_in_src,
+    find_objects_to_delete_not_replicated_in_dst,
+    make_id_object_map,
+)
 
 
 def test_make_id_object_map():
