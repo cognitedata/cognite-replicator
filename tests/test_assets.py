@@ -82,11 +82,10 @@ def test_create_hierarchy_without_dst_list():
         ]
         # src_empty_dst_ids = create_hierarchy(assets_src, [], "Evens Kingdom", runtime, client)
 
+
 def test_create_hierarchy_with_dst_list():
     assets_src = [
-        Asset(
-            id=3, name="Queen", external_id="Queen in the Kingdom", metadata={}, description="Married to the King"
-        ),
+        Asset(id=3, name="Queen", external_id="Queen in the Kingdom", metadata={}, description="Married to the King"),
         Asset(id=7, name="Prince", parent_id=3, external_id="Future King", metadata={}),
         Asset(id=5, name="Princess", parent_id=3, metadata={}),
     ]

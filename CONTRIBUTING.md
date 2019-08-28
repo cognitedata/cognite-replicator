@@ -27,7 +27,7 @@ If you want to generate code coverage reports run:
 ```
 poetry run pytest --cov cognite --cov-report html \
                                 --cov-report xml \
-                                
+
 ```
 
 Open `htmlcov/index.html` in the browser to navigate through the report.
