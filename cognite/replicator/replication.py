@@ -3,7 +3,6 @@ import threading
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import requests
-
 from cognite.client import CogniteClient
 from cognite.client.data_classes import Event, TimeSeries
 from cognite.client.data_classes.assets import Asset
@@ -133,7 +132,7 @@ def make_objects_batch(
     for src_obj in src_objects:
         dst_obj = src_id_dst_map.get(src_obj.id)
         if dst_obj:
-            if src_obj.last_updated_time > int(dst_obj.metadata["_replicatedTime"]):
+            if not src_obj.last_updated_time or src_obj.last_updated_time > int(dst_obj.metadata["_replicatedTime"]):
                 dst_obj = update(src_obj, dst_obj, src_dst_ids_assets, project_src, replicated_runtime, **kwargs)
                 update_objects.append(dst_obj)
             else:
@@ -244,7 +243,7 @@ def find_objects_to_delete_not_replicated_in_dst(dst_objects: List[Union[Asset, 
     """
     obj_ids_to_remove = []
     for obj in dst_objects:
-        if not obj.metadata or not obj.metadata["_replicatedSource"]:
+        if not obj.metadata or not obj.metadata.get("_replicatedSource"):
             obj_ids_to_remove.append(obj.id)
     return obj_ids_to_remove
 
@@ -259,11 +258,12 @@ def find_objects_to_delete_if_not_in_src(
         src_objects: The list of objects from the src destination.
         dst_objects: The list of objects from the dst destination.
     """
+
     src_obj_ids = {obj.id for obj in src_objects}
 
     obj_ids_to_remove = []
     for obj in dst_objects:
-        if obj.metadata and obj.metadata["_replicatedInternalId"]:
+        if obj.metadata and obj.metadata.get("_replicatedInternalId"):
             if int(obj.metadata["_replicatedInternalId"]) not in src_obj_ids:
                 obj_ids_to_remove.append(obj.id)
     return obj_ids_to_remove

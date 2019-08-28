@@ -63,7 +63,7 @@ def build_asset_update(
     dst_asset.description = src_asset.description
     dst_asset.metadata = replication.new_metadata(src_asset, project_src, runtime)
     dst_asset.source = src_asset.source
-    # existing.parent_id = src_id_dst_map[src_asset.parent_id] if depth > 0 else None  # when asset hierarchy is mutable
+    dst_asset.parent_id = src_id_dst_map[src_asset.parent_id] if depth > 0 else None  # when asset hierarchy is mutable
     return dst_asset
 
 
@@ -98,7 +98,7 @@ def create_hierarchy(
         client: The client corresponding to the destination project.
     """
     depth = 0
-    parents = [None]
+    parents = [None]  # root nodes parent id is None
     children = find_children(src_assets, parents)
 
     src_dst_ids: Dict[int, int] = {}
