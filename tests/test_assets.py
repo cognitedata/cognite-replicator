@@ -107,6 +107,3 @@ def test_create_hierarchy_with_dst_list():
         Asset(id=555, name="Copy-Princess", metadata={"_replicatedInternalId": 5, "_replicatedTime": 1}),
         Asset(id=101, name="Adopted", metadata={}),
     ]
-
-
-#        src_dst_ids = create_hierarchy(assets_src, assets_dst, "Evens Kingdom", runtime, client)
