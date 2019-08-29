@@ -123,7 +123,7 @@ def copy_ts(
 def replicate(
     client_src: CogniteClient,
     client_dst: CogniteClient,
-    batch_size: int,
+    batch_size: int = 10000,
     num_threads: int = 1,
     delete_replicated_if_not_in_src: bool = False,
     delete_not_replicated_in_dst: bool = False,
