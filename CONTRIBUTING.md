@@ -5,6 +5,12 @@ Get the code!
 $ git clone https://github.com/cognitedata/cognite-replicator.git
 $ cd cognite-replicator
 ```
+
+Install poetry:
+```bash
+curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
+```
+
 Install dependencies and initialize a shell within the virtual environment.
 ```bash
 $ poetry install
