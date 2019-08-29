@@ -14,6 +14,13 @@ packages = [
     {include = "cognite"}
 ]
 
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Natural Language :: English",
+]
+
 [tool.poetry.dependencies]
 python = "^3.6"
 cognite-sdk = "^1.1.1"
@@ -24,6 +31,9 @@ pytest = "^5.1.1"
 pytest-cov = "^2.7.1"
 black = {version = "^19.3b0", allows-prereleases = true}
 isort = "^4.3"
+
+[tool.poetry.scripts]
+replicator = 'cognite.replicator.__main__:main'
 
 [build-system]
 requires = ["poetry>=0.12"]
