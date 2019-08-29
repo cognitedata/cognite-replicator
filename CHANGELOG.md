@@ -15,6 +15,9 @@ Changes are grouped as follows
 ## [Unreleased]
 
 ### Added
+- Command line arguments for running the replicators. Try 'poetry run replicator'
+
+### Fixed
 - Use pre-commit hooks to run black and unit tests
 
 ## [0.2.2] - 2019-27-08
