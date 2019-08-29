@@ -30,12 +30,12 @@ On this GitHub-page under **release** can you find the `.whl` file. By clicking 
 
 ## Usage
 
-### Setup
+### Setup as Python library
 ```python
 import os
 
 from cognite.client import CogniteClient
-from cognite.replicator import assets, events, time_series
+from cognite.replicator import assets, events, time_series, datapoints
 
 SRC_API_KEY = os.environ.get("COGNITE_SOURCE_API_KEY")
 DST_API_KEY = os.environ.get("COGNITE_DESTINATION_API_KEY")
@@ -47,55 +47,40 @@ NUM_THREADS= 10 # this is the max number of threads to be used
 
 CLIENT_SRC = CogniteClient(api_key=SRC_API_KEY, project=PROJECT_SRC, client_name=CLIENT_NAME)
 CLIENT_DST = CogniteClient(api_key=DST_API_KEY, project=PROJECT_DST, client_name=CLIENT_NAME, timeout=90)
-```
-
-### Replicate Assets
-```python
 
 assets.replicate(CLIENT_SRC, CLIENT_DST)
-```
-
-### Replicate Events
-```python
-
 events.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
-```
-
-### Replicate Time Series
-```python
-
 time_series.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
-```
-
-### Replicate Datapoints
-```python
-from cognite.replicator import datapoints
-
 datapoints.replicate(CLIENT_SRC, CLIENT_DST)
 ```
 
-## Development
-We are using [Poetry](https://poetry.eustace.io/) to manage dependencies and building the library.
-
-Install poetry:
-```bash
-curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
-```
-
-To install dependencies:
-```bash
-poetry install
-```
-
-To build the wheel:
-```bash
-poetry build
-```
-
-### Testing
-We are using pytest framework. To run the test suite (after poetry and dependencies are installed):
-
+### Run it from databricks notebook
 ```python
-poetry run pytest --cov cognite
+import os
+import logging
+
+from cognite.client import CogniteClient
+from cognite.replicator import assets, configure_databricks_logger
+
+SRC_API_KEY = dbutils.secrets.get("cdf-api-keys", "source-tenant")
+DST_API_KEY = dbutils.secrets.get("cdf-api-keys", "destination-tenant")
+
+CLIENT_SRC = CogniteClient(api_key=SRC_API_KEY, client_name="cognite-replicator")
+CLIENT_DST = CogniteClient(api_key=DST_API_KEY, client_name="cognite-replicator")
+
+logger = logging.getLogger(__name__)
+
+configure_databricks_logger(log_level=loggig.INFO, logger=logger)
+assets.replicate(CLIENT_SRC, CLIENT_DST)
 ```
 
+### Run it from command line
+```bash
+poetry run replicator -h
+```
+
+## Changelog
+Wondering about upcoming or previous changes to the SDK? Take a look at the [CHANGELOG](https://github.com/cognitedata/cognite-replicator/blob/master/CHANGELOG.md).
+
+## Contributing
+Want to contribute? Check out [CONTRIBUTING](https://github.com/cognitedata/cognite-replicator/blob/master/CONTRIBUTING.md).
