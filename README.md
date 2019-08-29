@@ -70,7 +70,7 @@ CLIENT_DST = CogniteClient(api_key=DST_API_KEY, client_name="cognite-replicator"
 
 logger = logging.getLogger(__name__)
 
-configure_databricks_logger(log_level=loggig.INFO, logger=logger)
+configure_databricks_logger(log_level=logging.INFO, logger=logger)
 assets.replicate(CLIENT_SRC, CLIENT_DST)
 ```
 
