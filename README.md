@@ -64,7 +64,14 @@ events.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
 ### Replicate Time Series
 ```python
 
-time_series.replicate(CLIENT_SRC, PROJECT_DST, BATCH_SIZE, NUM_THREADS)
+time_series.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
+```
+
+### Replicate Datapoints
+```python
+from cognite.replicator import datapoints
+
+datapoints.replicate(CLIENT_SRC, CLIENT_DST)
 ```
 
 ## Development
@@ -91,3 +98,4 @@ We are using pytest framework. To run the test suite (after poetry and dependenc
 ```python
 poetry run pytest --cov cognite
 ```
+
