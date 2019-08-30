@@ -16,8 +16,6 @@ from typing import Dict, List, Tuple, Union
 from cognite.client import CogniteClient
 from cognite.client.data_classes import Asset, TimeSeries
 
-logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
-
 
 def retrieve_insert(
     thread_id: int,
@@ -54,9 +52,7 @@ def retrieve_insert(
                 latest_dst_time = latest_destination_dp[0].timestamp
 
             # Retrieve and insert missing datapoints
-            logging.info(
-                f"Thread {thread_id} is retrieving datapoints between {latest_dst_time} and {latest_src_time}\n-----------------------"
-            )
+            logging.info(f"Thread {thread_id} is retrieving datapoints between {latest_dst_time} and {latest_src_time}")
 
             datapoints = client_src.datapoints.retrieve(
                 external_id=src_ext_id, start=latest_dst_time, end=latest_src_time, limit=dp_limit
