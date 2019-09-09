@@ -24,7 +24,7 @@ podTemplate(
         configMapVolume(configMapName: 'codecov-script-configmap', mountPath: '/codecov-script'),
     ],
     envVars: [
-//       secretEnvVar(key: 'CODECOV_TOKEN', secretName: 'codecov-tokens', secretKey: 'cognite-sdk-python'),
+        secretEnvVar(key: 'CODECOV_TOKEN', secretName: 'codecov-tokens', secretKey: 'cognite-sdk-python'),
         envVar(key: 'CI', value: '1'),
         // /codecov-script/upload-report.sh relies on the following
         // Jenkins and Github environment variables.
@@ -51,6 +51,9 @@ podTemplate(
             }
             stage('Test code') {
                 sh("poetry run pytest --cov cognite")
+            }
+            stage('Upload report to codecov.io') {
+                sh('bash </codecov-script/upload-report.sh')
             }
             stage('Check code') {
                 sh("poetry run black -l 120 --check .")
