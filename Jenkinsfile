@@ -50,10 +50,13 @@ podTemplate(
                 sh("poetry install")
             }
             stage('Test code') {
-                sh("poetry run pytest --cov cognite")
+                sh("poetry run pytest --cov cognite --cov-report=xml:coverage.xml --junitxml=test-report.xml")
+                junit(allowEmptyResults: true, testResults: '**/test-report.xml')
+                summarizeTestResults()
             }
             stage('Upload report to codecov.io') {
                 sh('bash </codecov-script/upload-report.sh')
+                step([$class: 'CoberturaPublisher', coberturaReportFile: 'coverage.xml'])
             }
             stage('Check code') {
                 sh("poetry run black -l 120 --check .")
