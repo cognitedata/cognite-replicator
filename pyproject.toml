@@ -31,6 +31,7 @@ pytest = "^5.1.1"
 pytest-cov = "^2.7.1"
 black = {version = "^19.3b0", allows-prereleases = true}
 isort = "^4.3"
+tox = "^3.0"
 
 [tool.poetry.scripts]
 replicator = 'cognite.replicator.__main__:main'

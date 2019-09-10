@@ -50,7 +50,7 @@ podTemplate(
                 sh("poetry install")
             }
             stage('Test code') {
-                sh("poetry run pytest --cov cognite --cov-report=xml:coverage.xml --junitxml=test-report.xml")
+                sh("poetry run tox -p auto")
                 junit(allowEmptyResults: true, testResults: '**/test-report.xml')
                 summarizeTestResults()
             }
