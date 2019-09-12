@@ -28,9 +28,9 @@ $ export COGNITE_DESTINATION_API_KEY=<your destination API key>
 ## Installation
 The replicator is available on PyPI, and can also be executed as a standalone script.
 
-In your Databricks cluster, click on **Libraries** and **Install New**.  Choose your library type to be **PyPI**, and enter **cognite-replicater** as Package. Let the new library install and you are ready to replicate!
+In your Databricks cluster, click on **Libraries** and **Install New**.  Choose your library type to be **PyPI**, and enter **cognite-replicator** as Package. Let the new library install and you are ready to replicate!
 
-Via command line it is as sample as
+With shell you can just:
 ```bash
 pip install cognite-replicator
 ```
