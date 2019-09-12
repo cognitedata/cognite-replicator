@@ -23,5 +23,5 @@ COPY . /code
 # Project initialization:
 RUN poetry config settings.virtualenvs.create false && poetry install --no-dev --no-interaction --no-ansi
 
-ENTRYPOINT ["poetry", "run", "replicator"]
+ENTRYPOINT ["python", "-m", "cognite.replicator"]
 CMD []
