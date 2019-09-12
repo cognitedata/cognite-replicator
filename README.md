@@ -30,7 +30,7 @@ The replicator is available on PyPI, and can also be executed as a standalone sc
 
 In your Databricks cluster, click on **Libraries** and **Install New**.  Choose your library type to be **PyPI**, and enter **cognite-replicator** as Package. Let the new library install and you are ready to replicate!
 
-With shell you can just:
+Or, via command line:
 ```bash
 pip install cognite-replicator
 ```
