@@ -49,15 +49,15 @@ podTemplate(
             stage('Install all dependencies') {
                 sh("poetry install")
             }
-            stage('Build Docs') {
-                dir('./docs'){
-                    sh("poetry run sphinx-build -W -b html ./source ./build")
-                }
-            }
             stage('Test code') {
                 sh("poetry run pytest --cov cognite --cov-report=xml:coverage.xml --junitxml=test-report.xml")
                 junit(allowEmptyResults: true, testResults: '**/test-report.xml')
                 summarizeTestResults()
+            }
+            stage('Build Docs') {
+                dir('./docs'){
+                    sh("poetry run sphinx-build -W -b html ./source ./build")
+                }
             }
             stage('Upload report to codecov.io') {
                 sh('bash </codecov-script/upload-report.sh')

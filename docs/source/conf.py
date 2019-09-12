@@ -20,8 +20,8 @@ import cognite.replicator  # isort:skip
 
 # General information about the project.
 project = 'cognite-replicator'
-copyright = '2019, Cognite'
-author = 'Cognite'
+copyright = '2019, Cognite AS'
+author = 'Cognite AS'
 
 # The full version, including alpha/beta/rc tags
 version = cognite.replicator.__version__
