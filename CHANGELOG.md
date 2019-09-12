@@ -15,6 +15,7 @@ Changes are grouped as follows
 ## [Unreleased]
 
 ### Added
+- Dockerfile to build docker image of the replicator
 - Command line arguments for running the replicators. Try 'poetry run replicator'
 
 ### Fixed

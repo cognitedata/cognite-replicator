@@ -35,6 +35,13 @@ Or, via command line:
 pip install cognite-replicator
 ```
 
+Build and run it as a docker container:
+```bash
+docker build -t cognite-replicator .
+docker run -it cognite-replicator
+```
+
+
 ## Usage
 
 ### Setup as Python library
