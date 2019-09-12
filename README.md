@@ -7,6 +7,7 @@
 [![codecov](https://codecov.io/gh/cognitedata/cognite-replicator/branch/master/graph/badge.svg)](https://codecov.io/gh/cognitedata/cognite-replicator)
 [![PyPI version](https://badge.fury.io/py/cognite-replicator.svg)](https://pypi.org/project/cognite-replicator/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
+
 Cognite Replicator is a Python package for replicating data across Cognite Data Fusion (CDF) projects. This package is
 built on top of the Cognite Python SDK.
 
@@ -25,9 +26,14 @@ $ export COGNITE_DESTINATION_API_KEY=<your destination API key>
 ```
 
 ## Installation
-The replicator is currently distribuated as Python wheels, but it can also be executed as a standalone script.
+The replicator is available on PyPI, and can also be executed as a standalone script.
 
-On this GitHub-page under **release** can you find the `.whl` file. By clicking on the file, you will automatically download the file. Then go into Databricks and into your cluster. Click on **Libraries** and **Install New**.  Choose your library type to be a **Python Whl**. By clicking on the area **Drop WHL here** you can navigate to where you have your `.whl`-file (most likely in your dowloads folder). Choose the `.whl` file, let the new library install and you are ready to replicate!
+In your Databricks cluster, click on **Libraries** and **Install New**.  Choose your library type to be **PyPI**, and enter **cognite-replicator** as Package. Let the new library install and you are ready to replicate!
+
+Or, via command line:
+```bash
+pip install cognite-replicator
+```
 
 ## Usage
 
