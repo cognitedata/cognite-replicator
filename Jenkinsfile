@@ -65,13 +65,16 @@ podTemplate(
                 sh("poetry build")
             }
 
+            def pipVersion = sh(returnStdout: true, script: 'poetry run yolk -V cognite-replicator | sort -n | tail -1 | cut -d\\  -f 2').trim()
             def currentVersion = sh(returnStdout: true, script: 'sed -n -e "/^__version__/p" cognite/replicator/__init__.py | cut -d\\" -f2').trim()
             println("This version: " + currentVersion)
-//             if (env.BRANCH_NAME == 'master') {
-//                 stage('Release') {
-//                     sh("pipenv run twine upload --config-file /pypi/.pypirc dist/*")
-//                 }
-//             }
+            println("Latest pip version: " + pipVersion)
+
+             if (env.BRANCH_NAME == 'master' && currentVersion != pipVersion) {
+                 stage('Release') {
+                     sh("poetry run twine upload --config-file /pypi/.pypirc dist/*")
+                 }
+             }
         }
     }
 }
