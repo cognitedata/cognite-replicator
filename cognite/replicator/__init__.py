@@ -27,13 +27,27 @@ def configure_logger(log_level: str = "INFO", log_path: Path = None) -> None:
     _configure_stackdriver_logging()
 
 
-def configure_databricks_logger(logger: logging.Logger, log_level, log_file_path) -> None:
-    """Configure logging for databricks."""
-    logging.getLogger("py4j").setLevel(logging.ERROR)  # To remove the unnecessary databricks logging output
-    file_handler = logging.FileHandler(log_file_path)
-    file_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+def configure_databricks_logger(
+    log_level=logging.INFO, logger: logging.Logger = None, file_path: str = None
+) -> logging.Logger:
+    """Configure logging for databricks.
+
+    Args:
+        log_level: the logging level
+        logger: the logger to use, default is root logger
+        file_path: the path to a file for storing logs to persistent disk if provided
+    """
+    if logger is None:
+        logger = logging.getLogger()
     logger.setLevel(log_level)
-    logger.handlers = [logging.StreamHandler(sys.stdout), file_handler]
+    log_handlers = [logging.StreamHandler(sys.stdout)]
+    if file_path is not None:
+        file_handler = TimedRotatingFileHandler(file_path, when="midnight", backupCount=7)
+        file_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+        log_handlers.append(file_handler)
+    logger.handlers = log_handlers
+    logging.getLogger("py4j").setLevel(logging.ERROR)  # To remove the unnecessary databricks logging output
+    return logger
 
 
 def _configure_stackdriver_logging() -> None:

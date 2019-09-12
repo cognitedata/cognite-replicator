@@ -24,7 +24,7 @@ podTemplate(
         configMapVolume(configMapName: 'codecov-script-configmap', mountPath: '/codecov-script'),
     ],
     envVars: [
-//       secretEnvVar(key: 'CODECOV_TOKEN', secretName: 'codecov-tokens', secretKey: 'cognite-sdk-python'),
+        secretEnvVar(key: 'CODECOV_TOKEN', secretName: 'codecov-tokens', secretKey: 'cognite-replicator'),
         envVar(key: 'CI', value: '1'),
         // /codecov-script/upload-report.sh relies on the following
         // Jenkins and Github environment variables.
@@ -50,7 +50,13 @@ podTemplate(
                 sh("poetry install")
             }
             stage('Test code') {
-                sh("poetry run pytest --cov cognite")
+                sh("poetry run pytest --cov cognite --cov-report=xml:coverage.xml --junitxml=test-report.xml")
+                junit(allowEmptyResults: true, testResults: '**/test-report.xml')
+                summarizeTestResults()
+            }
+            stage('Upload report to codecov.io') {
+                sh('bash </codecov-script/upload-report.sh')
+                step([$class: 'CoberturaPublisher', coberturaReportFile: 'coverage.xml'])
             }
             stage('Check code') {
                 sh("poetry run black -l 120 --check .")
@@ -59,13 +65,16 @@ podTemplate(
                 sh("poetry build")
             }
 
+            def pipVersion = sh(returnStdout: true, script: 'poetry run yolk -V cognite-replicator | sort -n | tail -1 | cut -d\\  -f 2').trim()
             def currentVersion = sh(returnStdout: true, script: 'sed -n -e "/^__version__/p" cognite/replicator/__init__.py | cut -d\\" -f2').trim()
             println("This version: " + currentVersion)
-//             if (env.BRANCH_NAME == 'master') {
-//                 stage('Release') {
-//                     sh("pipenv run twine upload --config-file /pypi/.pypirc dist/*")
-//                 }
-//             }
+            println("Latest pip version: " + pipVersion)
+
+             if (env.BRANCH_NAME == 'master' && currentVersion != pipVersion) {
+                 stage('Release') {
+                     sh("poetry run twine upload --config-file /pypi/.pypirc dist/*")
+                 }
+             }
         }
     }
 }
