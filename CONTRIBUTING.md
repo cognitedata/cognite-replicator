@@ -38,6 +38,12 @@ poetry run pytest --cov cognite --cov-report html \
 
 Open `htmlcov/index.html` in the browser to navigate through the report.
 
+### Run it from the command line
+
+```bash
+poetry run replicator -h
+```
+
 
 ### Release version conventions
 See https://semver.org/
