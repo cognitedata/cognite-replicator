@@ -1,9 +1,11 @@
 <a href="https://cognite.com/">
-    <img src="https://github.com/cognitedata/cognite-python-docs/blob/master/img/cognite_logo.png" alt="Cognite logo" title="Cognite" align="right" height="80" />
+    <img src="https://raw.githubusercontent.com/cognitedata/cognite-python-docs/master/img/cognite_logo.png" alt="Cognite logo" title="Cognite" align="right" height="80" />
 </a>
 
 # Cognite Python Replicator
 [![build](https://webhooks.dev.cognite.ai/build/buildStatus/icon?job=github-builds/cognite-replicator/master)](https://jenkins.cognite.ai/job/github-builds/job/cognite-replicator/job/master/)
+[![codecov](https://codecov.io/gh/cognitedata/cognite-replicator/branch/master/graph/badge.svg)](https://codecov.io/gh/cognitedata/cognite-replicator)
+[![PyPI version](https://badge.fury.io/py/cognite-replicator.svg)](https://pypi.org/project/cognite-replicator/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 
 Cognite Replicator is a Python package for replicating data across Cognite Data Fusion (CDF) projects. This package is
@@ -14,7 +16,6 @@ Copyright 2019 Cognite AS
 ## Prerequisites
 In order to start using the Replicator, you need:
 * Python3 (>= 3.6)
-* Cognite Python SDK
 * Two API keys, one for your source tenant and one for your destination tenant. Never include the API key directly in the code or upload the key to github. Instead, set the API key as an environment variable.
 
 This is how you set the API key as an environment variable on Mac OS and Linux:
@@ -24,9 +25,16 @@ $ export COGNITE_DESTINATION_API_KEY=<your destination API key>
 ```
 
 ## Installation
-The replicator is currently distribuated as Python wheels, but it can also be executed as a standalone script.
+The replicator is available on PyPI, and can also be executed as a standalone script.
 
-On this GitHub-page under **release** can you find the `.whl` file. By clicking on the file, you will automatically download the file. Then go into Databricks and into your cluster. Click on **Libraries** and **Install New**.  Choose your library type to be a **Python Whl**. By clicking on the area **Drop WHL here** you can navigate to where you have your `.whl`-file (most likely in your dowloads folder). Choose the `.whl` file, let the new library install and you are ready to replicate!
+To install it as a Python library that can be run from command line:
+```bash
+pip install cognite-replicator
+python -m cognite.replicator
+```
+
+For Databricks you can install it on a cluster. First, click on **Libraries** and **Install New**.  Choose your library type to be **PyPI**, and enter **cognite-replicator** as Package. Let the new library install and you are ready to replicate!
+
 
 ## Usage
 
@@ -74,13 +82,8 @@ configure_databricks_logger(log_level=logging.INFO, logger=logger)
 assets.replicate(CLIENT_SRC, CLIENT_DST)
 ```
 
-### Run it from command line
-```bash
-poetry run replicator -h
-```
-
 ## Changelog
-Wondering about upcoming or previous changes to the SDK? Take a look at the [CHANGELOG](https://github.com/cognitedata/cognite-replicator/blob/master/CHANGELOG.md).
+Wondering about upcoming or previous changes? Take a look at the [CHANGELOG](https://github.com/cognitedata/cognite-replicator/blob/master/CHANGELOG.md).
 
 ## Contributing
 Want to contribute? Check out [CONTRIBUTING](https://github.com/cognitedata/cognite-replicator/blob/master/CONTRIBUTING.md).
