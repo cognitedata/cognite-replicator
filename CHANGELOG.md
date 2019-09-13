@@ -19,5 +19,6 @@ Changes are grouped as follows
 
 ### Fixed
 - Use pre-commit hooks to run black and unit tests
+- Send logs to google cloud stackdriver if configured, needed the right dependencis.
 
 ## [0.2.2] - 2019-27-08
