@@ -16,7 +16,6 @@ Copyright 2019 Cognite AS
 ## Prerequisites
 In order to start using the Replicator, you need:
 * Python3 (>= 3.6)
-* Cognite Python SDK
 * Two API keys, one for your source tenant and one for your destination tenant. Never include the API key directly in the code or upload the key to github. Instead, set the API key as an environment variable.
 
 This is how you set the API key as an environment variable on Mac OS and Linux:
@@ -28,11 +27,10 @@ $ export COGNITE_DESTINATION_API_KEY=<your destination API key>
 ## Installation
 The replicator is available on PyPI, and can also be executed as a standalone script.
 
-In your Databricks cluster, click on **Libraries** and **Install New**.  Choose your library type to be **PyPI**, and enter **cognite-replicator** as Package. Let the new library install and you are ready to replicate!
-
-Or, via command line:
+To install it as a Python library that can be run from command line:
 ```bash
 pip install cognite-replicator
+python -m cognite.replicator
 ```
 
 Build and run it as a docker container:
@@ -40,6 +38,8 @@ Build and run it as a docker container:
 docker build -t cognite-replicator .
 docker run -it cognite-replicator
 ```
+
+For *Databricks* you can install it on a cluster. First, click on **Libraries** and **Install New**.  Choose your library type to be **PyPI**, and enter **cognite-replicator** as Package. Let the new library install and you are ready to replicate!
 
 
 ## Usage
@@ -85,13 +85,8 @@ configure_databricks_logger(log_level=logging.INFO)
 assets.replicate(CLIENT_SRC, CLIENT_DST)
 ```
 
-### Run it from command line
-```bash
-poetry run replicator -h
-```
-
 ## Changelog
-Wondering about upcoming or previous changes to the SDK? Take a look at the [CHANGELOG](https://github.com/cognitedata/cognite-replicator/blob/master/CHANGELOG.md).
+Wondering about upcoming or previous changes? Take a look at the [CHANGELOG](https://github.com/cognitedata/cognite-replicator/blob/master/CHANGELOG.md).
 
 ## Contributing
 Want to contribute? Check out [CONTRIBUTING](https://github.com/cognitedata/cognite-replicator/blob/master/CONTRIBUTING.md).
