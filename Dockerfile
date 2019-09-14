@@ -22,4 +22,3 @@ COPY . /code
 RUN poetry config settings.virtualenvs.create false && poetry install --no-dev --no-interaction --no-ansi
 
 ENTRYPOINT ["python", "-m", "cognite.replicator"]
-CMD []
