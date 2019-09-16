@@ -4,7 +4,7 @@ import sys
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 
-from . import assets, events, replication, time_series
+from . import assets, events, replication, time_series, __version__
 
 
 def configure_logger(log_level: str = "INFO", log_path: Path = None) -> None:
