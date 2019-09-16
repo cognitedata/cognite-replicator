@@ -54,15 +54,20 @@ podTemplate(
                 junit(allowEmptyResults: true, testResults: '**/test-report.xml')
                 summarizeTestResults()
             }
-            stage('Upload report to codecov.io') {
-                sh('bash </codecov-script/upload-report.sh')
-                step([$class: 'CoberturaPublisher', coberturaReportFile: 'coverage.xml'])
-            }
-            stage('Check code') {
+            stage('Validate code format') {
                 sh("poetry run black -l 120 --check .")
             }
             stage('Build') {
                 sh("poetry build")
+            }
+            stage('Build Docs') {
+                dir('./docs'){
+                    sh("poetry run sphinx-build -W -b html ./source ./build")
+                }
+            }
+            stage('Upload report to codecov.io') {
+                sh('bash </codecov-script/upload-report.sh')
+                step([$class: 'CoberturaPublisher', coberturaReportFile: 'coverage.xml'])
             }
 
             def pipVersion = sh(returnStdout: true, script: 'poetry run yolk -V cognite-replicator | sort -n | tail -1 | cut -d\\  -f 2').trim()

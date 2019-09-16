@@ -67,12 +67,13 @@ def new_metadata(
 ) -> Dict[str, Union[int, str]]:
     """
     Copies the objects metadata and adds three new fields to it providing information about the objects replication.
-    Three extra fields are added to an objects metadata (_replicatedSource, _replicatedTime, _replicatedInternalId).
-        _replicatedSource: The name of the project this object is replicated from.
-        _replicatedTime: The timestamp of when the object was replicated, all objects created/updated in the same
-                         execution will have the same timestamp.
-        _replicatedInternalId: The internal id of the source object that the destination object is being replicated
-                               from.
+
+    Fields Created
+        - **_replicatedSource**: The name of the project this object is replicated from.
+        - **_replicatedTime**: The timestamp of when the object was replicated, all objects created/updated in the same
+          execution will have the same timestamp.
+        - **_replicatedInternalId**: The internal id of the source object that the destination object
+          is being replicated from.
 
     Args:
         obj: The source object that is being replicated to the destination.
@@ -81,6 +82,7 @@ def new_metadata(
 
     Returns:
         The metadata dictionary for the replicated destination object based on the source object.
+
     """
     metadata: Dict[str, Any] = dict(obj.metadata if obj.metadata else {})
     metadata["_replicatedSource"] = project_src
