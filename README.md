@@ -33,7 +33,13 @@ pip install cognite-replicator
 python -m cognite.replicator
 ```
 
-For Databricks you can install it on a cluster. First, click on **Libraries** and **Install New**.  Choose your library type to be **PyPI**, and enter **cognite-replicator** as Package. Let the new library install and you are ready to replicate!
+Build and run it as a docker container:
+```bash
+docker build -t cognite-replicator .
+docker run -it cognite-replicator
+```
+
+For *Databricks* you can install it on a cluster. First, click on **Libraries** and **Install New**.  Choose your library type to be **PyPI**, and enter **cognite-replicator** as Package. Let the new library install and you are ready to replicate!
 
 
 ## Usage
@@ -64,7 +70,6 @@ datapoints.replicate(CLIENT_SRC, CLIENT_DST)
 
 ### Run it from databricks notebook
 ```python
-import os
 import logging
 
 from cognite.client import CogniteClient
@@ -76,9 +81,7 @@ DST_API_KEY = dbutils.secrets.get("cdf-api-keys", "destination-tenant")
 CLIENT_SRC = CogniteClient(api_key=SRC_API_KEY, client_name="cognite-replicator")
 CLIENT_DST = CogniteClient(api_key=DST_API_KEY, client_name="cognite-replicator")
 
-logger = logging.getLogger(__name__)
-
-configure_databricks_logger(log_level=logging.INFO, logger=logger)
+configure_databricks_logger(log_level=logging.INFO)
 assets.replicate(CLIENT_SRC, CLIENT_DST)
 ```
 
