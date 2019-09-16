@@ -46,11 +46,11 @@ def build_asset_update(
     Args:
         src_asset: The asset from the source to be replicated to destination.
         dst_asset: The asset from the destination that needs to be updated to reflect changes made to its source asset.
-        src_id_dst_map: **A dictionary of all the mappings of source asset id to destination asset id.
+        src_id_dst_map: \\*\\*A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
-        depth: **The depth of the asset within the asset hierarchy.
-        ** only needed when hierarchy becomes mutable
+        depth: \\*\\*The depth of the asset within the asset hierarchy.
+    \\*\\* only needed when hierarchy becomes mutable
 
     Returns:
         The updated asset object for the replication destination.
