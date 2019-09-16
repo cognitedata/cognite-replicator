@@ -14,7 +14,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.abspath("../.."))
-import cognite.replicator.__version__  # isort:skip
+from cognite.replicator import __version__  # isort:skip
 
 # -- Project information -----------------------------------------------------
 
@@ -23,8 +23,8 @@ project = "cognite-replicator"
 copyright = "2019, Cognite AS"
 author = "Cognite AS"
 
-# The full version, including alpha/beta/rc tags
-version = cognite.replicator.__version__.__version__
+# The short X.Y version.
+version = __version__
 # The full version, including alpha/beta/rc tags.
 release = version
 

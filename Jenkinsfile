@@ -71,7 +71,7 @@ podTemplate(
             }
 
             def pipVersion = sh(returnStdout: true, script: 'poetry run yolk -V cognite-replicator | sort -n | tail -1 | cut -d\\  -f 2').trim()
-            def currentVersion = sh(returnStdout: true, script: 'sed -n -e "/^__version__/p" cognite/replicator/__init__.py | cut -d\\" -f2').trim()
+            def currentVersion = sh(returnStdout: true, script: 'sed -n -e "/^__version__/p" cognite/replicator/__version__.py | cut -d\\" -f2').trim()
             println("This version: " + currentVersion)
             println("Latest pip version: " + pipVersion)
 
