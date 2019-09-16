@@ -6,8 +6,6 @@ from pathlib import Path
 
 from . import assets, events, replication, time_series
 
-__version__ = "0.2.1"
-
 
 def configure_logger(log_level: str = "INFO", log_path: Path = None) -> None:
     """Configure the logging to stdout and optionally local file and GCP stackdriver."""
