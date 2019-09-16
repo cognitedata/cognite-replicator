@@ -35,6 +35,7 @@ pytest-cov = "^2.7.1"
 sphinx = "^2.0"
 sphinx-rtd-theme = "^0.4"
 tox = "^3.0"
+toml = "^0.10.0"
 twine = "^1.10.0"
 yolk3k = "^0.9.0"
 
