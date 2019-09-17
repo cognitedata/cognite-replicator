@@ -70,17 +70,25 @@ def update_time_series(
     return dst_ts
 
 
-def filter_away_service_account_ts(ts_src: List[TimeSeries]) -> List[TimeSeries]:
+def has_security_category(ts: TimeSeries) -> bool:
+    return ts.security_categories is not None and len(ts.security_categories) > 0
+
+
+def is_service_account_metric(ts: TimeSeries) -> bool:
+    return "service_account_metrics" in ts.name
+
+
+def filter_non_copyable_ts(ts_src: List[TimeSeries]) -> List[TimeSeries]:
     """
-    Filter out the service account metrics time series so they won't be copied.
+    Filter out the service account metrics time series and secure time series so they won't be copied.
 
     Args:
         ts_src: A list of all the source time series.
 
     Returns:
-        A list of time series that are not service account metrics.
+        A list of time series that are not service account metrics or security protected.
     """
-    return [ts for ts in ts_src if "service_account_metrics" not in ts.name]
+    return [ts for ts in ts_src if not has_security_category(ts) and not is_service_account_metric(ts)]
 
 
 def copy_ts(
@@ -158,7 +166,7 @@ def replicate(
         f"that have been replicated then it will be linked."
     )
 
-    ts_src_not_service = filter_away_service_account_ts(ts_src)
+    ts_src_not_service = filter_non_copyable_ts(ts_src)
     logging.info(
         f"There are {(len(ts_src) - len(ts_src_not_service))} service"
         f"account metric time series that will not be copied."
