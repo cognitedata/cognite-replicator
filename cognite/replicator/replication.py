@@ -197,6 +197,7 @@ def thread(
         client: The Cognite Client for the destination project.
 
     """
+
     threads = []
     chunk_size = int(len(src_objects) / num_threads)
     logging.info(f"Thread chunk size: {chunk_size}")
