@@ -71,7 +71,7 @@ def update_time_series(
 
 
 def has_security_category(ts: TimeSeries) -> bool:
-    return ts.security_categories and len(ts.security_categories) > 0
+    return ts.security_categories is not None and len(ts.security_categories) > 0
 
 
 def is_service_account_metric(ts: TimeSeries) -> bool:
@@ -86,9 +86,9 @@ def filter_non_copyable_ts(ts_src: List[TimeSeries]) -> List[TimeSeries]:
         ts_src: A list of all the source time series.
 
     Returns:
-        A list of time series that are not service account metrics.
+        A list of time series that are not service account metrics or security protected.
     """
-    return [ts for ts in ts_src if has_security_category(ts) and not is_service_account_metric(ts)]
+    return [ts for ts in ts_src if not has_security_category(ts) and not is_service_account_metric(ts)]
 
 
 def copy_ts(
