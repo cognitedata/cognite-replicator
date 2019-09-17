@@ -197,8 +197,6 @@ def thread(
         client: The Cognite Client for the destination project.
 
     """
-    # TODO: change to multiprocess, apply batch logic in each thread instead
-    # of making a thread for each individual object
     threads = []
     chunk_size = int(len(src_objects) / num_threads)
     logging.info(f"Thread chunk size: {chunk_size}")
