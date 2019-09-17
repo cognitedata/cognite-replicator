@@ -51,8 +51,7 @@ podTemplate(
                 sh("poetry install")
             }
             stage('Test code') {
-                sh("pyenv local")
-                sh("poetry run tox -p auto")
+                sh("tox -p auto")
                 junit(allowEmptyResults: true, testResults: '**/test-report.xml')
                 summarizeTestResults()
             }
