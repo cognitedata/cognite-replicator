@@ -51,7 +51,7 @@ podTemplate(
                 sh("poetry install")
             }
             stage('Test code') {
-                sh("poetry run tox -p auto")
+                sh("poetry run tox")
                 junit(allowEmptyResults: true, testResults: '**/test-report.xml')
                 summarizeTestResults()
             }
