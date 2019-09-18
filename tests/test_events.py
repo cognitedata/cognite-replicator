@@ -9,21 +9,27 @@ def test_create_event():
         Event(metadata={}, id=1007, asset_ids=[3], start_time=0, end_time=1),
         Event(metadata={}, id=2007, asset_ids=[7], start_time=1, end_time=2),
         Event(start_time=2, asset_ids=[5], end_time=4, metadata={}),
+        Event(start_time=6, end_time=8, metadata={}),
     ]
     runtime = time.time() * 1000
     id_mapping = {3: 333, 7: 777, 5: 555}
-    created_event0 = create_event(events_src[0], id_mapping, "Road to the Holy Grail", runtime)
-    created_event1 = create_event(events_src[1], id_mapping, "Road to the Holy Grail", runtime)
-    created_event2 = create_event(events_src[2], id_mapping, "Road to the Holy Grail", runtime)
-    assert created_event0.metadata["_replicatedInternalId"] == events_src[0].id
-    assert created_event1.metadata["_replicatedInternalId"] == events_src[1].id
-    assert created_event2.metadata["_replicatedInternalId"] == events_src[2].id
-    assert created_event0.metadata["_replicatedSource"] == "Road to the Holy Grail"
-    assert created_event1.metadata["_replicatedSource"] == "Road to the Holy Grail"
-    assert created_event2.metadata["_replicatedSource"] == "Road to the Holy Grail"
-    assert created_event0.asset_ids[0] == id_mapping[events_src[0].asset_ids[0]]
-    assert created_event1.asset_ids[0] == id_mapping[events_src[1].asset_ids[0]]
-    assert created_event2.asset_ids[0] == id_mapping[events_src[2].asset_ids[0]]
+    created_events = []
+    for i, event in enumerate(events_src):
+        created_events.append(create_event(event, id_mapping, "Road to the Holy Grail {}".format(i), runtime))
+
+    assert len(created_events) == len(events_src)
+
+    for i, event_obj in enumerate(created_events):
+        assert event_obj.metadata["_replicatedInternalId"] == events_src[i].id
+
+    for i, event_obj in enumerate(created_events):
+        assert event_obj.metadata["_replicatedSource"] == "Road to the Holy Grail {}".format(i)
+
+    for i, event_obj in enumerate(created_events):
+        if event_obj.asset_ids is not None:
+            assert event_obj.asset_ids[0] == id_mapping[events_src[i].asset_ids[0]]
+        else:
+            assert event_obj.asset_ids is None
 
 
 def test_update_event():
