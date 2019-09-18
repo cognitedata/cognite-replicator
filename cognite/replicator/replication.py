@@ -48,7 +48,7 @@ def existing_mapping(*objects: List[Asset], ids: Dict[int, int] = None) -> Dict[
     return ids
 
 
-def get_asset_ids(ids: List[int], src_dst_ids_assets: Dict[int, int]) -> List[int]:
+def get_asset_ids(ids: List[int], src_dst_ids_assets: Dict[int, int]) -> Union[List[int], None]:
     """
     Create the list of destination asset ids from the list of source asset ids.
 
@@ -59,6 +59,9 @@ def get_asset_ids(ids: List[int], src_dst_ids_assets: Dict[int, int]) -> List[in
     Returns:
         A list of the destination asset ids for the destination object.
     """
+    if ids is None:
+        return None
+
     return [src_dst_ids_assets[src_asset_id] for src_asset_id in ids if src_asset_id in src_dst_ids_assets]
 
 
