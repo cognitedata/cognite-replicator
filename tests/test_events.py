@@ -28,8 +28,6 @@ def test_create_event():
     for i, event_obj in enumerate(created_events):
         if event_obj.asset_ids is not None:
             assert event_obj.asset_ids[0] == id_mapping[events_src[i].asset_ids[0]]
-        else:
-            assert event_obj.asset_ids is None
 
 
 def test_update_event():
