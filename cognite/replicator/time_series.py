@@ -70,25 +70,16 @@ def update_time_series(
     return dst_ts
 
 
-def has_security_category(ts: TimeSeries) -> bool:
+def _has_security_category(ts: TimeSeries) -> bool:
     return ts.security_categories is not None and len(ts.security_categories) > 0
 
 
-def is_service_account_metric(ts: TimeSeries) -> bool:
+def _is_service_account_metric(ts: TimeSeries) -> bool:
     return "service_account_metrics" in ts.name
 
 
-def filter_non_copyable_ts(ts_src: List[TimeSeries]) -> List[TimeSeries]:
-    """
-    Filter out the service account metrics time series and secure time series so they won't be copied.
-
-    Args:
-        ts_src: A list of all the source time series.
-
-    Returns:
-        A list of time series that are not service account metrics or security protected.
-    """
-    return [ts for ts in ts_src if not has_security_category(ts) and not is_service_account_metric(ts)]
+def _is_copyable(ts: TimeSeries) -> bool:
+    return not _is_service_account_metric(ts) and not _has_security_category(ts)
 
 
 def copy_ts(
@@ -135,6 +126,8 @@ def replicate(
     num_threads: int = 1,
     delete_replicated_if_not_in_src: bool = False,
     delete_not_replicated_in_dst: bool = False,
+    skip_unlinkable: bool = False,
+    skip_nonasset: bool = False,
 ):
     """
     Replicates all the time series from the source project into the destination project.
@@ -148,6 +141,8 @@ def replicate(
         but no longer in the source project (Default=False).
         delete_not_replicated_in_dst: If True, will delete assets from the destination if they were not replicated
         from the source (Default=False).
+        skip_unlinkable: If no assets exist in the destination for a time series, do not replicate it
+        skip_nonasset: If a time series has no associated assets, do not replicate it
     """
     project_src = client_src.config.project
     project_dst = client_dst.config.project
@@ -166,10 +161,11 @@ def replicate(
         f"that have been replicated then it will be linked."
     )
 
-    ts_src_not_service = filter_non_copyable_ts(ts_src)
+    ts_src_filtered = replication.filter_objects(
+        ts_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset, _is_copyable
+    )
     logging.info(
-        f"There are {(len(ts_src) - len(ts_src_not_service))} service"
-        f"account metric time series that will not be copied."
+        f"Filtered out {len(ts_src) - len(ts_src_filtered)} time series. {len(ts_src_filtered)} time series remain."
     )
 
     replicated_runtime = int(time.time()) * 1000
@@ -180,11 +176,11 @@ def replicate(
         f"source ({project_src}) to destination ({project_dst})."
     )
 
-    if len(ts_src_not_service) > batch_size:
+    if len(ts_src_filtered) > batch_size:
         replication.thread(
             num_threads=num_threads,
             copy=copy_ts,
-            src_objects=ts_src_not_service,
+            src_objects=ts_src_filtered,
             src_id_dst_obj=src_id_dst_ts,
             src_dst_ids_assets=src_dst_ids_assets,
             project_src=project_src,
@@ -193,7 +189,7 @@ def replicate(
         )
     else:
         copy_ts(
-            src_ts=ts_src_not_service,
+            src_ts=ts_src_filtered,
             src_id_dst_ts=src_id_dst_ts,
             src_dst_ids_assets=src_dst_ids_assets,
             project_src=project_src,
@@ -202,7 +198,7 @@ def replicate(
         )
 
     logging.info(
-        f"Finished copying and updating {len(ts_src)} time series from "
+        f"Finished copying and updating {len(ts_src_filtered)} time series from "
         f"source ({project_src}) to destination ({project_dst})."
     )
 

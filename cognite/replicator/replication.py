@@ -1,6 +1,6 @@
 import logging
 import threading
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import requests
 from cognite.client import CogniteClient
@@ -25,6 +25,55 @@ def make_id_object_map(objects: List[Union[Asset, Event, TimeSeries]]) -> Dict[i
         for obj in objects
         if obj.metadata and obj.metadata["_replicatedInternalId"]
     }
+
+
+def filter_objects(
+    objects: Union[List[Event], List[TimeSeries]],
+    src_dst_ids_assets: Dict[int, int],
+    skip_unlinkable: bool = False,
+    skip_nonasset: bool = False,
+    filter_fn: Optional[Callable[[Union[Event, TimeSeries]], bool]] = None,
+) -> Union[List[Event], List[TimeSeries]]:
+    """Filters out objects based on their assets and optionally custom filter logic
+
+    Args:
+        objects: A list of all the objects to filter.
+        src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
+        skip_unlinkable: If True, excludes objects whose assets haven't been replicated in the destination
+        skip_nonasset: If True, excludes objects without any associated assets
+        filter_fn: If specified, is used to filter the objects in addition to the existing asset filters.
+
+    Returns:
+        A list of objects that meet the criteria.
+    """
+    filtered_objs = []
+
+    def has_assets(obj):
+        is_multi_asset = hasattr(obj, "asset_ids")
+        return (is_multi_asset and getattr(obj, "asset_ids", None) is not None) or (
+            not is_multi_asset and getattr(obj, "asset_id", None) is not None
+        )
+
+    for object in objects:
+        if filter_fn is not None and not filter_fn(object):
+            continue
+
+        if skip_nonasset and not has_assets(object):
+            continue
+
+        if skip_unlinkable and has_assets(object):
+            linkable = False
+            asset_id_list = getattr(object, "asset_ids", [getattr(object, "asset_id", -1)])
+            for asset_id in asset_id_list:
+                if asset_id in src_dst_ids_assets:
+                    linkable = True
+                    break
+
+            if not linkable:
+                continue
+        filtered_objs.append(object)
+
+    return filtered_objs
 
 
 def existing_mapping(*objects: List[Asset], ids: Dict[int, int] = None) -> Dict[int, int]:
@@ -113,9 +162,9 @@ def make_objects_batch(
     Args:
         src_objects: A list of objects to be replicated from a source.
         src_id_dst_map: A dictionary of source object ids to the matching destination object.
+        src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         create: The function to be used in order to create all the objects in CDF.
         update: The function to be used in order to update the existing objects in CDF.
-        src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         replicated_runtime: The timestamp to be used in the new replicated metadata.
         depth: The depth of the asset within the asset hierarchy, only used for making assets.
