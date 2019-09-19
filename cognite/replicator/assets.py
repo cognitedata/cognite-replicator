@@ -142,6 +142,9 @@ def replicate(
     client_dst: CogniteClient,
     delete_replicated_if_not_in_src: bool = False,
     delete_not_replicated_in_dst: bool = False,
+    subtree_external_id: str = None,
+    subtree_id: int = None,
+    subtree_max_depth: int = None,
 ):
     """
     Replicates all the assets from the source project into the destination project.
@@ -153,12 +156,21 @@ def replicate(
         but no longer in the source project (Default=False).
         delete_not_replicated_in_dst: If True, will delete assets from the destination if they were not replicated
         from the source (Default=False).
+        subtree_external_id: str = None,
+        subtree_id: int = None,
+        subtree_max_depth: int = None,
     """
     project_src = client_src.config.project
     project_dst = client_dst.config.project
 
-    assets_src = client_src.assets.list(limit=None)
+    if subtree_id is not None or subtree_external_id is not None:
+        assets_src = client_src.assets.retrieve_subtree(
+            id=subtree_id, external_id=subtree_external_id, depth=subtree_max_depth
+        )
+    else:
+        assets_src = client_src.assets.list(limit=None)
     assets_dst = client_dst.assets.list(limit=None)
+
     logging.info(f"There are {len(assets_src)} existing assets in source ({project_src}).")
     logging.info(f"There are {len(assets_dst)} existing assets in destination ({project_dst}).")
 
