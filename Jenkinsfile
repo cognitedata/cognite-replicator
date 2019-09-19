@@ -47,10 +47,11 @@ podTemplate(
                 sh("pip3 install poetry")
             }
             stage('Install all dependencies') {
+                sh("pyenv local 3.6.6 3.7.2")
                 sh("poetry install")
             }
             stage('Test code') {
-                sh("poetry run pytest --cov cognite --cov-report=xml:coverage.xml --junitxml=test-report.xml")
+                sh("poetry run tox")
                 junit(allowEmptyResults: true, testResults: '**/test-report.xml')
                 summarizeTestResults()
             }
