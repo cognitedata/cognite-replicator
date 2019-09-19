@@ -164,9 +164,7 @@ def replicate(
     if skip_unlinkable or skip_nonasset:
         pre_filter_length = len(events_src)
         events_src = replication.filter_objects(events_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset)
-        logging.info(
-            f"Filtered out {pre_filter_length - len(events_src)} events. {len(events_src)} events remain."
-        )
+        logging.info(f"Filtered out {pre_filter_length - len(events_src)} events. {len(events_src)} events remain.")
 
     replicated_runtime = int(time.time()) * 1000
     logging.info(f"These copied/updated events will have a replicated run time of: {replicated_runtime}.")
