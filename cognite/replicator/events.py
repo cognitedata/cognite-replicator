@@ -126,6 +126,8 @@ def replicate(
     num_threads: int = 1,
     delete_replicated_if_not_in_src: bool = False,
     delete_not_replicated_in_dst: bool = False,
+    skip_unlinkable: bool = False,
+    skip_nonasset: bool = False,
 ):
     """
     Replicates all the events from the source project into the destination project.
@@ -139,6 +141,8 @@ def replicate(
         but no longer in the source project (Default=False).
         delete_not_replicated_in_dst: If True, will delete events from the destination if they were not replicated
         from the source (Default=False).
+        skip_unlinkable: If no assets exist in the destination for an event, do not replicate it
+        skip_nonasset: If an event has no associated assets, do not replicate it
     """
     project_src = client_src.config.project
     project_dst = client_dst.config.project
@@ -156,6 +160,13 @@ def replicate(
         f"If an events asset ids is one of the {len(src_dst_ids_assets)} assets "
         f"that have been replicated then it will be linked."
     )
+
+    if skip_unlinkable or skip_nonasset:
+        pre_filter_length = len(events_src)
+        events_src = replication.filter_objects(events_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset)
+        logging.info(
+            f"Filtered out {pre_filter_length - len(events_src)} events. {len(events_src)} events remain."
+        )
 
     replicated_runtime = int(time.time()) * 1000
     logging.info(f"These copied/updated events will have a replicated run time of: {replicated_runtime}.")

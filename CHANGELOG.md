@@ -23,3 +23,17 @@ Changes are grouped as follows
 - Send logs to google cloud stackdriver if configured, needed the right dependencis.
 
 ## [0.2.2] - 2019-27-08
+
+### Fixed
+- Time series replication no longer attempts to create security category-protected time series
+
+## [0.2.3] - 2019-19-08
+
+### Fixed
+- Events without assetIds can now be replicated as expected
+
+## [0.2.4] - 2019-19-09
+
+### Added
+- Support for asset replication by subtree
+- Support for restricting event and time series replication to events/time series with replicated assets

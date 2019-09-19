@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from cognite.client import CogniteClient
 from cognite.client.data_classes.assets import Asset
@@ -84,7 +84,14 @@ def find_children(assets: List[Asset], parents: List[Asset]) -> List[Asset]:
 
 
 def create_hierarchy(
-    src_assets: List[Asset], dst_assets: List[Asset], project_src: str, runtime: int, client: CogniteClient
+    src_assets: List[Asset],
+    dst_assets: List[Asset],
+    project_src: str,
+    runtime: int,
+    client: CogniteClient,
+    subtree_id: Optional[int] = None,
+    subtree_external_id: Optional[str] = None,
+    subtree_max_depth: Optional[int] = None,
 ):
     """
     Creates/updates the asset hierarchy in batches by depth, starting with the root assets and then moving on to the
@@ -96,9 +103,14 @@ def create_hierarchy(
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
         client: The client corresponding to the destination project.
+        subtree_id: The id of the subtree root to replicate,
+        subtree_external_id: The external id of the subtree root to replicate,
+        subtree_max_depth: The maximum tree depth to replicate,
     """
     depth = 0
     parents = [None]  # root nodes parent id is None
+    if subtree_id is not None or subtree_external_id is not None:
+        unlink_subtree_parent(src_assets, subtree_id, subtree_external_id)
     children = find_children(src_assets, parents)
 
     src_dst_ids: Dict[int, int] = {}
@@ -132,9 +144,37 @@ def create_hierarchy(
         )
 
         depth += 1
+        if subtree_max_depth is not None and depth > subtree_max_depth:
+            logging.info("Reached max depth")
+            break
         children = find_children(src_assets, children)
 
     return src_dst_ids
+
+
+def unlink_subtree_parent(
+    src_assets: List[Asset], subtree_id: Optional[int] = None, subtree_external_id: Optional[str] = None
+):
+    """Sets the parentId of the subtree root to be None
+
+    Args:
+        src_assets: A list of the assets that are in the source.
+        subtree_id: The id of the subtree root,
+        subtree_external_id: The external id of the subtree root,
+    """
+    logging.info("Searching for subtree parent...")
+    for asset in src_assets:
+        if (subtree_id is not None and asset.id == subtree_id) or (
+            subtree_external_id is not None and asset.external_id == subtree_external_id
+        ):
+            logging.info(f"Found the subtree root: {asset.id} with parent id: {asset.parent_id}")
+            if asset.parent_id:
+                asset.metadata["_replicatedOriginalParentId"] = asset.parent_id
+            if asset.parent_external_id:
+                asset.metadata["_replicatedOriginalParentExternalId"] = asset.parent_external_id
+            asset.parent_id = None
+            asset.parent_external_id = None
+            return
 
 
 def replicate(
@@ -142,9 +182,9 @@ def replicate(
     client_dst: CogniteClient,
     delete_replicated_if_not_in_src: bool = False,
     delete_not_replicated_in_dst: bool = False,
-    subtree_external_id: str = None,
-    subtree_id: int = None,
-    subtree_max_depth: int = None,
+    subtree_id: Optional[int] = None,
+    subtree_external_id: Optional[str] = None,
+    subtree_max_depth: Optional[int] = None,
 ):
     """
     Replicates all the assets from the source project into the destination project.
@@ -156,14 +196,15 @@ def replicate(
         but no longer in the source project (Default=False).
         delete_not_replicated_in_dst: If True, will delete assets from the destination if they were not replicated
         from the source (Default=False).
-        subtree_external_id: str = None,
-        subtree_id: int = None,
-        subtree_max_depth: int = None,
+        subtree_id: The id of the subtree root to replicate,
+        subtree_external_id: The external id of the subtree root to replicate,
+        subtree_max_depth: The maximum tree depth to replicate,
     """
     project_src = client_src.config.project
     project_dst = client_dst.config.project
 
     if subtree_id is not None or subtree_external_id is not None:
+        logging.info(f"Loading a subtree with id {subtree_id} or external id {subtree_external_id}")
         assets_src = client_src.assets.retrieve_subtree(
             id=subtree_id, external_id=subtree_external_id, depth=subtree_max_depth
         )
@@ -181,7 +222,16 @@ def replicate(
         f"Starting to copy and update {len(assets_src)} assets from "
         f"source ({project_src}) to destination ({project_dst})."
     )
-    src_dst_ids_assets = create_hierarchy(assets_src, assets_dst, project_src, replicated_runtime, client_dst)
+    src_dst_ids_assets = create_hierarchy(
+        assets_src,
+        assets_dst,
+        project_src,
+        replicated_runtime,
+        client_dst,
+        subtree_id,
+        subtree_external_id,
+        subtree_max_depth,
+    )
 
     logging.info(
         f"Finished copying and updating {len(src_dst_ids_assets)} assets from "
