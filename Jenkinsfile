@@ -1,6 +1,8 @@
 @Library('jenkins-helpers@v0.1.12') _
 
 def label = "cognite-replicator-${UUID.randomUUID().toString()}"
+def imageName = "cognite/cognite-replicator"
+def devImageName = "cognite/cognite-replicator-dev"
 
 podTemplate(
     label: label,
@@ -81,6 +83,31 @@ podTemplate(
                      sh("poetry run twine upload --config-file /pypi/.pypirc dist/*")
                  }
              }
+        }
+
+        container('docker') {
+            stage('Build docker image') {
+                sh("docker build -t ${imageName}:${gitCommit} .")
+            }
+
+            stage('Login to docker hub') {
+                sh('cat /dockerhub-credentials/DOCKER_PASSWORD | docker login -u "$(cat /dockerhub-credentials/DOCKER_USERNAME)" --password-stdin')
+            }
+
+            if (env.CHANGE_ID) {
+                stage("Publish PR image") {
+                    def prImage = "${devImageName}:pr-${env.CHANGE_ID}"
+                    sh("docker tag ${imageName}:${gitCommit} ${prImage}")
+                    sh("docker push ${prImage}")
+                    pullRequest.comment("[pr-bot]\nRun this build with `docker run --rm -it -p 3000:3000 ${prImage}`")
+                }
+            } else if (env.BRANCH_NAME == 'master') {
+                stage('Push to GCR') {
+                    sh("docker tag ${imageName}:${gitCommit} ${imageName}:latest")
+                    sh("docker push ${imageName}:${gitCommit}")
+                    sh("docker push ${imageName}:latest")
+                }
+            }
         }
     }
 }
