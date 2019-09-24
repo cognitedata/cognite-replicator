@@ -3,6 +3,7 @@ import threading
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import requests
+
 from cognite.client import CogniteClient
 from cognite.client.data_classes import Event, TimeSeries
 from cognite.client.data_classes.assets import Asset
@@ -23,7 +24,7 @@ def make_id_object_map(objects: List[Union[Asset, Event, TimeSeries]]) -> Dict[i
     return {
         int(obj.metadata["_replicatedInternalId"]): obj
         for obj in objects
-        if obj.metadata and obj.metadata["_replicatedInternalId"]
+        if obj.metadata and obj.metadata.get("_replicatedInternalId")
     }
 
 
@@ -91,7 +92,7 @@ def existing_mapping(*objects: List[Asset], ids: Dict[int, int] = None) -> Dict[
         ids = {}
 
     for obj in objects:
-        if obj.metadata and obj.metadata["_replicatedInternalId"]:
+        if obj.metadata and obj.metadata.get("_replicatedInternalId"):
             ids[int(obj.metadata["_replicatedInternalId"])] = obj.id
 
     return ids
