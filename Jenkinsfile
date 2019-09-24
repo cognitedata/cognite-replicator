@@ -19,6 +19,12 @@ podTemplate(
             resourceLimitCpu: '1000m',
             resourceLimitMemory: '800Mi',
             ttyEnabled: true),
+        containerTemplate(name: 'docker',
+            command: '/bin/cat -',
+            image: 'docker:18.06.1-ce',
+            resourceLimitCpu: '1000m',
+            resourceLimitMemory: '1000Mi',
+            ttyEnabled: true),
     ],
     volumes: [
         secretVolume(secretName: 'jenkins-docker-builder', mountPath: '/jenkins-docker-builder', readOnly: true),
