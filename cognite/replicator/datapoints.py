@@ -25,28 +25,31 @@ def retrieve_insert(
     client_dst: CogniteClient,
     dp_limit: int,
 ):
-
+    logging.info(f"Thread {thread_id}: Starting datapoint replication...")
+    updated_count = 0
     for src_ext_id in src_ext_id_list_parts:
         if src_ext_id in dst_ext_id_list:
             # SOURCE
             latest_src_dp = client_src.datapoints.retrieve_latest(external_id=src_ext_id)
             if not latest_src_dp:
                 logging.info(
-                    f"Thread {thread_id}: No datapoints found in source -- skipping time series associated with: {src_ext_id}"
+                    f"Thread {thread_id}: No datapoints found in source -- "
+                    "skipping time series associated with: {src_ext_id}"
                 )
                 continue
 
             logging.debug(
                 f"Thread {thread_id}: Latest timestamp source with ext_id {src_ext_id}: {latest_src_dp[0].timestamp}"
             )
-            latest_src_time = latest_src_dp[0].timestamp
+            latest_src_time = latest_src_dp[0].timestamp + 1  # +1 because end time exclusive
 
             # DESTINATION
             latest_destination_dp = client_dst.datapoints.retrieve_latest(external_id=src_ext_id)
             if not latest_destination_dp:
                 latest_dst_time = 0
                 logging.info(
-                    f"Thread {thread_id}: No datapoints in destination, starting copying from time(epoch): {latest_dst_time}"
+                    f"Thread {thread_id}: No datapoints in destination, "
+                    "starting copying from time(epoch): {latest_dst_time}"
                 )
             elif latest_destination_dp:
                 latest_dst_time = latest_destination_dp[0].timestamp
@@ -60,8 +63,8 @@ def retrieve_insert(
             logging.info(f"Thread {thread_id}: Number of datapoints: {len(datapoints)}")
             new_objects = [(o.timestamp, o.value) for o in datapoints]
             client_dst.datapoints.insert(new_objects, external_id=src_ext_id)
-            # Update latest datapoint in destination for initializing next replication
-            latest_destination_dp = client_dst.datapoints.retrieve_latest(external_id=src_ext_id)
+            updated_count += 1
+    logging.info(f"Thread {thread_id}: Done! {updated_count} time series updated")
 
 
 def replicate(client_src, client_dst, keep_asset_connection=True, num_threads=10, limit=100000):
