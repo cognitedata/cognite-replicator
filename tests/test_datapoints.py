@@ -2,7 +2,7 @@ from cognite.replicator import datapoints
 
 
 def test_get_chunk():
-    """Should split the array [1..18] as follows:
+    """Should split the array [0..17] as follows:
 
     [(0, [0, 1]),
      (1, [2, 3]),
