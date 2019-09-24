@@ -251,9 +251,9 @@ def thread(
     """
 
     threads = []
-    chunk_size = int(len(src_objects) / num_threads)
+    chunk_size = len(src_objects) // num_threads
     logging.info(f"Thread chunk size: {chunk_size}")
-    remainder = len(src_objects) - (chunk_size * num_threads)
+    remainder = len(src_objects) % num_threads
     logging.info(f"Thread remainder size: {remainder}\n")
 
     i = 0
