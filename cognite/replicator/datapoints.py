@@ -78,20 +78,19 @@ def retrieve_insert(
         f"{len(ext_ids) - updated_timeseries_count} time series up-to-date. "
         f"{total_datapoints_copied} datapoints copied in total"
     )
-    return True
 
 
 def _get_chunk(lst: List[Any], num_chunks: int, chunk_number: int) -> List[Any]:
-    """Returns a slice of the given list such that
+    """Returns a slice of the given list such that all slices are as even in size as possible.
 
     Args:
         lst: The list to slice
         num_chunks: The amount of chunks that the list should be split into
-        chunk_number: Which chunk of the lst to pull
+        chunk_number: Which chunk of the lst to return
 
     Returns:
-        The chunk_number-th chunk of lst such that the chunk has length chunk_size or chunk_size + 1, so that the concat
-        of all chunks is equivalent to the full lst
+        The chunk_number-th chunk of lst such that the concat of all num_chunks chunks is equivalent to the full lst,
+        and each chunk has equal size +-1
     """
     chunk_size = len(lst) // num_chunks
     remainder = len(lst) % num_chunks
