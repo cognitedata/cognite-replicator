@@ -5,6 +5,7 @@ import multiprocessing as mp
 from typing import Any, List, Optional
 
 from cognite.client import CogniteClient
+from cognite.client.exceptions import CogniteAPIError
 
 
 def retrieve_insert(
@@ -33,51 +34,64 @@ def retrieve_insert(
     logging.info(f"Thread {thread_id}: Starting datapoint replication...")
     updated_timeseries_count = 0
     total_datapoints_copied = 0
+    failed_external_ids = []
     for ext_id in ext_ids:
-        # SOURCE
-        latest_src_dp = client_src.datapoints.retrieve_latest(external_id=ext_id)
-        if not latest_src_dp:
-            logging.info(
-                f"Thread {thread_id}: No datapoints found in source -- "
-                "skipping time series associated with: {src_ext_id}"
-            )
-            continue
+        try:
+            # SOURCE
+            latest_src_dp = client_src.datapoints.retrieve_latest(external_id=ext_id)
+            if not latest_src_dp:
+                logging.info(
+                    f"Thread {thread_id}: No datapoints found in source -- "
+                    f"skipping time series associated with: {ext_id}"
+                )
+                continue
 
-        logging.debug(f"Thread {thread_id}: Latest timestamp source with ext_id {ext_id}: {latest_src_dp[0].timestamp}")
-        latest_src_time = latest_src_dp[0].timestamp + 1  # +1 because end time is exclusive for retrieve()
-
-        # DESTINATION
-        latest_destination_dp = client_dst.datapoints.retrieve_latest(external_id=ext_id)
-        latest_dst_time = 0
-        if not latest_destination_dp:
             logging.debug(
-                f"Thread {thread_id}: No datapoints in destination, "
-                "starting copying from time(epoch): {latest_dst_time}"
+                f"Thread {thread_id}: Latest timestamp source with ext_id {ext_id}: {latest_src_dp[0].timestamp}"
             )
-        elif latest_destination_dp:
-            latest_dst_time = latest_destination_dp[0].timestamp + 1  # +1 because start time is inclusive for retrieve
+            latest_src_time = latest_src_dp[0].timestamp + 1  # +1 because end time is exclusive for retrieve()
 
-        if latest_dst_time >= latest_src_time:
-            logging.debug(f"Skipping {ext_id} because already up-to-date")
-            continue
+            # DESTINATION
+            latest_destination_dp = client_dst.datapoints.retrieve_latest(external_id=ext_id)
+            latest_dst_time = 0
+            if not latest_destination_dp:
+                logging.debug(
+                    f"Thread {thread_id}: No datapoints in destination, "
+                    f"starting copying from time(epoch): {latest_dst_time}"
+                )
+            elif latest_destination_dp:
+                # +1 because start time is inclusive for retrieve()
+                latest_dst_time = latest_destination_dp[0].timestamp + 1
 
-        # Retrieve and insert missing datapoints
-        logging.debug(f"Thread {thread_id} is retrieving datapoints between {latest_dst_time} and {latest_src_time}")
+            if latest_dst_time >= latest_src_time:
+                logging.debug(f"Skipping {ext_id} because already up-to-date")
+                continue
 
-        datapoints = client_src.datapoints.retrieve(
-            external_id=ext_id, start=latest_dst_time, end=latest_src_time, limit=limit
-        )
-        logging.debug(f"Thread {thread_id}: Number of datapoints: {len(datapoints)}")
-        if not mock_run:
-            client_dst.datapoints.insert(datapoints, external_id=ext_id)
-        updated_timeseries_count += 1
-        total_datapoints_copied += len(datapoints)
+            # Retrieve and insert missing datapoints
+            logging.debug(
+                f"Thread {thread_id} is retrieving datapoints between {latest_dst_time} and {latest_src_time}"
+            )
+
+            datapoints = client_src.datapoints.retrieve(
+                external_id=ext_id, start=latest_dst_time, end=latest_src_time, limit=limit
+            )
+            logging.debug(f"Thread {thread_id}: Number of datapoints: {len(datapoints)}")
+            if not mock_run:
+                client_dst.datapoints.insert(datapoints, external_id=ext_id)
+            updated_timeseries_count += 1
+            total_datapoints_copied += len(datapoints)
+        except CogniteAPIError:
+            failed_external_ids.append(ext_id)
 
     logging.info(
         f"Thread {thread_id}: Done! {updated_timeseries_count} time series updated, "
         f"{len(ext_ids) - updated_timeseries_count} time series up-to-date. "
-        f"{total_datapoints_copied} datapoints copied in total"
+        f"{total_datapoints_copied} datapoints copied in total. "
+        f"{len(failed_external_ids)} failure(s)."
     )
+
+    if len(failed_external_ids):
+        logging.error(f"Sample of failed ids: {failed_external_ids[:min(10, len(failed_external_ids))]}")
 
 
 def _get_chunk(lst: List[Any], num_chunks: int, chunk_number: int) -> List[Any]:
@@ -108,7 +122,7 @@ def replicate(
     num_threads: int = 10,
     limit: Optional[int] = None,
     external_ids: Optional[List[str]] = None,
-    mock_run: Optional[bool] = False,
+    mock_run: bool = False,
 ):
     """
     Replicates data points from the source project into the destination project for all time series that
