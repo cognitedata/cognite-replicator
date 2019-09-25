@@ -107,7 +107,7 @@ podTemplate(
                     def prImage = "${devImageName}:pr-${env.CHANGE_ID}"
                     sh("docker tag ${imageName}:${gitCommit} ${prImage}")
                     sh("docker push ${prImage}")
-                    pullRequest.comment("[pr-bot]\nRun this build with `docker run --rm -it -p 3000:3000 ${prImage}`")
+                    pullRequest.comment("[pr-bot]\nRun this build with `docker run --rm -it ${prImage}`")
                 }
             } else if (env.BRANCH_NAME == 'master') {
                 stage('Push to GCR') {
