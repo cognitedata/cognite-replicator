@@ -2,7 +2,7 @@
 
 import logging
 import multiprocessing as mp
-from math import ceil
+from math import ceil, floor
 from typing import Any, List, Optional
 from datetime import datetime
 
@@ -42,11 +42,12 @@ def retrieve_insert(
     for i, ext_id in enumerate(ext_ids):
         if i % ceil(len(ext_ids) / 10) == 0:
             logging.info(f"Job {job_id}: Progress: On time series {i+1}/{len(ext_ids)} "
-                         f"({ceil(100 * i / len(ext_ids))}% complete)"
+                         f"({floor(100 * i / len(ext_ids))}% complete)"
                          f" in {datetime.now()-start_time}")
             logging.info(
                 f"Job {job_id}: Current results: {updated_timeseries_count} time series updated, "
-                f"{i - updated_timeseries_count} time series up-to-date. "
+                f"{i - updated_timeseries_count - len(failed_external_ids) - len(empty_external_ids)} time "
+                f"series up-to-date. "
                 f"{total_datapoints_copied} datapoints copied. "
                 f"{len(failed_external_ids)} failure(s). {len(empty_external_ids)} time series without datapoints."
             )
@@ -76,11 +77,11 @@ def retrieve_insert(
                 latest_dst_time = latest_destination_dp[0].timestamp + 1
 
             if latest_dst_time >= latest_src_time:
-                logging.debug(f"Skipping {ext_id} because already up-to-date")
+                logging.debug(f"Job {job_id}: Skipping {ext_id} because already up-to-date")
                 continue
 
             # Retrieve and insert missing datapoints
-            logging.debug(f"Job {job_id} is retrieving datapoints between {latest_dst_time} and {latest_src_time}")
+            logging.debug(f"Job {job_id}: Retrieving datapoints between {latest_dst_time} and {latest_src_time}")
 
             datapoints = client_src.datapoints.retrieve(
                 external_id=ext_id, start=latest_dst_time, end=latest_src_time, limit=limit
@@ -92,20 +93,21 @@ def retrieve_insert(
             total_datapoints_copied += len(datapoints)
         except (CogniteAPIError, ValueError):
             failed_external_ids.append(ext_id)
-            logging.error(f"Failed for external id {ext_id}")
+            logging.error(f"Job {job_id}: Failed for external id {ext_id}")
 
     logging.info(
         f"Job {job_id}: Done! Final results: {updated_timeseries_count} time series updated, "
-        f"{len(ext_ids) - updated_timeseries_count} time series up-to-date. "
+        f"{len(ext_ids) - updated_timeseries_count - len(failed_external_ids) - len(empty_external_ids)} time series "
+        f"up-to-date. "
         f"{total_datapoints_copied} datapoints copied in total. "
         f"{len(failed_external_ids)} failure(s). {len(empty_external_ids)} time series without datapoints."
     )
 
     if len(failed_external_ids):
-        logging.error(f"Sample of failed ids: {failed_external_ids[:10]}")
+        logging.error(f"Job {job_id}: Sample of failed ids: {failed_external_ids[:10]}")
 
     if len(empty_external_ids):
-        logging.info(f"Sample of empty time series: {empty_external_ids[:10]}")
+        logging.info(f"Job {job_id}: Sample of empty time series: {empty_external_ids[:10]}")
 
 
 def _get_chunk(lst: List[Any], num_chunks: int, chunk_number: int) -> List[Any]:
