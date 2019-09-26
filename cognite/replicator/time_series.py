@@ -172,7 +172,7 @@ def replicate(
     logging.info(f"These copied/updated time series will have a replicated run time of: {replicated_runtime}.")
 
     logging.info(
-        f"Starting to copy and update {len(ts_src)} time series from "
+        f"Starting to copy and update {len(ts_src_filtered)} time series from "
         f"source ({project_src}) to destination ({project_dst})."
     )
 
