@@ -41,9 +41,11 @@ def retrieve_insert(
     start_time = datetime.now()
     for i, ext_id in enumerate(ext_ids):
         if i % ceil(len(ext_ids) / 10) == 0:
-            logging.info(f"Job {job_id}: Progress: On time series {i+1}/{len(ext_ids)} "
-                         f"({floor(100 * i / len(ext_ids))}% complete)"
-                         f" in {datetime.now()-start_time}")
+            logging.info(
+                f"Job {job_id}: Progress: On time series {i+1}/{len(ext_ids)} "
+                f"({floor(100 * i / len(ext_ids))}% complete)"
+                f" in {datetime.now()-start_time}"
+            )
             logging.info(
                 f"Job {job_id}: Current results: {updated_timeseries_count} time series updated, "
                 f"{i - updated_timeseries_count - len(failed_external_ids) - len(empty_external_ids)} time "
