@@ -62,11 +62,7 @@ def update_event(
         if src_event.start_time and src_event.end_time and src_event.start_time < src_event.end_time
         else src_event.end_time
     )
-    dst_event.end_time = (
-        src_event.end_time
-        if src_event.start_time and src_event.end_time and src_event.start_time > src_event.end_time
-        else src_event.end_time
-    )
+    dst_event.end_time = src_event.end_time
     dst_event.type = src_event.type
     dst_event.subtype = src_event.subtype
     dst_event.description = src_event.description

@@ -60,11 +60,7 @@ def update_file(
         if src_file.start_time and src_file.end_time and src_file.start_time < src_file.end_time
         else src_file.end_time
     )
-    dst_file.end_time = (
-        src_file.end_time
-        if src_file.start_time and src_file.end_time and src_file.start_time > src_file.end_time
-        else src_file.end_time
-    )
+    dst_file.end_time = src_file.end_time
     dst_file.type = src_file.type
     dst_file.subtype = src_file.subtype
     dst_file.description = src_file.description
