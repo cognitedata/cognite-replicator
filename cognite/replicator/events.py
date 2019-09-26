@@ -28,9 +28,7 @@ def create_event(src_event: Event, src_dst_ids_assets: Dict[int, int], project_s
         start_time=src_event.start_time
         if src_event.start_time and src_event.end_time and src_event.start_time < src_event.end_time
         else src_event.end_time,
-        end_time=src_event.end_time
-        if src_event.start_time and src_event.end_time and src_event.start_time > src_event.end_time
-        else src_event.end_time,
+        end_time=src_event.end_time,
         type=src_event.type,
         subtype=src_event.subtype,
         description=src_event.description,

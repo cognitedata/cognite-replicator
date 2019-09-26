@@ -31,12 +31,12 @@ def make_id_object_map(
 
 
 def filter_objects(
-    objects: Union[List[Event], List[TimeSeries]],
+    objects: Union[List[Event], List[FileMetadata], List[TimeSeries]],
     src_dst_ids_assets: Dict[int, int],
     skip_unlinkable: bool = False,
     skip_nonasset: bool = False,
-    filter_fn: Optional[Callable[[Union[Event, TimeSeries]], bool]] = None,
-) -> Union[List[Event], List[TimeSeries]]:
+    filter_fn: Optional[Callable[[Union[Event, FileMetadata, TimeSeries]], bool]] = None,
+) -> Union[List[Event], List[FileMetadata], List[TimeSeries]]:
     """Filters out objects based on their assets and optionally custom filter logic
 
     Args:
@@ -147,8 +147,8 @@ def new_metadata(
 
 
 def make_objects_batch(
-    src_objects: List[Union[Asset, Event, TimeSeries]],
-    src_id_dst_map: Dict[int, Union[Asset, Event, TimeSeries]],
+    src_objects: List[Union[Asset, Event, FileMetadata, TimeSeries]],
+    src_id_dst_map: Dict[int, Union[Asset, Event, FileMetadata, TimeSeries]],
     src_dst_ids_assets: Dict[int, int],
     create,
     update,
