@@ -40,6 +40,9 @@ def retrieve_insert(
     failed_external_ids = []
     start_time = datetime.now()
     for i, ext_id in enumerate(ext_ids):
+        if ext_id is None:
+            continue
+
         if i % ceil(len(ext_ids) / 10) == 0:
             logging.info(
                 f"Job {job_id}: Progress: On time series {i+1}/{len(ext_ids)} "
@@ -93,7 +96,7 @@ def retrieve_insert(
                 client_dst.datapoints.insert(datapoints, external_id=ext_id)
             updated_timeseries_count += 1
             total_datapoints_copied += len(datapoints)
-        except (CogniteAPIError, ValueError):
+        except CogniteAPIError:
             failed_external_ids.append(ext_id)
             logging.error(f"Job {job_id}: Failed for external id {ext_id}")
 
