@@ -33,6 +33,10 @@ def retrieve_insert(
         mock_run: If true, only retrieves data points from source and does not insert into destination
     """
 
+    def handle_failed_timeseries(external_id: str, e: Exception, failed_lst: List[str]):
+        failed_lst.append(external_id)
+        logging.error(f"Job {job_id}: Failed for external id {external_id}. {e}")
+
     logging.info(f"Job {job_id}: Starting datapoint replication for {len(ext_ids)} time series...")
     updated_timeseries_count = 0
     total_datapoints_copied = 0
@@ -56,49 +60,61 @@ def retrieve_insert(
                 f"{total_datapoints_copied} datapoints copied. "
                 f"{len(failed_external_ids)} failure(s). {len(empty_external_ids)} time series without datapoints."
             )
+
+        # SOURCE
         try:
-            # SOURCE
             latest_src_dp = client_src.datapoints.retrieve_latest(external_id=ext_id)
-            if not latest_src_dp:
-                logging.debug(
-                    f"Job {job_id}: No datapoints found in source -- " f"skipping time series associated with: {ext_id}"
-                )
-                empty_external_ids.append(ext_id)
-                continue
+        except CogniteAPIError as exc:
+            handle_failed_timeseries(ext_id, exc, failed_external_ids)
+            continue
 
-            logging.debug(f"Job {job_id}: Latest timestamp source with ext_id {ext_id}: {latest_src_dp[0].timestamp}")
-            latest_src_time = latest_src_dp[0].timestamp + 1  # +1 because end time is exclusive for retrieve()
+        if not latest_src_dp:
+            logging.debug(
+                f"Job {job_id}: No datapoints found in source -- " f"skipping time series associated with: {ext_id}"
+            )
+            empty_external_ids.append(ext_id)
+            continue
 
-            # DESTINATION
+        logging.debug(f"Job {job_id}: Latest timestamp source with ext_id {ext_id}: {latest_src_dp[0].timestamp}")
+        latest_src_time = latest_src_dp[0].timestamp + 1  # +1 because end time is exclusive for retrieve()
+
+        # DESTINATION
+        try:
             latest_destination_dp = client_dst.datapoints.retrieve_latest(external_id=ext_id)
-            latest_dst_time = 0
-            if not latest_destination_dp:
-                logging.debug(
-                    f"Job {job_id}: No datapoints in destination, "
-                    f"starting copying from time(epoch): {latest_dst_time}"
-                )
-            elif latest_destination_dp:
-                # +1 because start time is inclusive for retrieve()
-                latest_dst_time = latest_destination_dp[0].timestamp + 1
+        except CogniteAPIError as exc:
+            handle_failed_timeseries(ext_id, exc, failed_external_ids)
+            continue
 
-            if latest_dst_time >= latest_src_time:
-                logging.debug(f"Job {job_id}: Skipping {ext_id} because already up-to-date")
-                continue
+        latest_dst_time = 0
+        if not latest_destination_dp:
+            logging.debug(
+                f"Job {job_id}: No datapoints in destination, "
+                f"starting copying from time(epoch): {latest_dst_time}"
+            )
+        elif latest_destination_dp:
+            # +1 because start time is inclusive for retrieve()
+            latest_dst_time = latest_destination_dp[0].timestamp + 1
 
-            # Retrieve and insert missing datapoints
-            logging.debug(f"Job {job_id}: Retrieving datapoints between {latest_dst_time} and {latest_src_time}")
+        if latest_dst_time >= latest_src_time:
+            logging.debug(f"Job {job_id}: Skipping {ext_id} because already up-to-date")
+            continue
 
+        # Retrieve and insert missing datapoints
+        logging.debug(f"Job {job_id}: Retrieving datapoints between {latest_dst_time} and {latest_src_time}")
+
+        try:
             datapoints = client_src.datapoints.retrieve(
                 external_id=ext_id, start=latest_dst_time, end=latest_src_time, limit=limit
             )
             logging.debug(f"Job {job_id}: Number of datapoints: {len(datapoints)}")
             if not mock_run:
                 client_dst.datapoints.insert(datapoints, external_id=ext_id)
-            updated_timeseries_count += 1
-            total_datapoints_copied += len(datapoints)
-        except CogniteAPIError:
-            failed_external_ids.append(ext_id)
-            logging.error(f"Job {job_id}: Failed for external id {ext_id}")
+        except CogniteAPIError as exc:
+            handle_failed_timeseries(ext_id, exc, failed_external_ids)
+            continue
+
+        updated_timeseries_count += 1
+        total_datapoints_copied += len(datapoints)
 
     logging.info(
         f"Job {job_id}: Done! Final results: {updated_timeseries_count} time series updated, "
