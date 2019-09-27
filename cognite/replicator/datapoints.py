@@ -2,9 +2,9 @@
 
 import logging
 import multiprocessing as mp
+from datetime import datetime
 from math import ceil, floor
 from typing import Any, List, Optional
-from datetime import datetime
 
 from cognite.client import CogniteClient
 from cognite.client.exceptions import CogniteAPIError
@@ -70,7 +70,7 @@ def retrieve_insert(
 
         if not latest_src_dp:
             logging.debug(
-                f"Job {job_id}: No datapoints found in source -- " f"skipping time series associated with: {ext_id}"
+                f"Job {job_id}: No datapoints found in source -- skipping time series associated with: {ext_id}"
             )
             empty_external_ids.append(ext_id)
             continue
@@ -88,8 +88,7 @@ def retrieve_insert(
         latest_dst_time = 0
         if not latest_destination_dp:
             logging.debug(
-                f"Job {job_id}: No datapoints in destination, "
-                f"starting copying from time(epoch): {latest_dst_time}"
+                f"Job {job_id}: No datapoints in destination, starting copying from time(epoch): {latest_dst_time}"
             )
         elif latest_destination_dp:
             # +1 because start time is inclusive for retrieve()
