@@ -62,7 +62,3 @@ def test_update_file():
             assert len(file_obj.asset_ids) == len(files_src[i].asset_ids)
             for asset_id in files_src[i].asset_ids:
                 assert id_mapping[asset_id] in file_obj.asset_ids
-
-    assert updated_files[0].mime_type == "application/pdf"
-    assert updated_files[1].mime_type == "application/pdf"
-    assert updated_files[2].mime_type is None
