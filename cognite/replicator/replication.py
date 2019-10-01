@@ -290,6 +290,33 @@ def thread(
         logging.info(f"Joined thread: {count}")
 
 
+def clear_replication_metadata(client: CogniteClient):
+    """Removes the replication metadata from all resources, so that the replicated tenant will look like an original.
+    Sample use-case: clean up a demo-tenant so that extra data is not present.
+
+    Caution: After clearing replication metadata, the delete_replicated_if_not_in_src option will delete everything.
+
+    Parameters:
+        client: The client to strip replication metadata away from
+    """
+    def remove_replication_metadata(
+        objects: Union[List[Asset], List[Event], List[TimeSeries]],
+        update_fn: Callable[[Union[List[Asset], List[Event], List[TimeSeries]]], None],
+    ):
+        for obj in objects:
+            del obj.metadata["_replicatedInternalId"]
+            del obj.metadata["_replicatedSource"]
+            del obj.metadata["_replicatedTime"]
+        update_fn(objects)
+
+    events_dst = client.events.list(limit=None)
+    ts_dst = client.time_series.list(limit=None)
+    assets_dst = client.assets.list(limit=None)
+    remove_replication_metadata(assets_dst, client.assets.update)
+    remove_replication_metadata(events_dst, client.events.update)
+    remove_replication_metadata(ts_dst, client.time_series.update)
+
+
 def find_objects_to_delete_not_replicated_in_dst(
     dst_objects: List[Union[Asset, Event, FileMetadata, TimeSeries]]
 ) -> List[Asset]:

@@ -17,6 +17,7 @@ def retrieve_insert(
     ext_ids: List[str],
     limit: int,
     mock_run: bool = False,
+    max_chunk_size: int = 100000,
 ):
     """
     Copies data points from the source time series specified by the external id list into the destination project.
@@ -31,6 +32,7 @@ def retrieve_insert(
         ext_ids: The list of external ids for time series to copy over
         limit: The maximum number of data points to copy per time series
         mock_run: If true, only retrieves data points from source and does not insert into destination
+        max_chunk_size: The maximum number of datapoints to store in memory while replicating
     """
 
     def handle_failed_timeseries(external_id: str, e: Exception, failed_lst: List[str]):
@@ -102,18 +104,28 @@ def retrieve_insert(
         logging.debug(f"Job {job_id}: Retrieving datapoints between {latest_dst_time} and {latest_src_time}")
 
         try:
-            datapoints = client_src.datapoints.retrieve(
-                external_id=ext_id, start=latest_dst_time, end=latest_src_time, limit=limit
-            )
-            logging.debug(f"Job {job_id}: Number of datapoints: {len(datapoints)}")
-            if not mock_run:
-                client_dst.datapoints.insert(datapoints, external_id=ext_id)
+            datapoints_count = 0
+            cur_limit = max_chunk_size
+            while latest_dst_time < latest_src_time:
+                if limit is not None:
+                    cur_limit = min(cur_limit, limit - datapoints_count)
+
+                datapoints = client_src.datapoints.retrieve(
+                    external_id=ext_id, start=latest_dst_time, end=latest_src_time, limit=cur_limit
+                )
+                datapoints_count += len(datapoints)
+                if len(datapoints):
+                    latest_dst_time = datapoints[-1].timestamp + 1
+                    if not mock_run:
+                        client_dst.datapoints.insert(datapoints, external_id=ext_id)
+
+            logging.debug(f"Job {job_id}: Number of datapoints: {datapoints_count}")
         except CogniteAPIError as exc:
             handle_failed_timeseries(ext_id, exc, failed_external_ids)
             continue
 
         updated_timeseries_count += 1
-        total_datapoints_copied += len(datapoints)
+        total_datapoints_copied += datapoints_count
 
     logging.info(
         f"Job {job_id}: Done! Final results: {updated_timeseries_count} time series updated, "
@@ -160,6 +172,7 @@ def replicate(
     limit: Optional[int] = None,
     external_ids: Optional[List[str]] = None,
     mock_run: bool = False,
+    max_chunk_size: int = 100000,
 ):
     """
     Replicates data points from the source project into the destination project for all time series that
@@ -173,6 +186,7 @@ def replicate(
         limit: The maximum number of data points to copy per time series
         external_ids: A list of time series to replicate data points for
         mock_run: If true, runs the replication without insert, printing what would happen
+        max_chunk_size: The maximum number of datapoints to store in memory while replicating
     """
     if external_ids is not None:
         ts_src = client_src.time_series.retrieve_multiple(external_ids=external_ids)
@@ -191,11 +205,19 @@ def replicate(
         f"Number of common time series external ids between destination and source: {len(shared_external_ids)}"
     )
     if batch_size is None:
-        batch_size = max(1, len(shared_external_ids) // num_threads)
+        batch_size = ceil(len(shared_external_ids) / num_threads)
     num_batches = ceil(len(shared_external_ids) / batch_size)
 
     arg_list = [
-        (client_src, client_dst, job_id, _get_chunk(shared_external_ids, num_batches, job_id), limit, mock_run)
+        (
+            client_src,
+            client_dst,
+            job_id,
+            _get_chunk(shared_external_ids, num_batches, job_id),
+            limit,
+            mock_run,
+            max_chunk_size,
+        )
         for job_id in range(num_batches)
     ]
 
