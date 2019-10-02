@@ -37,3 +37,40 @@ Changes are grouped as follows
 ### Added
 - Support for asset replication by subtree
 - Support for restricting event and time series replication to events/time series with replicated assets
+
+## [0.3.0] - 2019-25-09
+
+### Added
+- Ability to fetch datapoints for a list of timeseries specified by external ids
+
+### Changed
+- Time series overlap checks between destination and source much faster
+
+### Fixed
+- Boundary cases of datapoint replication are handled properly - no duplicates at start time, 
+and no exclusion of final datapoint
+
+
+## [0.3.1] - 2019-25-09
+
+### Changed
+- Determines number of batches/jobs to do based on num_batches, rather than only on num_threads
+
+### Fixed 
+- Handle exceptions in datapoint replication
+
+## [0.3.2] - 2019-27-09
+
+### Added
+- Push to docker hub within Jenkins
+
+### Changed
+- Logging for datapoint replication simplified
+
+### Fixed
+- batch_size parameter for datapoints now consistent with other resource types
+
+## [0.4.0] - 2019-02-10
+
+### Added
+- Support for file metadata replication

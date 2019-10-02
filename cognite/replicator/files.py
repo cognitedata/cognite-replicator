@@ -1,9 +1,11 @@
 import logging
+import mimetypes
 import time
 from typing import Dict, List
 
 from cognite.client import CogniteClient
 from cognite.client.data_classes import FileMetadata
+from cognite.client.exceptions import CogniteAPIError
 
 from . import replication
 
@@ -24,15 +26,15 @@ def create_file(
         The replicated file to be created in the destination.
     """
     logging.debug(f"Creating a new file based on source file id {src_file.id}")
+    mime_type = mimetypes.types_map.get(f".{src_file.mime_type}", src_file.mime_type)
 
     return FileMetadata(
         external_id=src_file.external_id,
         name=src_file.name,
         source=src_file.source,
-        mime_type=src_file.mime_type,
+        mime_type=mime_type,
         metadata=replication.new_metadata(src_file, project_src, runtime),
         asset_ids=replication.get_asset_ids(src_file.asset_ids, src_dst_ids_assets),
-        uploaded=False,  # TODO: later copy full files over
     )
 
 
@@ -55,18 +57,11 @@ def update_file(
     logging.debug(f"Updating existing file {dst_file.id} based on source file id {src_file.id}")
 
     dst_file.external_id = src_file.external_id
-    dst_file.start_time = (
-        src_file.start_time
-        if src_file.start_time and src_file.end_time and src_file.start_time < src_file.end_time
-        else src_file.end_time
-    )
-    dst_file.end_time = src_file.end_time
-    dst_file.type = src_file.type
-    dst_file.subtype = src_file.subtype
-    dst_file.description = src_file.description
+    dst_file.source = src_file.source
     dst_file.metadata = replication.new_metadata(src_file, project_src, runtime)
     dst_file.asset_ids = replication.get_asset_ids(src_file.asset_ids, src_dst_ids_assets)
-    dst_file.source = src_file.source
+    dst_file.source_created_time = src_file.source_created_time
+    dst_file.source_modified_time = src_file.source_modified_time
     return dst_file
 
 
@@ -98,17 +93,29 @@ def copy_files(
 
     logging.info(f"Creating {len(create_files)} new files and updating {len(update_files)} existing files.")
 
+    create_urls = []
     if create_files:
         logging.debug(f"Attempting to create {len(create_files)} files.")
-        create_files = replication.retry(client.files.create, create_files)
-        logging.debug(f"Successfully created {len(create_files)} files.")
+        for file in create_files:
+            response = None
+            try:
+                response = replication.retry(client.files.create, file)
+            except CogniteAPIError as exc:
+                logging.error(f"Failed to create file {file.name}. {exc}")
+                if "Invalid MIME type" in exc.message:
+                    file.mime_type = None
+                    response = replication.retry(client.files.create, file)
+
+            if response:
+                create_urls.append(response)
+        logging.debug(f"Successfully created {len(create_urls)} files.")
 
     if update_files:
         logging.debug(f"Attempting to update {len(update_files)} files.")
         update_files = replication.retry(client.files.update, update_files)
         logging.debug(f"Successfully updated {len(update_files)} files.")
 
-    logging.info(f"Created {len(create_files)} new files and updated {len(update_files)} existing files.")
+    logging.info(f"Created {len(create_urls)} new files and updated {len(update_files)} existing files.")
 
 
 def replicate(

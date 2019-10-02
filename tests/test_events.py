@@ -21,11 +21,7 @@ def test_create_event():
 
     for i, event_obj in enumerate(created_events):
         assert event_obj.metadata["_replicatedInternalId"] == events_src[i].id
-
-    for i, event_obj in enumerate(created_events):
         assert event_obj.metadata["_replicatedSource"] == "Road to the Holy Grail {}".format(i)
-
-    for i, event_obj in enumerate(created_events):
         if event_obj.asset_ids is not None:
             assert event_obj.asset_ids[0] == id_mapping[events_src[i].asset_ids[0]]
 
