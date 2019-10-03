@@ -133,6 +133,7 @@ def retrieve_insert(
         f"up-to-date. "
         f"{total_datapoints_copied} datapoints copied in total. "
         f"{len(failed_external_ids)} failure(s). {len(empty_external_ids)} time series without datapoints."
+        f"Total elapsed time: {datetime.now()-start_time}"
     )
 
     if len(failed_external_ids):
@@ -221,5 +222,8 @@ def replicate(
         for job_id in range(num_batches)
     ]
 
-    with mp.Pool(num_threads) as pool:
-        pool.starmap(retrieve_insert, arg_list)
+    if num_threads > 1:
+        with mp.Pool(num_threads) as pool:
+            pool.starmap(retrieve_insert, arg_list)
+    else:
+        retrieve_insert(*arg_list[0])
