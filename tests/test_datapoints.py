@@ -1,4 +1,17 @@
 from cognite.replicator import datapoints
+from cognite.client.data_classes import Datapoints
+
+
+def test_get_range():
+    src_latest = Datapoints(timestamp=[20000000])
+    dst_latest = Datapoints(timestamp=[10000000])
+
+    start, end = datapoints._get_time_range(src_latest, dst_latest)
+    assert (start, end) == (dst_latest[0].timestamp + 1, src_latest[0].timestamp + 1)
+
+    start, end = datapoints._get_time_range(None, None)
+    assert start == 0
+    assert end is None
 
 
 def test_get_chunk():
