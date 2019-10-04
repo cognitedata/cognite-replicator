@@ -1,29 +1,18 @@
 import logging
 import multiprocessing as mp
 from datetime import datetime
-from enum import Enum
 from math import ceil, floor
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 
 from cognite.client import CogniteClient
 from cognite.client.data_classes import Datapoints
 from cognite.client.exceptions import CogniteAPIError
 
 
-class Replication(Enum):
-    SUCCESS = 0
-    FAILURE = 1
-    EMPTY = 2
-
-
-def _get_time_range(src_datapoint: Datapoints, dst_datapoint: Datapoints):
-    # +1 because datapoint time ranges are inclusive on start and exclusive on end,
-    # and we want the last one but not the first
-    start_time = 0
-    if dst_datapoint:
-        start_time = dst_datapoint.timestamp[0] + 1
-
-    end_time = None if not src_datapoint else src_datapoint.timestamp[0] + 1
+def _get_time_range(src_datapoint: Datapoints, dst_datapoint: Datapoints) -> Tuple[int, int]:
+    # +1 because datapoint retrieval time ranges are inclusive on start and exclusive on end
+    start_time = 0 if not dst_datapoint else dst_datapoint.timestamp[0] + 1
+    end_time = 0 if not src_datapoint else src_datapoint.timestamp[0] + 1
     return start_time, end_time
 
 
@@ -33,20 +22,23 @@ def _get_chunk(lst: List[Any], num_chunks: int, chunk_number: int) -> List[Any]:
     Args:
         lst: The list to slice
         num_chunks: The amount of chunks that the list should be split into
-        chunk_number: Which chunk of the lst to return
+        chunk_number: Which chunk of the lst to return (0-indexed)
 
     Returns:
         The chunk_number-th chunk of lst such that the concat of all num_chunks chunks is equivalent to the full lst,
         and each chunk has equal size +-1
     """
     chunk_size = len(lst) // num_chunks
-    remainder = len(lst) % num_chunks
-    return lst[
-        chunk_number * chunk_size
-        + min(chunk_number, remainder) : (chunk_number + 1) * chunk_size
-        + int(chunk_number < remainder)
-        + min(chunk_number, remainder)
-    ]
+    num_excess_elements = len(lst) % num_chunks
+
+    start_index = chunk_number * chunk_size
+    start_index += min(chunk_number, num_excess_elements)  # offset by amount of excess elements used in previous chunks
+
+    end_index = start_index + chunk_size
+    if chunk_number < num_excess_elements:  # if we need to include an extra element
+        end_index += 1
+
+    return lst[start_index:end_index]
 
 
 def replicate_datapoints(
@@ -57,7 +49,7 @@ def replicate_datapoints(
     partition_size: int = 100000,
     mock_run: bool = False,
     job_id: int = 1,
-):
+) -> Tuple[bool, int]:
     """
     Copies data points from the source tenant into the destination project, for the given time series.
 
@@ -72,17 +64,18 @@ def replicate_datapoints(
         partition_size: The maximum number of datapoints to retrieve per request
         mock_run: If true, only retrieves data points from source and does not insert into destination
         job_id: The batch number being processed
+
+    Returns:
+        A tuple of the success status (True if no failures) and the number of datapoints successfully replicated
     """
     try:
         latest_dst_dp = client_dst.datapoints.retrieve_latest(external_id=ts_external_id)
         latest_src_dp = client_src.datapoints.retrieve_latest(external_id=ts_external_id)
     except CogniteAPIError as exc:
         logging.error(f"Job {job_id}: Failed for external id {ts_external_id}. {exc}")
-        return Replication.FAILURE, 0
+        return False, 0
 
     start, end = _get_time_range(latest_src_dp, latest_dst_dp)
-    if not end:
-        return Replication.EMPTY, 0
 
     logging.debug(f"Job {job_id}: Ext_id: {ts_external_id} Retrieving datapoints between {start} and {end}")
     datapoints_count = 0
@@ -95,17 +88,20 @@ def replicate_datapoints(
             datapoints = client_src.datapoints.retrieve(
                 external_id=ts_external_id, start=start, end=end, limit=num_to_fetch
             )
-            datapoints_count += len(datapoints)
-            if len(datapoints):
-                start = datapoints[-1].timestamp + 1
-                if not mock_run:
-                    client_dst.datapoints.insert(datapoints, external_id=ts_external_id)
+            if len(datapoints) == 0:
+                break
+
+            if not mock_run:
+                client_dst.datapoints.insert(datapoints, external_id=ts_external_id)
         except CogniteAPIError as exc:
             logging.error(f"Job {job_id}: Failed for external id {ts_external_id}. {exc}")
-            return Replication.FAILURE, datapoints_count
+            return False, datapoints_count
+        else:
+            datapoints_count += len(datapoints)
+            start = datapoints[-1].timestamp + 1
 
     logging.debug(f"Job {job_id}: Ext_id: {ts_external_id} Number of datapoints: {datapoints_count}")
-    return Replication.SUCCESS, datapoints_count
+    return True, datapoints_count
 
 
 def batch_replicate(
@@ -133,15 +129,14 @@ def batch_replicate(
     def log_status(total_ts_count):
         logging.info(
             f"Job {job_id}: Current results: {updated_timeseries_count} time series updated, "
-            f"{total_ts_count - updated_timeseries_count - len(failed_external_ids) - len(empty_external_ids)} "
+            f"{total_ts_count - updated_timeseries_count - len(failed_external_ids)} "
             f"time series up-to-date. {total_datapoints_copied} datapoints copied. "
-            f"{len(failed_external_ids)} failure(s). {len(empty_external_ids)} time series without datapoints."
+            f"{len(failed_external_ids)} failure(s)."
         )
 
     logging.info(f"Job {job_id}: Starting datapoint replication for {len(ext_ids)} time series...")
     updated_timeseries_count = 0
     total_datapoints_copied = 0
-    empty_external_ids = []
     failed_external_ids = []
     start_time = datetime.now()
 
@@ -153,13 +148,11 @@ def batch_replicate(
             )
             log_status(i)
 
-        status, datapoints_copied_count = replicate_datapoints(
+        success_status, datapoints_copied_count = replicate_datapoints(
             client_src, client_dst, ext_id, partition_size=partition_size, mock_run=mock_run, job_id=job_id, limit=limit
         )
 
-        if status == Replication.EMPTY:
-            empty_external_ids.append(ext_id)
-        elif status == Replication.FAILURE:
+        if not success_status:
             failed_external_ids.append(ext_id)
         else:
             updated_timeseries_count += 1
@@ -169,7 +162,6 @@ def batch_replicate(
 
     logging.info(f"Total elapsed time: {datetime.now() - start_time}")
     logging.info(f"Job {job_id}: Sample of failed ids: {failed_external_ids[:10]}")
-    logging.info(f"Job {job_id}: Sample of empty time series: {empty_external_ids[:10]}")
 
 
 def replicate(
