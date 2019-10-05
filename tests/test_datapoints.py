@@ -1,33 +1,32 @@
+from cognite.client.data_classes import Datapoints
 from cognite.replicator import datapoints
 
 
+def test_get_range():
+    src_latest = Datapoints(timestamp=[20000000])
+    dst_latest = Datapoints(timestamp=[10000000])
+
+    start, end = datapoints._get_time_range(src_latest, dst_latest)
+    assert (start, end) == (dst_latest[0].timestamp + 1, src_latest[0].timestamp + 1)
+
+    start, end = datapoints._get_time_range(Datapoints(), Datapoints())
+    assert (start, end) == (0, 0)
+
+
 def test_get_chunk():
-    """Should split the array [0..17] as follows:
-
-    [(0, [0, 1]),
-     (1, [2, 3]),
-     (2, [4, 5]),
-     (3, [6, 7]),
-     (4, [8, 9]),
-     (5, [10, 11]),
-     (6, [12, 13]),
-     (7, [14, 15]),
-     (8, [16]),
-     (9, [17])
-     ]
-
-     """
     full_list = list(range(18))
     num_batches = 10
-    sample_arg_list = [(i, datapoints._get_chunk(full_list, num_batches, i)) for i in range(num_batches)]
-    last_val = -1
-    assert len(sample_arg_list) == num_batches
-    for i, arg in enumerate(sample_arg_list):
-        if i < 8:
-            assert len(arg[1]) == 2
-        else:
-            assert len(arg[1]) == 1
+    sample_arg_list = [datapoints._get_chunk(full_list, num_batches, i) for i in range(num_batches)]
+    assert sample_arg_list == [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9], [10, 11], [12, 13], [14, 15], [16], [17]]
 
-        for val in arg[1]:
-            assert val == last_val + 1
-            last_val = val
+    full_list = list(range(10))
+    sample_arg_list = [datapoints._get_chunk(full_list, num_batches, i) for i in range(num_batches)]
+    assert sample_arg_list == [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]]
+
+    num_batches = 5
+    sample_arg_list = [datapoints._get_chunk(full_list, num_batches, i) for i in range(num_batches)]
+    assert sample_arg_list == [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9]]
+
+    full_list = [1]
+    sample_arg_list = [datapoints._get_chunk(full_list, num_batches, i) for i in range(num_batches)]
+    assert sample_arg_list == [[1], [], [], [], []]

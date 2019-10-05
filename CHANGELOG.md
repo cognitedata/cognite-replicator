@@ -47,7 +47,7 @@ Changes are grouped as follows
 - Time series overlap checks between destination and source much faster
 
 ### Fixed
-- Boundary cases of datapoint replication are handled properly - no duplicates at start time, 
+- Boundary cases of datapoint replication are handled properly - no duplicates at start time,
 and no exclusion of final datapoint
 
 
@@ -56,7 +56,7 @@ and no exclusion of final datapoint
 ### Changed
 - Determines number of batches/jobs to do based on num_batches, rather than only on num_threads
 
-### Fixed 
+### Fixed
 - Handle exceptions in datapoint replication
 
 ## [0.3.2] - 2019-27-09
@@ -74,3 +74,11 @@ and no exclusion of final datapoint
 
 ### Added
 - Support for file metadata replication
+
+## [0.4.1] - 2019-03-10
+
+### Added
+- Replication method clear_replication_metadata to remove the metadata added during replication
+
+### Fixed
+- Amount of data points pulled into memory now limited by default
