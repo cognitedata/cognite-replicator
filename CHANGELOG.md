@@ -12,6 +12,13 @@ Changes are grouped as follows
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities.
 
+
+## [Planned]
+- Support for replicating Sequences
+- Support for replicating file data
+
+## [Unreleased]
+
 ## [0.4.1] - 2019-10-03
 
 ### Added
