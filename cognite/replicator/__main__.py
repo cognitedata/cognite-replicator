@@ -18,7 +18,7 @@ from pathlib import Path
 from cognite.client import CogniteClient
 from cognite.client.exceptions import CogniteAPIError
 
-from . import assets, configure_logger, events, raw, time_series
+from . import assets, configure_logger, datapoints, events, files, raw, time_series
 
 CLIENT_NAME = "cognite-replicator"
 CLIENT_TIMEOUT = 120
@@ -66,6 +66,10 @@ def create_cli_parser() -> argparse.ArgumentParser:
 
     parser.add_argument("--batch-size", default=10000, type=int, help="Number of items in each batch, if relevant")
     parser.add_argument("--number-of-threads", default=1, type=int, help="Number of thread to use, if relevant")
+
+    parser.add_argument(
+        "--datapoint-limit", default=1000000, type=int, help="Maximum number of datapoints to fetch per time series"
+    )
 
     parser.add_argument("--client-timeout", default=CLIENT_TIMEOUT, type=int, help="Seconds for clients to timeout")
     parser.add_argument("--client-name", default=CLIENT_NAME, help="Name of client, default: " + CLIENT_NAME)
@@ -143,13 +147,20 @@ def main():
         )
 
     if Resource.FILES in resources_to_replicate:
-        pass
+        files.replicate(
+            src_client,
+            dest_client,
+            args.batch_size,
+            args.number_of_threads,
+            delete_replicated_if_not_in_src=delete_replicated_if_not_in_src,
+            delete_not_replicated_in_dst=delete_not_replicated_in_dst,
+        )
 
     if Resource.RAW in resources_to_replicate:
         raw.replicate(src_client, dest_client, args.batch_size)
 
     if Resource.DATAPOINTS in resources_to_replicate:
-        pass
+        datapoints.replicate(src_client, dest_client, num_threads=args.number_of_threads, limit=args.datapoint_limit)
 
 
 if __name__ == "__main__":
