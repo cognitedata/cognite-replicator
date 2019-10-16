@@ -41,6 +41,39 @@ def _get_chunk(lst: List[Any], num_chunks: int, chunk_number: int) -> List[Any]:
     return lst[start_index:end_index]
 
 
+def simulate_live(
+    client_src: CogniteClient,
+    client_dst: CogniteClient,
+    num_threads: int = 8,
+    limit: int = 1,
+    src_datapoint_transform: Callable[[Datapoint], Datapoint] = None,
+    timerange_transform: Callable[[Tuple[int, int]], int] = None,
+):
+    """
+    Polls source tenant for new datapoints and inserts them into the destination project.
+
+    If data points already exist in the destination for the time series, only the newer data points in the source are
+    copied over.
+
+    Args:
+        client_src: The client corresponding to the source project.
+        client_dst: The client corresponding to the destination project.
+        num_threads: The number of threads to be used.
+        limit: The maximum number of data points to copy per time series
+        src_datapoint_transform: If specified, will transform all source datapoints
+        timerange_transform: If specified, shifts the time range boundaries
+    """
+    while 1:
+        replicate(
+            client_src,
+            client_dst,
+            num_threads=num_threads,
+            limit=limit,
+            src_datapoint_transform=src_datapoint_transform,
+            timerange_transform=timerange_transform,
+        )
+
+
 def replicate_datapoints(
     client_src: CogniteClient,
     client_dst: CogniteClient,
@@ -79,6 +112,9 @@ def replicate_datapoints(
         logging.error(f"Job {job_id}: Failed for external id {ts_external_id}. {exc}")
         return False, 0
 
+    if len(latest_src_dp) == 0:
+        return True, 0
+
     if src_datapoint_transform:
         latest_src_dp = Datapoints(timestamp=[src_datapoint_transform(latest_src_dp[0]).timestamp])
 
@@ -104,15 +140,11 @@ def replicate_datapoints(
             if src_datapoint_transform:
                 transformed_values = []
                 transformed_timestamps = []
-                logging.info(f"TYPE(DP): {type(datapoints)}, TYPE(DP[1]):{type(datapoints[0])}, {datapoints[0]}")
                 for i in range(len(datapoints)):
                     transformed_datapoint = src_datapoint_transform(datapoints[i])
                     transformed_timestamps.append(transformed_datapoint.timestamp)
                     transformed_values.append(transformed_datapoint.value)
-                    # datapoints[i].timestamp = transformed_dp.timestamp
-                    # datapoints[i].value = transformed_dp.value
                 datapoints = Datapoints(timestamp=transformed_timestamps, value=transformed_values)
-                logging.info(f"TYPE(DP): {type(datapoints)}, TYPE(DP[1]):{type(datapoints[0])}, {datapoints[0]}")
 
             if not mock_run:
                 client_dst.datapoints.insert(datapoints, external_id=ts_external_id)
@@ -136,6 +168,7 @@ def batch_replicate(
     mock_run: bool = False,
     partition_size: int = 100000,
     src_datapoint_transform: Callable[[Datapoint], Datapoint] = None,
+    timerange_transform: Callable[[Tuple[int, int]], int] = None,
 ):
     """
     Replicates datapoints for each time series specified by the external id list.
@@ -149,6 +182,7 @@ def batch_replicate(
         mock_run: If true, only retrieves data points from source and does not insert into destination
         partition_size: The maximum number of datapoints to retrieve per request
         src_datapoint_transform: If specified, will transform all source datapoints
+        timerange_transform: If specified, shifts the time range boundaries
     """
 
     def log_status(total_ts_count):
@@ -182,6 +216,7 @@ def batch_replicate(
             job_id=job_id,
             limit=limit,
             src_datapoint_transform=src_datapoint_transform,
+            timerange_transform=timerange_transform,
         )
 
         if not success_status:
@@ -206,6 +241,7 @@ def replicate(
     mock_run: bool = False,
     partition_size: int = 100000,
     src_datapoint_transform: Callable[[Datapoint], Datapoint] = None,
+    timerange_transform: Callable[[Tuple[int, int]], int] = None,
 ):
     """
     Replicates data points from the source project into the destination project for all time series that
@@ -221,6 +257,7 @@ def replicate(
         mock_run: If true, runs the replication without insert, printing what would happen
         partition_size: The maximum number of datapoints to retrieve per request
         src_datapoint_transform: If specified, will transform all source datapoints
+        timerange_transform: If specified, shifts the time range boundaries
     """
     if external_ids is not None:
         ts_src = client_src.time_series.retrieve_multiple(external_ids=external_ids)
@@ -252,6 +289,7 @@ def replicate(
             mock_run,
             partition_size,
             src_datapoint_transform,
+            timerange_transform,
         )
         for job_id in range(num_batches)
     ]
