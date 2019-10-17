@@ -79,7 +79,7 @@ def replicate_datapoints(
         logging.error(f"Job {job_id}: Failed for external id {ts_external_id}. {exc}")
         return False, 0
 
-    if len(latest_src_dp) == 0:
+    if not latest_src_dp:
         return True, 0
 
     if src_datapoint_transform:
@@ -101,7 +101,7 @@ def replicate_datapoints(
             datapoints = client_src.datapoints.retrieve(
                 external_id=ts_external_id, start=start, end=end, limit=num_to_fetch
             )
-            if len(datapoints) == 0:
+            if not datapoints:
                 break
 
             if src_datapoint_transform:
