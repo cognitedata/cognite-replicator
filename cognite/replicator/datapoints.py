@@ -107,8 +107,8 @@ def replicate_datapoints(
             if src_datapoint_transform:
                 transformed_values = []
                 transformed_timestamps = []
-                for i in range(len(datapoints)):
-                    transformed_datapoint = src_datapoint_transform(datapoints[i])
+                for src_datapoint in datapoints:
+                    transformed_datapoint = src_datapoint_transform(src_datapoint)
                     transformed_timestamps.append(transformed_datapoint.timestamp)
                     transformed_values.append(transformed_datapoint.value)
                 datapoints = Datapoints(timestamp=transformed_timestamps, value=transformed_values)
