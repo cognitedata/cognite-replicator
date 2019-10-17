@@ -19,10 +19,19 @@ Changes are grouped as follows
 
 ## [Unreleased]
 
+## [0.5.0] - 2019-10-03
+
+### Added
+- Datapoint replication now provides `src_datapoint_transform` parameter to allow for transformations of
+  source datapoints (e.g. adjust value, adjust timestamp)
+
+- Datapoint replication now provides `timerange_transform` parameter to allow replication of arbitrary
+  time ranges
+
 ## [0.4.1] - 2019-10-03
 
 ### Added
-- Replication method clear_replication_metadata to remove the metadata added during replication
+- Replication method `clear_replication_metadata` to remove the metadata added during replication
 
 ### Fixed
 - Amount of data points pulled into memory now limited by default
@@ -78,7 +87,7 @@ and no exclusion of final datapoint
 
 ### Added
 - Dockerfile to build docker image of the replicator
-- Command line arguments for running the replicators. Try 'poetry run replicator'
+- Command line arguments for running the replicators. Try `poetry run replicator`
 
 ### Fixed
 - Time series replication no longer attempts to create security category-protected time series

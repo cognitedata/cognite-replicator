@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cognite_replicator"
-version = "0.4.1"
+version = "0.5.0"
 description = "Python package for replicating data across CDF tenants. Copyright 2019 Cognite AS"
 license = "Apache-2.0"
 authors = [
@@ -8,7 +8,7 @@ authors = [
     "Nina Odegard <nina.odegard@cognite.com>",
     "Sofie Haug <sofie.haug@cognite.com>",
     "Torbjørn Opheim <torbjorn.opheim@cognite.com>",
-    "Tristan Monger <tristan.monger@cognite.com>"
+    "Tristan Monger <tristan.monger@cognite.com>",
 ]
 readme = "README.md"
 packages = [
