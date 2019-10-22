@@ -30,13 +30,14 @@ $ export COGNITE_DESTINATION_API_KEY=<your destination API key>
 ## Installation
 The replicator is available on PyPI, and can also be executed as a standalone script.
 
-To install it as a Python library that can be run from command line:
+To run it from command line, run:
 ```bash
 pip install cognite-replicator
-python -m cognite.replicator
+python -m cognite.replicator config/filepath.yml
 ```
+If no file is specified then replicator will use config/default.yml.
 
-Build and run it as a docker container:
+Alternatively, build and run it as a docker container:
 ```bash
 docker build -t cognite-replicator .
 docker run -it cognite-replicator

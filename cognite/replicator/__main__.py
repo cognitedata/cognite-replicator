@@ -39,7 +39,7 @@ class Resource(Enum):
 def create_cli_parser() -> argparse.ArgumentParser:
     """Returns ArgumentParser for command line interface."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", default="config/default.yml", help="path to yaml configuration file")
+    parser.add_argument("config", nargs="?", default="config/default.yml", help="path to yaml configuration file")
 
     return parser
 
@@ -63,7 +63,8 @@ def _validate_login(src_client: CogniteClient, dst_client: CogniteClient, src_pr
 
 def main():
     args = create_cli_parser().parse_args()
-    config = yaml.load(open(args.config, "r").read())
+    with open(args.config, "r") as config_file:
+        config = yaml.safe_load(config_file.read())
 
     configure_logger(config.get("log_level", "INFO"), Path(config.get("log_path")))
 

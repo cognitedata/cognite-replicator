@@ -8,7 +8,7 @@ resources:                                          # Which resource types to re
 src_api_key_env_var: COGNITE_SOURCE_API_KEY         # Name of env variable for CDF API KEY of the source project
 dst_api_key_env_var: COGNITE_DESTINATION_API_KEY    # Name of env variable for CDF API KEY of the destination project
 src_project: source-project-name                    # Project that src_api_key belongs to
-dst_project: dst-project-name                       # Project that dst_api_key belongs to
+dst_project: dest-project-name                      # Project that dst_api_key belongs to
 delete_if_removed_in_source: false                  # Remove objects that were replicated and are now deleted in source
 delete_if_not_replicated: false                     # Remove all objects in destination that aren't from source
 batch_size: 10000                                   # Number of items in each batch
