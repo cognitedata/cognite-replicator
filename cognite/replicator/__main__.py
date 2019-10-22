@@ -74,7 +74,7 @@ def main():
         "resync_destination_tenant", config.get("delete_if_not_replicated", False)
     )
     src_api_key = os.environ.get(config.get("src_api_key_env_var", "COGNITE_SOURCE_API_KEY"))
-    dest_api_key = os.environ.get(config.get("dest_api_key_env_var", "COGNITE_DESTINATION_API_KEY"))
+    dst_api_key = os.environ.get(config.get("dst_api_key_env_var", "COGNITE_DESTINATION_API_KEY"))
 
     src_client = CogniteClient(
         api_key=src_api_key,
@@ -83,13 +83,13 @@ def main():
         timeout=config.get("client_timeout"),
     )
     dest_client = CogniteClient(
-        api_key=dest_api_key,
-        project=config.get("dest_project"),
+        api_key=dst_api_key,
+        project=config.get("dst_project"),
         client_name=config.get("client_name"),
         timeout=config.get("client_timeout"),
     )
 
-    if not _validate_login(src_client, dest_client, config.get("src_project"), config.get("dest_project")):
+    if not _validate_login(src_client, dest_client, config.get("src_project"), config.get("dst_project")):
         sys.exit(2)
 
     resources_to_replicate = {Resource[resource.upper()] for resource in config.get("resources")}
