@@ -15,13 +15,12 @@ import sys
 from enum import Enum, auto, unique
 from pathlib import Path
 
+import yaml
+
 from cognite.client import CogniteClient
 from cognite.client.exceptions import CogniteAPIError
 
 from . import assets, configure_logger, datapoints, events, files, raw, time_series
-
-CLIENT_NAME = "cognite-replicator"
-CLIENT_TIMEOUT = 120
 
 
 @unique
@@ -38,43 +37,10 @@ class Resource(Enum):
 
 
 def create_cli_parser() -> argparse.ArgumentParser:
-    """Returns Argumentparser for command line interface."""
+    """Returns ArgumentParser for command line interface."""
     parser = argparse.ArgumentParser()
-    options = [i.name.lower() for i in Resource]
-    parser.add_argument("resource", nargs="+", choices=options, help="Which resource types to replicate")
+    parser.add_argument("config", default="config/default.yml", help="path to configuration file")
 
-    parser.add_argument("--src-api-key", help="CDF API KEY of the source project to copy objects from")
-    parser.add_argument("--dest-api-key", help="CDF API KEY of the destination project")
-    parser.add_argument("--src-project", help="Project that src-api-key belongs to")
-    parser.add_argument("--dest-project", help="Project that dest-api-key belongs to")
-
-    parser.add_argument(
-        "--resync-destination-tenant",
-        action="store_true",
-        help="Remove objects so destination is in sync with source tenant",
-    )
-    parser.add_argument(
-        "--delete-if-removed-in-source",
-        action="store_true",
-        help="Remove objects that was replicated and are deleted in source now",
-    )
-    parser.add_argument(
-        "--delete-if-not-replicated",
-        action="store_true",
-        help="Remove all objects in destination which was created/updated by replication",
-    )
-
-    parser.add_argument("--batch-size", default=10000, type=int, help="Number of items in each batch, if relevant")
-    parser.add_argument("--number-of-threads", default=1, type=int, help="Number of thread to use, if relevant")
-
-    parser.add_argument(
-        "--datapoint-limit", default=1000000, type=int, help="Maximum number of datapoints to fetch per time series"
-    )
-
-    parser.add_argument("--client-timeout", default=CLIENT_TIMEOUT, type=int, help="Seconds for clients to timeout")
-    parser.add_argument("--client-name", default=CLIENT_NAME, help="Name of client, default: " + CLIENT_NAME)
-    parser.add_argument("--log-path", default="log", help="Folder to save logs to")
-    parser.add_argument("--log-level", default="info", help="Logging level")
     return parser
 
 
@@ -97,26 +63,38 @@ def _validate_login(src_client: CogniteClient, dest_client: CogniteClient, src_p
 
 def main():
     args = create_cli_parser().parse_args()
-    configure_logger(args.log_level, Path(args.log_path))
+    config = yaml.load(args.config)
 
-    delete_replicated_if_not_in_src = True if args.resync_destination_tenant else args.delete_if_removed_in_source
-    delete_not_replicated_in_dst = True if args.resync_destination_tenant else args.delete_if_not_replicated
-    src_api_key = args.src_api_key if args.src_api_key else os.environ.get("COGNITE_SOURCE_API_KEY")
-    dest_api_key = args.src_api_key if args.dest_api_key else os.environ.get("COGNITE_DESTINATION_API_KEY")
+    configure_logger(config.get("log_level", "INFO"), Path(config.get("log_path")))
+
+    delete_replicated_if_not_in_src = config.get(
+        "resync_destination_tenant", config.get("delete_if_removed_in_source", False)
+    )
+    delete_not_replicated_in_dst = config.get(
+        "resync_destination_tenant", config.get("delete_if_not_replicated", False)
+    )
+    src_api_key = os.environ.get(config.get("src_api_key_env_var", "COGNITE_SOURCE_API_KEY"))
+    dest_api_key = os.environ.get(config.get("dest_api_key_env_var", "COGNITE_DESTINATION_API_KEY"))
 
     src_client = CogniteClient(
-        api_key=src_api_key, project=args.src_project, client_name=args.client_name, timeout=args.client_timeout
+        api_key=src_api_key,
+        project=config.get("src_project"),
+        client_name=config.get("client_name"),
+        timeout=config.get("client_timeout"),
     )
     dest_client = CogniteClient(
-        api_key=dest_api_key, project=args.dest_project, client_name=args.client_name, timeout=args.client_timeout
+        api_key=dest_api_key,
+        project=config.get("dest_project"),
+        client_name=config.get("client_name"),
+        timeout=config.get("client_timeout"),
     )
 
-    if not _validate_login(src_client, dest_client, args.src_project, args.dest_project):
+    if not _validate_login(src_client, dest_client, config.get("src_project"), config.get("dest_project")):
         sys.exit(2)
 
-    resources_to_replicate = {Resource[i.upper()] for i in args.resource}
+    resources_to_replicate = {Resource[resource.upper()] for resource in config.get("resources")}
     if Resource.ALL in resources_to_replicate:
-        resources_to_replicate.update({i for i in Resource})
+        resources_to_replicate.update({resource for resource in Resource})
 
     if Resource.ASSETS in resources_to_replicate:
         assets.replicate(
@@ -130,8 +108,8 @@ def main():
         events.replicate(
             src_client,
             dest_client,
-            args.batch_size,
-            args.number_of_threads,
+            config.get("batch_size"),
+            config.get("number_of_threads"),
             delete_replicated_if_not_in_src=delete_replicated_if_not_in_src,
             delete_not_replicated_in_dst=delete_not_replicated_in_dst,
         )
@@ -140,8 +118,8 @@ def main():
         time_series.replicate(
             src_client,
             dest_client,
-            args.batch_size,
-            args.number_of_threads,
+            config.get("batch_size"),
+            config.get("number_of_threads"),
             delete_replicated_if_not_in_src=delete_replicated_if_not_in_src,
             delete_not_replicated_in_dst=delete_not_replicated_in_dst,
         )
@@ -150,17 +128,19 @@ def main():
         files.replicate(
             src_client,
             dest_client,
-            args.batch_size,
-            args.number_of_threads,
+            config.get("batch_size"),
+            config.get("number_of_threads"),
             delete_replicated_if_not_in_src=delete_replicated_if_not_in_src,
             delete_not_replicated_in_dst=delete_not_replicated_in_dst,
         )
 
     if Resource.RAW in resources_to_replicate:
-        raw.replicate(src_client, dest_client, args.batch_size)
+        raw.replicate(src_client, dest_client, config.get("batch_size"))
 
     if Resource.DATAPOINTS in resources_to_replicate:
-        datapoints.replicate(src_client, dest_client, num_threads=args.number_of_threads, limit=args.datapoint_limit)
+        datapoints.replicate(
+            src_client, dest_client, num_threads=config.get("number_of_threads"), limit=config.get("datapoint_limit")
+        )
 
 
 if __name__ == "__main__":

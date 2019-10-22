@@ -1,0 +1,21 @@
+resources:                                # Which resource types to replicate
+  - assets
+  - events
+  - raw
+  - timeseries
+  - datapoints
+  - files
+src_api_key_env_var:                     # Name of environment variable holding CDF API KEY of the source project
+dest_api_key_env_var:                    # Name of environment variable holding CDF API KEY of the destination project
+src_project:                             # Project that src-api-key belongs to
+dest_project:                            # Project that dest-api-key belongs to
+resync-destination-tenant: false         # Set to remove objects so destination is in sync with source tenant
+delete-if-removed-in-source: false       # Remove object so destination is in sync with source tenant
+delete-if-not-replicated: false          # Remove all objects in destination which was created/updated by replication
+batch_size: 10000                        # Number of items in each batch
+number-of-threads: 1                     # Number of threads to use
+datapoint-limit: 1000000                 # Maximum number of datapoints to fetch per time series
+client-timeout: 120                      # Seconds for clients to timeout
+client-name: cognite-replicator          # Name of client
+log-path: log                            # Folder to save logs to
+log-level: info                          # Logging level
