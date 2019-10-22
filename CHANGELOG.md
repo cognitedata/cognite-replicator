@@ -19,7 +19,12 @@ Changes are grouped as follows
 
 ## [Unreleased]
 
-## [0.5.0] - 2019-10-03
+## [0.6.0] - 2019-10-22
+
+### Changed
+- Running the package as a script now uses a yaml file for configuration, rather than command-line args.
+
+## [0.5.0] - 2019-10-17
 
 ### Added
 - Datapoint replication now provides `src_datapoint_transform` parameter to allow for transformations of

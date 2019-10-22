@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cognite_replicator"
-version = "0.5.0"
+version = "0.6.0"
 description = "Python package for replicating data across CDF tenants. Copyright 2019 Cognite AS"
 license = "Apache-2.0"
 authors = [
@@ -33,6 +33,7 @@ isort = "^4.3"
 pre-commit = "^1.18"
 pytest = "^5.1.1"
 pytest-cov = "^2.7.1"
+pyyaml = "^5.1.0"
 sphinx = "^2.0"
 sphinx-rtd-theme = "^0.4"
 toml = "^0.10.0"
