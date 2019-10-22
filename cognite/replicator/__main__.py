@@ -39,7 +39,7 @@ class Resource(Enum):
 def create_cli_parser() -> argparse.ArgumentParser:
     """Returns ArgumentParser for command line interface."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("config", default="config/default.yml", help="path to yaml configuration file")
+    parser.add_argument("--config", default="config/default.yml", help="path to yaml configuration file")
 
     return parser
 
@@ -63,16 +63,13 @@ def _validate_login(src_client: CogniteClient, dst_client: CogniteClient, src_pr
 
 def main():
     args = create_cli_parser().parse_args()
-    config = yaml.load(args.config)
+    config = yaml.load(open(args.config, "r").read())
 
     configure_logger(config.get("log_level", "INFO"), Path(config.get("log_path")))
 
-    delete_replicated_if_not_in_src = config.get(
-        "resync_destination_tenant", config.get("delete_if_removed_in_source", False)
-    )
-    delete_not_replicated_in_dst = config.get(
-        "resync_destination_tenant", config.get("delete_if_not_replicated", False)
-    )
+    delete_replicated_if_not_in_src = config.get("delete_if_removed_in_source", False)
+    delete_not_replicated_in_dst = config.get("delete_if_not_replicated", False)
+
     src_api_key = os.environ.get(config.get("src_api_key_env_var", "COGNITE_SOURCE_API_KEY"))
     dst_api_key = os.environ.get(config.get("dst_api_key_env_var", "COGNITE_DESTINATION_API_KEY"))
 
