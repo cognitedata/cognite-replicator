@@ -159,8 +159,8 @@ def unlink_subtree_parents(
 
     Args:
         src_assets: A list of the assets that are in the source.
-        subtree_ids: The id of the subtree root,
-        subtree_external_ids: The external id of the subtree root,
+        subtree_ids: The id of the subtree root(s).
+        subtree_external_ids: The external id of the subtree root(s).
     """
     logging.info("Searching for subtree parent...")
     for asset in src_assets:
@@ -168,6 +168,9 @@ def unlink_subtree_parents(
             subtree_external_ids is not None and asset.external_id in subtree_external_ids
         ):
             logging.info(f"Found the subtree root: {asset.id} with parent id: {asset.parent_id}")
+            if asset.metadata is None:
+                asset.metadata = {}
+
             if asset.parent_id:
                 asset.metadata["_replicatedOriginalParentId"] = asset.parent_id
             if asset.parent_external_id:
