@@ -159,8 +159,8 @@ def unlink_subtree_parents(
 
     Args:
         src_assets: A list of the assets that are in the source.
-        subtree_ids: The id of the subtree root(s).
-        subtree_external_ids: The external id of the subtree root(s).
+        subtree_ids: The id(s) of the subtree root(s).
+        subtree_external_ids: The external id(s) of the subtree root(s).
     """
     logging.info("Searching for subtree parent...")
     for asset in src_assets:
