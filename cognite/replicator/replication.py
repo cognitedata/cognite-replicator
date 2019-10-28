@@ -290,6 +290,20 @@ def thread(
         logging.info(f"Joined thread: {count}")
 
 
+def remove_replication_metadata(objects: Union[List[Asset], List[Event], List[TimeSeries]]):
+    """Removes the replication metadata from the passed resource list, so that the resources will look original.
+    See also clear_replication_metadata.
+
+    Parameters:
+        objects: The list of objects to strip replication metadata away from
+    """
+    for obj in objects:
+        if obj.metadata:
+            obj.metadata.pop("_replicatedInternalId", None)
+            obj.metadata.pop("_replicatedSource", None)
+            obj.metadata.pop("_replicatedTime", None)
+
+
 def clear_replication_metadata(client: CogniteClient):
     """Removes the replication metadata from all resources, so that the replicated tenant will look like an original.
     Sample use-case: clean up a demo-tenant so that extra data is not present.
@@ -300,27 +314,13 @@ def clear_replication_metadata(client: CogniteClient):
         client: The client to strip replication metadata away from
     """
 
-    def remove_replication_metadata(
-        objects: Union[List[Asset], List[Event], List[TimeSeries]],
-        update_fn: Callable[[Union[List[Asset], List[Event], List[TimeSeries]]], None],
-        object_name: str = "unspecified objects",
-    ):
-        logging.info(f"Starting {object_name}...")
-        for obj in objects:
-            if obj.metadata:
-                obj.metadata.pop("_replicatedInternalId", None)
-                obj.metadata.pop("_replicatedSource", None)
-                obj.metadata.pop("_replicatedTime", None)
-        update_fn(objects)
-        logging.info(f"Done {object_name}!")
-
     logging.info("Starting to clear replication metadata...")
     events_dst = client.events.list(limit=None)
     ts_dst = client.time_series.list(limit=None)
     assets_dst = client.assets.list(limit=None)
-    remove_replication_metadata(assets_dst, client.assets.update, "assets")
-    remove_replication_metadata(ts_dst, client.time_series.update, "time series")
-    remove_replication_metadata(events_dst, client.events.update, "events")
+    client.events.update(events_dst)
+    client.time_series.update(ts_dst)
+    client.assets.update(assets_dst)
     logging.info("Replication metadata cleared!")
 
 
