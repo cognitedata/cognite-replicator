@@ -1,9 +1,9 @@
 import logging
 import time
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from cognite.client import CogniteClient
-from cognite.client.data_classes.assets import Asset
+from cognite.client.data_classes.assets import Asset, AssetList
 
 from . import replication
 
@@ -67,7 +67,7 @@ def build_asset_update(
     return dst_asset
 
 
-def find_children(assets: List[Asset], parents: List[Asset]) -> List[Asset]:
+def find_children(assets: List[Asset], parents: Union[List[None], List[Asset]]) -> List[Asset]:
     """
     Creates a list of all the assets that are children of the parent assets.
 
@@ -89,8 +89,8 @@ def create_hierarchy(
     project_src: str,
     runtime: int,
     client: CogniteClient,
-    subtree_id: Optional[int] = None,
-    subtree_external_id: Optional[str] = None,
+    subtree_ids: Optional[List[int]] = None,
+    subtree_external_ids: Optional[List[str]] = None,
     subtree_max_depth: Optional[int] = None,
 ):
     """
@@ -103,14 +103,14 @@ def create_hierarchy(
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
         client: The client corresponding to the destination project.
-        subtree_id: The id of the subtree root to replicate,
-        subtree_external_id: The external id of the subtree root to replicate,
+        subtree_ids: The id of the subtree root to replicate,
+        subtree_external_ids: The external id of the subtree root to replicate,
         subtree_max_depth: The maximum tree depth to replicate,
     """
     depth = 0
     parents = [None]  # root nodes parent id is None
-    if subtree_id is not None or subtree_external_id is not None:
-        unlink_subtree_parent(src_assets, subtree_id, subtree_external_id)
+    if subtree_ids is not None or subtree_external_ids is not None:
+        unlink_subtree_parents(src_assets, subtree_ids, subtree_external_ids)
     children = find_children(src_assets, parents)
 
     src_dst_ids: Dict[int, int] = {}
@@ -152,20 +152,20 @@ def create_hierarchy(
     return src_dst_ids
 
 
-def unlink_subtree_parent(
-    src_assets: List[Asset], subtree_id: Optional[int] = None, subtree_external_id: Optional[str] = None
+def unlink_subtree_parents(
+    src_assets: List[Asset], subtree_ids: Optional[List[int]] = None, subtree_external_ids: Optional[List[str]] = None
 ):
-    """Sets the parentId of the subtree root to be None
+    """Sets the parentId of subtree roots to be None
 
     Args:
         src_assets: A list of the assets that are in the source.
-        subtree_id: The id of the subtree root,
-        subtree_external_id: The external id of the subtree root,
+        subtree_ids: The id of the subtree root,
+        subtree_external_ids: The external id of the subtree root,
     """
     logging.info("Searching for subtree parent...")
     for asset in src_assets:
-        if (subtree_id is not None and asset.id == subtree_id) or (
-            subtree_external_id is not None and asset.external_id == subtree_external_id
+        if (subtree_ids is not None and asset.id in subtree_ids) or (
+            subtree_external_ids is not None and asset.external_id in subtree_external_ids
         ):
             logging.info(f"Found the subtree root: {asset.id} with parent id: {asset.parent_id}")
             if asset.parent_id:
@@ -174,7 +174,6 @@ def unlink_subtree_parent(
                 asset.metadata["_replicatedOriginalParentExternalId"] = asset.parent_external_id
             asset.parent_id = None
             asset.parent_external_id = None
-            return
 
 
 def replicate(
@@ -182,8 +181,8 @@ def replicate(
     client_dst: CogniteClient,
     delete_replicated_if_not_in_src: bool = False,
     delete_not_replicated_in_dst: bool = False,
-    subtree_id: Optional[int] = None,
-    subtree_external_id: Optional[str] = None,
+    subtree_ids: Optional[Union[int, List[int]]] = None,
+    subtree_external_ids: Optional[Union[str, List[str]]] = None,
     subtree_max_depth: Optional[int] = None,
 ):
     """
@@ -196,20 +195,28 @@ def replicate(
         but no longer in the source project (Default=False).
         delete_not_replicated_in_dst: If True, will delete assets from the destination if they were not replicated
         from the source (Default=False).
-        subtree_id: The id of the subtree root to replicate,
-        subtree_external_id: The external id of the subtree root to replicate,
+        subtree_ids: The id or list of ids of subtree root to replicate,
+        subtree_external_ids: The external id or list of external ids of the subtree root to replicate,
         subtree_max_depth: The maximum tree depth to replicate,
     """
     project_src = client_src.config.project
     project_dst = client_dst.config.project
 
-    if subtree_id is not None or subtree_external_id is not None:
-        logging.info(f"Loading a subtree with id {subtree_id} or external id {subtree_external_id}")
-        assets_src = client_src.assets.retrieve_subtree(
-            id=subtree_id, external_id=subtree_external_id, depth=subtree_max_depth
-        )
-    else:
+    if not subtree_ids and not subtree_external_ids:
         assets_src = client_src.assets.list(limit=None)
+    else:
+        logging.info(f"Loading subtree(s) with id(s) {subtree_ids} or external id(s) {subtree_external_ids}")
+        assets_src = AssetList(resources=[])
+        if subtree_ids:
+            if not isinstance(subtree_ids, list):
+                subtree_ids = [subtree_ids]
+            for subtree_id in subtree_ids:
+                assets_src += client_src.assets.retrieve_subtree(id=subtree_id, depth=subtree_max_depth)
+        if subtree_external_ids:
+            if not isinstance(subtree_external_ids, list):
+                subtree_external_ids = [subtree_external_ids]
+            for subtree_id in subtree_external_ids:
+                assets_src += client_src.assets.retrieve_subtree(external_id=subtree_id, depth=subtree_max_depth)
     assets_dst = client_dst.assets.list(limit=None)
 
     logging.info(f"There are {len(assets_src)} existing assets in source ({project_src}).")
@@ -228,8 +235,8 @@ def replicate(
         project_src,
         replicated_runtime,
         client_dst,
-        subtree_id,
-        subtree_external_id,
+        subtree_ids,
+        subtree_external_ids,
         subtree_max_depth,
     )
 
