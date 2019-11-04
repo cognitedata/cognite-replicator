@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from cognite.client import CogniteClient
 from cognite.client.data_classes import TimeSeries
@@ -102,6 +102,10 @@ def copy_ts(
         client: The client corresponding to the destination project.
     """
     logging.info(f"Starting to replicate {len(src_ts)} time series.")
+    for ts in src_ts:  # for unlinkable time_series, remove asset id to avoid insertion error
+        if ts.id not in src_dst_ids_assets:
+            ts.asset_id = None
+
     create_ts, update_ts, unchanged_ts = replication.make_objects_batch(
         src_ts, src_id_dst_ts, src_dst_ids_assets, create_time_series, update_time_series, project_src, runtime
     )
@@ -128,6 +132,7 @@ def replicate(
     delete_not_replicated_in_dst: bool = False,
     skip_unlinkable: bool = False,
     skip_nonasset: bool = False,
+    target_external_ids: Optional[List[str]] = None,
 ):
     """
     Replicates all the time series from the source project into the destination project.
@@ -143,14 +148,19 @@ def replicate(
         from the source (Default=False).
         skip_unlinkable: If no assets exist in the destination for a time series, do not replicate it
         skip_nonasset: If a time series has no associated assets, do not replicate it
+        target_external_ids: List of specific time series external ids to replicate
     """
     project_src = client_src.config.project
     project_dst = client_dst.config.project
 
-    ts_src = client_src.time_series.list(limit=None)
-    ts_dst = client_dst.time_series.list(limit=None)
-    logging.info(f"There are {len(ts_src)} existing time series in source ({project_src}).")
-    logging.info(f"There are {len(ts_dst)} existing time series in destination ({project_dst}).")
+    if target_external_ids:
+        ts_src = client_src.time_series.retrieve_multiple(external_ids=target_external_ids)
+        ts_dst = client_dst.time_series.retrieve_multiple(external_ids=target_external_ids)
+    else:
+        ts_src = client_src.time_series.list(limit=None)
+        ts_dst = client_dst.time_series.list(limit=None)
+        logging.info(f"There are {len(ts_src)} existing time series in source ({project_src}).")
+        logging.info(f"There are {len(ts_dst)} existing time series in destination ({project_dst}).")
 
     src_id_dst_ts = replication.make_id_object_map(ts_dst)
 
