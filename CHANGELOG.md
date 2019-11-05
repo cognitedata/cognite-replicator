@@ -19,6 +19,15 @@ Changes are grouped as follows
 
 ## [Unreleased]
 
+## [0.7.0] - 2019-11-05
+
+### Added
+- Add ability to replicate time series by list of external ids
+- Add ability to replicate unlinkable (asset-less) time series
+
+### Fixed
+- Added missing yaml dependency
+
 ## [0.6.0] - 2019-10-22
 
 ### Changed
