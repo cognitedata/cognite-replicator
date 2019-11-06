@@ -18,3 +18,4 @@ client_timeout: 120                                 # Seconds for clients to tim
 client_name: cognite-replicator                     # Name of client
 log_path: log                                       # Folder to save logs to
 log_level: info                                     # Logging level
+timeseries_exclude_pattern:                         # Regex pattern to prevent replication of matching timeseries
