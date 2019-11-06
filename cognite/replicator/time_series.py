@@ -1,4 +1,5 @@
 import logging
+import re
 import time
 from typing import Dict, List, Optional
 
@@ -133,6 +134,7 @@ def replicate(
     skip_unlinkable: bool = False,
     skip_nonasset: bool = False,
     target_external_ids: Optional[List[str]] = None,
+    exclude_pattern: str = None,
 ):
     """
     Replicates all the time series from the source project into the destination project.
@@ -148,7 +150,8 @@ def replicate(
         from the source (Default=False).
         skip_unlinkable: If no assets exist in the destination for a time series, do not replicate it
         skip_nonasset: If a time series has no associated assets, do not replicate it
-        target_external_ids: List of specific time series external ids to replicate
+        target_external_ids: List of specific time series external ids to replicate,
+        exclude_pattern: Regex pattern; time series whose names match will not be replicated
     """
     project_src = client_src.config.project
     project_dst = client_dst.config.project
@@ -171,9 +174,16 @@ def replicate(
         f"that have been replicated then it will be linked."
     )
 
-    ts_src_filtered = replication.filter_objects(
-        ts_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset, _is_copyable
-    )
+    compiled_re = None
+    if exclude_pattern:
+        compiled_re = re.compile(exclude_pattern)
+
+    def filter_fn(ts):
+        if exclude_pattern:
+            return _is_copyable(ts) and compiled_re.search(ts.name) is None
+        return _is_copyable(ts)
+
+    ts_src_filtered = replication.filter_objects(ts_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset, filter_fn)
     logging.info(
         f"Filtered out {len(ts_src) - len(ts_src_filtered)} time series. {len(ts_src_filtered)} time series remain."
     )
