@@ -1,4 +1,4 @@
-@Library('jenkins-helpers@v0.1.12') _
+@Library('jenkins-helpers') _
 
 def label = "cognite-replicator-${UUID.randomUUID().toString()}"
 def imageName = "cognite/cognite-replicator"
