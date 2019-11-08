@@ -24,6 +24,7 @@ Changes are grouped as follows
 ### Added
 - Add ability to replicate time series by list of external ids
 - Add ability to replicate unlinkable (asset-less) time series
+- Add ability to replicate datapoints in a specific [start, end) range
 
 ### Fixed
 - Added missing yaml dependency
