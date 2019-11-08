@@ -3,7 +3,8 @@ import time
 from typing import Dict, List, Optional
 
 from cognite.client import CogniteClient
-from cognite.client.data_classes import TimeSeries
+from cognite.client.data_classes import TimeSeries, TimeSeriesList
+from cognite.client.exceptions import CogniteNotFoundError
 
 from . import replication
 
@@ -103,7 +104,7 @@ def copy_ts(
     """
     logging.info(f"Starting to replicate {len(src_ts)} time series.")
     for ts in src_ts:  # for unlinkable time_series, remove asset id to avoid insertion error
-        if ts.id not in src_dst_ids_assets:
+        if ts.asset_id is not None and ts.asset_id not in src_dst_ids_assets:
             ts.asset_id = None
 
     create_ts, update_ts, unchanged_ts = replication.make_objects_batch(
@@ -155,7 +156,10 @@ def replicate(
 
     if target_external_ids:
         ts_src = client_src.time_series.retrieve_multiple(external_ids=target_external_ids)
-        ts_dst = client_dst.time_series.retrieve_multiple(external_ids=target_external_ids)
+        try:
+            ts_dst = client_dst.time_series.retrieve_multiple(external_ids=target_external_ids)
+        except CogniteNotFoundError:
+            ts_dst = TimeSeriesList([])
     else:
         ts_src = client_src.time_series.list(limit=None)
         ts_dst = client_dst.time_series.list(limit=None)
