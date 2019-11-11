@@ -16,7 +16,6 @@ from enum import Enum, auto, unique
 from pathlib import Path
 
 import yaml
-
 from cognite.client import CogniteClient
 from cognite.client.exceptions import CogniteAPIError
 
@@ -120,6 +119,7 @@ def main():
             config.get("number_of_threads"),
             delete_replicated_if_not_in_src=delete_replicated_if_not_in_src,
             delete_not_replicated_in_dst=delete_not_replicated_in_dst,
+            exclude_pattern=config.get("timeseries_exclude_pattern"),
         )
 
     if Resource.FILES in resources_to_replicate:

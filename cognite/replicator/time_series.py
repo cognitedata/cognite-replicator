@@ -1,9 +1,11 @@
 import logging
+import re
 import time
 from typing import Dict, List, Optional
 
 from cognite.client import CogniteClient
-from cognite.client.data_classes import TimeSeries
+from cognite.client.data_classes import TimeSeries, TimeSeriesList
+from cognite.client.exceptions import CogniteNotFoundError
 
 from . import replication
 
@@ -103,7 +105,7 @@ def copy_ts(
     """
     logging.info(f"Starting to replicate {len(src_ts)} time series.")
     for ts in src_ts:  # for unlinkable time_series, remove asset id to avoid insertion error
-        if ts.id not in src_dst_ids_assets:
+        if ts.asset_id is not None and ts.asset_id not in src_dst_ids_assets:
             ts.asset_id = None
 
     create_ts, update_ts, unchanged_ts = replication.make_objects_batch(
@@ -133,6 +135,7 @@ def replicate(
     skip_unlinkable: bool = False,
     skip_nonasset: bool = False,
     target_external_ids: Optional[List[str]] = None,
+    exclude_pattern: str = None,
 ):
     """
     Replicates all the time series from the source project into the destination project.
@@ -148,14 +151,18 @@ def replicate(
         from the source (Default=False).
         skip_unlinkable: If no assets exist in the destination for a time series, do not replicate it
         skip_nonasset: If a time series has no associated assets, do not replicate it
-        target_external_ids: List of specific time series external ids to replicate
+        target_external_ids: List of specific time series external ids to replicate,
+        exclude_pattern: Regex pattern; time series whose names match will not be replicated
     """
     project_src = client_src.config.project
     project_dst = client_dst.config.project
 
     if target_external_ids:
         ts_src = client_src.time_series.retrieve_multiple(external_ids=target_external_ids)
-        ts_dst = client_dst.time_series.retrieve_multiple(external_ids=target_external_ids)
+        try:
+            ts_dst = client_dst.time_series.retrieve_multiple(external_ids=target_external_ids)
+        except CogniteNotFoundError:
+            ts_dst = TimeSeriesList([])
     else:
         ts_src = client_src.time_series.list(limit=None)
         ts_dst = client_dst.time_series.list(limit=None)
@@ -171,9 +178,16 @@ def replicate(
         f"that have been replicated then it will be linked."
     )
 
-    ts_src_filtered = replication.filter_objects(
-        ts_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset, _is_copyable
-    )
+    compiled_re = None
+    if exclude_pattern:
+        compiled_re = re.compile(exclude_pattern)
+
+    def filter_fn(ts):
+        if exclude_pattern:
+            return _is_copyable(ts) and compiled_re.search(ts.name) is None
+        return _is_copyable(ts)
+
+    ts_src_filtered = replication.filter_objects(ts_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset, filter_fn)
     logging.info(
         f"Filtered out {len(ts_src) - len(ts_src_filtered)} time series. {len(ts_src_filtered)} time series remain."
     )
