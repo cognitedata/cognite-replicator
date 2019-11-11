@@ -2,7 +2,7 @@ import logging
 import multiprocessing as mp
 from datetime import datetime
 from math import ceil, floor
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple, Union
 
 from cognite.client import CogniteClient
 from cognite.client.data_classes import Datapoint, Datapoints
@@ -51,6 +51,8 @@ def replicate_datapoints(
     job_id: int = 1,
     src_datapoint_transform: Optional[Callable[[Datapoint], Datapoint]] = None,
     timerange_transform: Optional[Callable[[Tuple[int, int]], Tuple[int, int]]] = None,
+    start: Union[int, str] = None,
+    end: Union[int, str] = None,
 ) -> Tuple[bool, int]:
     """
     Copies data points from the source tenant into the destination project, for the given time series.
@@ -68,6 +70,8 @@ def replicate_datapoints(
         job_id: The batch number being processed
         src_datapoint_transform: Function to apply to all source datapoints before inserting into destination
         timerange_transform: Function to set the time range boundaries (start, end) arbitrarily.
+        start: Timestamp to start replication onwards from; if not specified starts at most recent datapoint
+        end: If specified, limits replication to datapoints earlier than the end time
 
     Returns:
         A tuple of the success status (True if no failures) and the number of datapoints successfully replicated
@@ -85,7 +89,11 @@ def replicate_datapoints(
     if src_datapoint_transform:
         latest_src_dp = Datapoints(timestamp=[src_datapoint_transform(latest_src_dp[0]).timestamp])
 
-    start, end = _get_time_range(latest_src_dp, latest_dst_dp)
+    _start, _end = _get_time_range(latest_src_dp, latest_dst_dp)
+    if start is None:
+        start = _start
+    if end is None:
+        end = _end
 
     if timerange_transform:
         start, end = timerange_transform(start, end)
@@ -136,6 +144,8 @@ def batch_replicate(
     partition_size: int = 100000,
     src_datapoint_transform: Optional[Callable[[Datapoint], Datapoint]] = None,
     timerange_transform: Optional[Callable[[Tuple[int, int]], Tuple[int, int]]] = None,
+    start: Union[int, str] = None,
+    end: Union[int, str] = None,
 ):
     """
     Replicates datapoints for each time series specified by the external id list.
@@ -150,6 +160,8 @@ def batch_replicate(
         partition_size: The maximum number of datapoints to retrieve per request
         src_datapoint_transform: Function to apply to all source datapoints before inserting into destination
         timerange_transform: Function to set the time range boundaries (start, end) arbitrarily.
+        start: Timestamp to start replication onwards from; if not specified starts at most recent datapoint
+        end: If specified, limits replication to datapoints earlier than the end time
     """
 
     def log_status(total_ts_count):
@@ -184,6 +196,8 @@ def batch_replicate(
             limit=limit,
             src_datapoint_transform=src_datapoint_transform,
             timerange_transform=timerange_transform,
+            start=start,
+            end=end,
         )
 
         if not success_status:
@@ -209,6 +223,8 @@ def replicate(
     partition_size: int = 100000,
     src_datapoint_transform: Optional[Callable[[Datapoint], Datapoint]] = None,
     timerange_transform: Optional[Callable[[Tuple[int, int]], Tuple[int, int]]] = None,
+    start: Union[int, str] = None,
+    end: Union[int, str] = None,
 ):
     """
     Replicates data points from the source project into the destination project for all time series that
@@ -225,6 +241,8 @@ def replicate(
         partition_size: The maximum number of datapoints to retrieve per request
         src_datapoint_transform: Function to apply to all source datapoints before inserting into destination
         timerange_transform: Function to set the time range boundaries (start, end) arbitrarily.
+        start: Timestamp to start replication onwards from; if not specified starts at most recent datapoint
+        end: If specified, limits replication to datapoints earlier than the end time
     """
     if external_ids is not None:
         ts_src = client_src.time_series.retrieve_multiple(external_ids=external_ids)
@@ -257,6 +275,8 @@ def replicate(
             partition_size,
             src_datapoint_transform,
             timerange_transform,
+            start,
+            end,
         )
         for job_id in range(num_batches)
     ]
