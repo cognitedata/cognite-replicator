@@ -184,7 +184,7 @@ def replicate(
 
     def filter_fn(ts):
         if exclude_pattern:
-            return _is_copyable(ts) and compiled_re.search(ts.name) is None
+            return _is_copyable(ts) and compiled_re.search(ts.external_id) is None
         return _is_copyable(ts)
 
     ts_src_filtered = replication.filter_objects(ts_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset, filter_fn)

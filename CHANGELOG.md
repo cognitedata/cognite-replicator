@@ -19,6 +19,11 @@ Changes are grouped as follows
 
 ## [Unreleased]
 
+## [0.7.1] - 2019-11-12
+
+### Fixed
+- Switch time series regex filter to external id instead of name field
+
 ## [0.7.0] - 2019-11-05
 
 ### Added
