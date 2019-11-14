@@ -12,7 +12,7 @@ podTemplate(
     ],
     containers: [
         containerTemplate(name: 'python',
-            image: 'eu.gcr.io/cognitedata/multi-python:7040fac',
+            image: 'eu.gcr.io/cognitedata/multi-python:2019-10-18T1122-3e874f7',
             command: '/bin/cat -',
             resourceRequestCpu: '1000m',
             resourceRequestMemory: '800Mi',
@@ -57,7 +57,7 @@ podTemplate(
                 sh("pip3 install poetry")
             }
             stage('Install all dependencies') {
-                sh("pyenv local 3.6.6 3.7.2 3.8.0")
+                sh("pyenv local 3.6.6 3.7.4 3.8.0")
                 sh("poetry install")
             }
             stage('Test code') {
