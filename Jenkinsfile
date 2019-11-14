@@ -59,7 +59,6 @@ podTemplate(
             stage('Install all dependencies') {
                 sh('pip3 install twine')
                 sh('poetry config settings.virtualenvs.create false')
-                sh('poetry config http-basic.snakepit $PYPI_ARTIFACTORY_USERNAME $PYPI_ARTIFACTORY_PASSWORD')
                 sh('poetry install')
             }
             stage('Check code') {
