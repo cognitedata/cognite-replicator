@@ -12,7 +12,7 @@ podTemplate(
     ],
     containers: [
         containerTemplate(name: 'python',
-            image: 'eu.gcr.io/cognitedata/multi-python:7040fac',
+            image: 'eu.gcr.io/cognitedata/multi-python:2019-10-18T1122-3e874f7',
             command: '/bin/cat -',
             resourceRequestCpu: '1000m',
             resourceRequestMemory: '800Mi',
@@ -54,20 +54,25 @@ podTemplate(
 
         container('python') {
             stage('Install poetry') {
-                sh("pip3 install poetry")
+                sh('pip3 install poetry')
             }
             stage('Install all dependencies') {
-                sh("pyenv local 3.6.6 3.7.2 3.8.0")
-                sh("poetry install")
+                sh('pip3 install twine')
+                sh('poetry config settings.virtualenvs.create false')
+                sh('poetry config http-basic.snakepit $PYPI_ARTIFACTORY_USERNAME $PYPI_ARTIFACTORY_PASSWORD')
+                sh('poetry install')
             }
-            stage('Test code') {
-                sh("poetry run tox")
+            stage('Check code') {
+                sh("pyenv local 3.6.6 3.7.4 3.8.0")
+                sh("tox -p auto")
                 junit(allowEmptyResults: true, testResults: '**/test-report.xml')
                 summarizeTestResults()
             }
             stage('Validate code format') {
-                sh("poetry run black -l 120 --check .")
+                sh("black --check .")
+                sh("isort --check-only -rc .")
             }
+
             stage('Build') {
                 sh("poetry build")
             }
@@ -76,19 +81,14 @@ podTemplate(
                     sh("poetry run sphinx-build -W -b html ./source ./build")
                 }
             }
-            stage('Upload report to codecov.io') {
+            stage('Upload coverage reports') {
                 sh('bash </codecov-script/upload-report.sh')
                 step([$class: 'CoberturaPublisher', coberturaReportFile: 'coverage.xml'])
             }
 
-            def pipVersion = sh(returnStdout: true, script: 'poetry run yolk -V cognite-replicator | sort -n | tail -1 | cut -d\\  -f 2').trim()
-            def currentVersion = sh(returnStdout: true, script: 'sed -n -e "/^__version__/p" cognite/replicator/_version.py | cut -d\\" -f2').trim()
-            println("This version: " + currentVersion)
-            println("Latest pip version: " + pipVersion)
-
-             if (env.BRANCH_NAME == 'master' && currentVersion != pipVersion) {
-                 stage('Release') {
-                     sh("poetry run twine upload --config-file /pypi/.pypirc dist/*")
+             if (env.BRANCH_NAME == 'master') {
+                 stage('Release to pypi') {
+                     sh("twine upload --verbose --config-file /pypi/.pypirc dist/* || echo 'version exists'")
                  }
              }
         }
