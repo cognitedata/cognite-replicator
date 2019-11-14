@@ -57,7 +57,7 @@ podTemplate(
                 sh("pip3 install poetry")
             }
             stage('Install all dependencies') {
-                sh("pyenv local 3.6.6 3.7.2")
+                sh("pyenv local 3.6.6 3.7.2 3.8.0")
                 sh("poetry install")
             }
             stage('Test code') {
