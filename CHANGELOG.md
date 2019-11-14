@@ -19,6 +19,9 @@ Changes are grouped as follows
 
 ## [Unreleased]
 
+## Added
+- Provide config file path with env var COGNITE_CONFIG_FILE
+
 ## [0.7.1] - 2019-11-12
 
 ### Fixed
