@@ -76,7 +76,7 @@ def _get_config_path(config_arg: Optional[str]) -> Path:
         config_file = None
 
     if not config_file or not config_file.is_file():
-        logging.fatal(f"Config file not found: {config_file} {config_arg}")
+        logging.fatal(f"Config file not found: {config_file}")
         sys.exit(1)
     return config_file
 
@@ -86,7 +86,7 @@ def main():
     with open(_get_config_path(args.config)) as config_file:
         config = yaml.safe_load(config_file.read())
 
-    configure_logger(config.get("log_level", "INFO").upper(), Path(config.get("log_path")))
+    configure_logger(config.get("log_level", "INFO").upper(), Path(config.get("log_path", "log")))
 
     delete_replicated_if_not_in_src = config.get("delete_if_removed_in_source", False)
     delete_not_replicated_in_dst = config.get("delete_if_not_replicated", False)
