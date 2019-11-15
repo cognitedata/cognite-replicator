@@ -2,7 +2,7 @@
 
 def label = "cognite-replicator-${UUID.randomUUID().toString()}"
 def imageName = "cognite/cognite-replicator"
-def devImageName = "cognite/cognite-replicator-dev"
+def currentVersion =  ""
 
 podTemplate(
     label: label,
@@ -12,7 +12,7 @@ podTemplate(
     ],
     containers: [
         containerTemplate(name: 'python',
-            image: 'eu.gcr.io/cognitedata/multi-python:7040fac',
+            image: 'eu.gcr.io/cognitedata/multi-python:2019-10-18T1122-3e874f7',
             command: '/bin/cat -',
             resourceRequestCpu: '1000m',
             resourceRequestMemory: '800Mi',
@@ -27,7 +27,6 @@ podTemplate(
             ttyEnabled: true),
     ],
     volumes: [
-        secretVolume(secretName: 'jenkins-docker-builder', mountPath: '/jenkins-docker-builder', readOnly: true),
         secretVolume(secretName: 'pypi-credentials', mountPath: '/pypi', readOnly: true),
         secretVolume(secretName: 'cognitecicd-dockerhub', mountPath: '/dockerhub-credentials'),
         hostPathVolume(hostPath: '/var/run/docker.sock', mountPath: '/var/run/docker.sock'),
@@ -57,7 +56,7 @@ podTemplate(
                 sh("pip3 install poetry")
             }
             stage('Install all dependencies') {
-                sh("pyenv local 3.6.6 3.7.2")
+                sh("pyenv local 3.6.6 3.7.4 3.8.0")
                 sh("poetry install")
             }
             stage('Test code') {
@@ -81,8 +80,8 @@ podTemplate(
                 step([$class: 'CoberturaPublisher', coberturaReportFile: 'coverage.xml'])
             }
 
+            currentVersion = sh(returnStdout: true, script: 'sed -n -e "/^__version__/p" cognite/replicator/_version.py | cut -d\\" -f2').trim()
             def pipVersion = sh(returnStdout: true, script: 'poetry run yolk -V cognite-replicator | sort -n | tail -1 | cut -d\\  -f 2').trim()
-            def currentVersion = sh(returnStdout: true, script: 'sed -n -e "/^__version__/p" cognite/replicator/_version.py | cut -d\\" -f2').trim()
             println("This version: " + currentVersion)
             println("Latest pip version: " + pipVersion)
 
@@ -104,7 +103,7 @@ podTemplate(
 
             if (env.CHANGE_ID) {
                 stage("Publish PR image") {
-                    def prImage = "${devImageName}:pr-${env.CHANGE_ID}"
+                    def prImage = "${imageName}-dev:pr-${env.CHANGE_ID}"
                     sh("docker tag ${imageName}:${gitCommit} ${prImage}")
                     sh("docker push ${prImage}")
                     pullRequest.comment("[pr-bot]\nRun this build with `docker run --rm -it ${prImage}`")
@@ -112,7 +111,8 @@ podTemplate(
             } else if (env.BRANCH_NAME == 'master') {
                 stage('Push to GCR') {
                     sh("docker tag ${imageName}:${gitCommit} ${imageName}:latest")
-                    sh("docker push ${imageName}:${gitCommit}")
+                    sh("docker tag ${imageName}:${gitCommit} ${imageName}:${currentVersion}")
+                    sh("docker push ${imageName}:${currentVersion}")
                     sh("docker push ${imageName}:latest")
                 }
             }
