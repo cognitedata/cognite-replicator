@@ -254,7 +254,7 @@ def replicate(
     logging.info(f"Number of time series in source: {len(ts_src)}")
     logging.info(f"Number of time series in destination: {len(ts_dst)}")
 
-    src_ext_id_list = set([ts_id.external_id for ts_id in ts_src])
+    src_ext_id_list = [ts_id.external_id for ts_id in ts_src]
     dst_ext_id_list = set([ts_id.external_id for ts_id in ts_dst])
     shared_external_ids = [ext_id for ext_id in src_ext_id_list if ext_id in dst_ext_id_list and ext_id]
     logging.info(
