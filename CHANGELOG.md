@@ -19,8 +19,11 @@ Changes are grouped as follows
 
 ## [Unreleased]
 
+## [0.7.2] - 2019-11-15
+
 ### Changed
 - Use version for tag on images published to docker hub
+- Replicate datapoints with a consistent time series order
 
 ## [0.7.1] - 2019-11-12
 
