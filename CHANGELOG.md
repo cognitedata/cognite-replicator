@@ -19,6 +19,9 @@ Changes are grouped as follows
 
 ## [Unreleased]
 
+## Added
+- Provide config file path with env var COGNITE_CONFIG_FILE
+
 ### Changed
 - Use version for tag on images published to docker hub
 
