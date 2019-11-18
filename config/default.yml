@@ -17,5 +17,5 @@ datapoint_limit: 1000000                            # Maximum number of datapoin
 client_timeout: 120                                 # Seconds for clients to timeout
 client_name: cognite-replicator                     # Name of client
 log_path: log                                       # Folder to save logs to
-log_level: info                                     # Logging level
+log_level: INFO                                     # Logging level
 timeseries_exclude_pattern:                         # Regex pattern to prevent replication of matching timeseries

@@ -6,7 +6,10 @@ To run, configure the source and destination CogniteClient with project and api_
 API keys can be set as environment variables COGNITE_SOURCE_API_KEY and
 COGNITE_DESTINATION_API_KEY or through command line arguments.
 
-Example usage: poetry run replicator assets
+You must provide a config file, give the path either in environment variable
+COGNITE_CONFIG_FILE or as command line argument.
+
+Example usage: poetry run replicator
 """
 import argparse
 import logging
@@ -14,12 +17,16 @@ import os
 import sys
 from enum import Enum, auto, unique
 from pathlib import Path
+from typing import Optional
 
 import yaml
+
 from cognite.client import CogniteClient
 from cognite.client.exceptions import CogniteAPIError
 
 from . import assets, configure_logger, datapoints, events, files, raw, time_series
+
+ENV_VAR_FOR_CONFIG_FILE_PATH = "COGNITE_CONFIG_FILE"
 
 
 @unique
@@ -38,8 +45,7 @@ class Resource(Enum):
 def create_cli_parser() -> argparse.ArgumentParser:
     """Returns ArgumentParser for command line interface."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("config", nargs="?", default="config/default.yml", help="path to yaml configuration file")
-
+    parser.add_argument("config", nargs="?", help="path to yaml configuration file")
     return parser
 
 
@@ -60,12 +66,27 @@ def _validate_login(src_client: CogniteClient, dst_client: CogniteClient, src_pr
     return True
 
 
+def _get_config_path(config_arg: Optional[str]) -> Path:
+    """Get the config file, first either from given path or from env variable."""
+    if config_arg:
+        config_file = Path(config_arg)
+    elif os.environ.get(ENV_VAR_FOR_CONFIG_FILE_PATH):
+        config_file = Path(os.environ[ENV_VAR_FOR_CONFIG_FILE_PATH])
+    else:
+        config_file = None
+
+    if not config_file or not config_file.is_file():
+        logging.fatal(f"Config file not found: {config_file}")
+        sys.exit(1)
+    return config_file
+
+
 def main():
     args = create_cli_parser().parse_args()
-    with open(args.config, "r") as config_file:
+    with open(_get_config_path(args.config)) as config_file:
         config = yaml.safe_load(config_file.read())
 
-    configure_logger(config.get("log_level", "INFO"), Path(config.get("log_path")))
+    configure_logger(config.get("log_level", "INFO").upper(), Path(config.get("log_path", "log")))
 
     delete_replicated_if_not_in_src = config.get("delete_if_removed_in_source", False)
     delete_not_replicated_in_dst = config.get("delete_if_not_replicated", False)
