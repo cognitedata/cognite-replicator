@@ -59,15 +59,15 @@ podTemplate(
                 sh('poetry config settings.virtualenvs.create false')
                 sh('poetry install')
             }
-            stage('Check code') {
-                sh("pyenv local 3.6.6 3.7.4 3.8.0")
-                sh("tox -p auto")
-                junit(allowEmptyResults: true, testResults: '**/test-report.xml')
-                summarizeTestResults()
-            }
             stage('Validate code format') {
                 sh("black --check .")
                 sh("isort --check-only -rc .")
+            }
+            stage('Run unittests') {
+                sh("pyenv local 3.6.6 3.7.4 3.8.0")
+                sh("poetry run tox")
+                junit(allowEmptyResults: true, testResults: '**/test-report.xml')
+                summarizeTestResults()
             }
             stage('Build') {
                 sh("poetry build")
