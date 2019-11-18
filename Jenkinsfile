@@ -2,7 +2,6 @@
 
 def label = "cognite-replicator-${UUID.randomUUID().toString()}"
 def imageName = "cognite/cognite-replicator"
-def devImageName = "cognite/cognite-replicator-dev"
 
 podTemplate(
     label: label,
@@ -27,7 +26,6 @@ podTemplate(
             ttyEnabled: true),
     ],
     volumes: [
-        secretVolume(secretName: 'jenkins-docker-builder', mountPath: '/jenkins-docker-builder', readOnly: true),
         secretVolume(secretName: 'pypi-credentials', mountPath: '/pypi', readOnly: true),
         secretVolume(secretName: 'cognitecicd-dockerhub', mountPath: '/dockerhub-credentials'),
         hostPathVolume(hostPath: '/var/run/docker.sock', mountPath: '/var/run/docker.sock'),
@@ -71,7 +69,6 @@ podTemplate(
                 sh("black --check .")
                 sh("isort --check-only -rc .")
             }
-
             stage('Build') {
                 sh("poetry build")
             }
@@ -85,33 +82,33 @@ podTemplate(
                 step([$class: 'CoberturaPublisher', coberturaReportFile: 'coverage.xml'])
             }
 
-             if (env.BRANCH_NAME == 'master') {
-                 stage('Release to pypi') {
-                     sh("twine upload --verbose --config-file /pypi/.pypirc dist/* || echo 'version exists'")
-                 }
-             }
+            if (env.BRANCH_NAME == 'master') {
+                stage('Release to pypi') {
+                    sh("twine upload --verbose --config-file /pypi/.pypirc dist/* || echo 'version exists'")
+                }
+            }
         }
 
         container('docker') {
             stage('Build docker image') {
                 sh("docker build -t ${imageName}:${gitCommit} .")
             }
-
             stage('Login to docker hub') {
                 sh('cat /dockerhub-credentials/DOCKER_PASSWORD | docker login -u "$(cat /dockerhub-credentials/DOCKER_USERNAME)" --password-stdin')
             }
-
             if (env.CHANGE_ID) {
                 stage("Publish PR image") {
-                    def prImage = "${devImageName}:pr-${env.CHANGE_ID}"
+                    def prImage = "${imageName}-dev:pr-${env.CHANGE_ID}"
                     sh("docker tag ${imageName}:${gitCommit} ${prImage}")
                     sh("docker push ${prImage}")
                     pullRequest.comment("[pr-bot]\nRun this build with `docker run --rm -it ${prImage}`")
                 }
             } else if (env.BRANCH_NAME == 'master') {
                 stage('Push to GCR') {
+                    def currentVersion = sh(returnStdout: true, script: 'sed -n -e "/^__version__/p" cognite/replicator/_version.py | cut -d\\" -f2').trim()
                     sh("docker tag ${imageName}:${gitCommit} ${imageName}:latest")
-                    sh("docker push ${imageName}:${gitCommit}")
+                    sh("docker tag ${imageName}:${gitCommit} ${imageName}:${currentVersion}")
+                    sh("docker push ${imageName}:${currentVersion}")
                     sh("docker push ${imageName}:latest")
                 }
             }
