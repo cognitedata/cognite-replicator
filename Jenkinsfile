@@ -65,7 +65,7 @@ podTemplate(
             }
             stage('Run unittests') {
                 sh("pyenv local 3.6.6 3.7.4 3.8.0")
-                sh("poetry run tox")
+                sh("tox")
                 junit(allowEmptyResults: true, testResults: '**/test-report.xml')
                 summarizeTestResults()
             }
