@@ -74,7 +74,7 @@ podTemplate(
             }
             stage('Build Docs') {
                 dir('./docs'){
-                    sh("poetry run sphinx-build -W -b html ./source ./build")
+                    sh("sphinx-build -W -b html ./source ./build")
                 }
             }
             stage('Upload coverage reports') {
