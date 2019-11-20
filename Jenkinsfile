@@ -2,7 +2,6 @@
 
 def label = "cognite-replicator-${UUID.randomUUID().toString()}"
 def imageName = "cognite/cognite-replicator"
-def currentVersion =  ""
 
 podTemplate(
     label: label,
@@ -53,54 +52,50 @@ podTemplate(
 
         container('python') {
             stage('Install poetry') {
-                sh("pip3 install poetry")
+                sh('pip3 install poetry')
             }
             stage('Install all dependencies') {
-                sh("pyenv local 3.6.6 3.7.4 3.8.0")
-                sh("poetry install")
-            }
-            stage('Test code') {
-                sh("poetry run tox")
-                junit(allowEmptyResults: true, testResults: '**/test-report.xml')
-                summarizeTestResults()
+                sh('pip3 install twine')
+                sh('poetry config settings.virtualenvs.create false')
+                sh('poetry install')
             }
             stage('Validate code format') {
-                sh("poetry run black -l 120 --check .")
+                sh("black --check .")
+                sh("isort --check-only -rc .")
+            }
+            stage('Run unittests') {
+                sh("pyenv local 3.6.6 3.7.4 3.8.0")
+                sh("tox")
+                junit(allowEmptyResults: true, testResults: '**/test-report.xml')
+                summarizeTestResults()
             }
             stage('Build') {
                 sh("poetry build")
             }
             stage('Build Docs') {
                 dir('./docs'){
-                    sh("poetry run sphinx-build -W -b html ./source ./build")
+                    sh("sphinx-build -W -b html ./source ./build")
                 }
             }
-            stage('Upload report to codecov.io') {
+            stage('Upload coverage reports') {
                 sh('bash </codecov-script/upload-report.sh')
                 step([$class: 'CoberturaPublisher', coberturaReportFile: 'coverage.xml'])
             }
 
-            currentVersion = sh(returnStdout: true, script: 'sed -n -e "/^__version__/p" cognite/replicator/_version.py | cut -d\\" -f2').trim()
-            def pipVersion = sh(returnStdout: true, script: 'poetry run yolk -V cognite-replicator | sort -n | tail -1 | cut -d\\  -f 2').trim()
-            println("This version: " + currentVersion)
-            println("Latest pip version: " + pipVersion)
-
-             if (env.BRANCH_NAME == 'master' && currentVersion != pipVersion) {
-                 stage('Release') {
-                     sh("poetry run twine upload --config-file /pypi/.pypirc dist/*")
-                 }
-             }
+            if (env.BRANCH_NAME == 'master') {
+                stage('Release to pypi') {
+                    sh("twine upload --verbose --config-file /pypi/.pypirc dist/* || echo 'version exists'")
+                }
+            }
         }
 
         container('docker') {
             stage('Build docker image') {
                 sh("docker build -t ${imageName}:${gitCommit} .")
             }
-
             stage('Login to docker hub') {
                 sh('cat /dockerhub-credentials/DOCKER_PASSWORD | docker login -u "$(cat /dockerhub-credentials/DOCKER_USERNAME)" --password-stdin')
             }
-
             if (env.CHANGE_ID) {
                 stage("Publish PR image") {
                     def prImage = "${imageName}-dev:pr-${env.CHANGE_ID}"
@@ -110,6 +105,7 @@ podTemplate(
                 }
             } else if (env.BRANCH_NAME == 'master') {
                 stage('Push to GCR') {
+                    def currentVersion = sh(returnStdout: true, script: 'sed -n -e "/^__version__/p" cognite/replicator/_version.py | cut -d\\" -f2').trim()
                     sh("docker tag ${imageName}:${gitCommit} ${imageName}:latest")
                     sh("docker tag ${imageName}:${gitCommit} ${imageName}:${currentVersion}")
                     sh("docker push ${imageName}:${currentVersion}")

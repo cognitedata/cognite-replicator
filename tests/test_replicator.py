@@ -1,4 +1,5 @@
 import toml
+
 from cognite.replicator import __version__
 
 
