@@ -8,21 +8,9 @@ from cognite.client.testing import monkeypatch_cognite_client
 from cognite.replicator.__main__ import (
     ENV_VAR_FOR_CONFIG_FILE_PATH,
     _get_config_path,
-    _get_datapoints_end_timestamp,
     _validate_login,
     create_cli_parser,
 )
-
-
-def test_get_datapoints_end_timestamp():
-    now = int(datetime.datetime(2019, 1, 31, 12).timestamp())
-    timeseries_delay_seconds = 604800
-    datapoints_end_timestamp = _get_datapoints_end_timestamp(now, timeseries_delay_seconds)
-
-    assert datapoints_end_timestamp == int(datetime.datetime(2019, 1, 24, 12).timestamp()) * 1000
-
-    datapoints_end_timestamp = _get_datapoints_end_timestamp(now, None)
-    assert datapoints_end_timestamp is None
 
 
 def test_validate_login():
