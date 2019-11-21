@@ -19,3 +19,7 @@ client_name: cognite-replicator                     # Name of client
 log_path: log                                       # Folder to save logs to
 log_level: INFO                                     # Logging level
 timeseries_exclude_pattern:                         # Regex pattern to prevent replication of matching timeseries
+timeseries_delay_seconds: 604800                    # Number of seconds to delay datapoints
+timeseries_external_ids:                            # List of timeseries external_ids to synchronize
+  - external-id-1:value
+  - external-id-2:value

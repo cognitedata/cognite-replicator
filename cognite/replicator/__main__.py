@@ -15,6 +15,7 @@ import argparse
 import logging
 import os
 import sys
+import time
 from enum import Enum, auto, unique
 from pathlib import Path
 from typing import Optional
@@ -91,6 +92,11 @@ def main():
     delete_replicated_if_not_in_src = config.get("delete_if_removed_in_source", False)
     delete_not_replicated_in_dst = config.get("delete_if_not_replicated", False)
 
+    datapoints_end_timestamp = None
+    timeseries_delay_seconds = config.get("timeseries_delay_seconds")
+    if timeseries_delay_seconds is not None:
+        datapoints_end_timestamp = (int(time.time()) - int(timeseries_delay_seconds)) * 1000
+
     src_api_key = os.environ.get(config.get("src_api_key_env_var", "COGNITE_SOURCE_API_KEY"))
     dst_api_key = os.environ.get(config.get("dst_api_key_env_var", "COGNITE_DESTINATION_API_KEY"))
 
@@ -140,6 +146,7 @@ def main():
             config.get("number_of_threads"),
             delete_replicated_if_not_in_src=delete_replicated_if_not_in_src,
             delete_not_replicated_in_dst=delete_not_replicated_in_dst,
+            target_external_ids=config.get("timeseries_external_ids"),
             exclude_pattern=config.get("timeseries_exclude_pattern"),
         )
 
@@ -158,7 +165,12 @@ def main():
 
     if Resource.DATAPOINTS in resources_to_replicate:
         datapoints.replicate(
-            src_client, dst_client, num_threads=config.get("number_of_threads"), limit=config.get("datapoint_limit")
+            src_client,
+            dst_client,
+            num_threads=config.get("number_of_threads"),
+            limit=config.get("datapoint_limit"),
+            external_ids=config.get("timeseries_external_ids"),
+            end=datapoints_end_timestamp,
         )
 
 
