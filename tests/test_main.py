@@ -1,16 +1,16 @@
+import datetime
+import time
 from pathlib import Path
 
 import pytest
-import datetime
-import time
 
 from cognite.client.testing import monkeypatch_cognite_client
 from cognite.replicator.__main__ import (
     ENV_VAR_FOR_CONFIG_FILE_PATH,
     _get_config_path,
+    _get_datapoints_end_timestamp,
     _validate_login,
     create_cli_parser,
-    _get_datapoints_end_timestamp,
 )
 
 
