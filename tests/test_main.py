@@ -21,6 +21,9 @@ def test_get_datapoints_end_timestamp():
 
     assert datapoints_end_timestamp == int(datetime.datetime(2019, 1, 24, 12).timestamp()) * 1000
 
+    datapoints_end_timestamp = _get_datapoints_end_timestamp(now, None)
+    assert datapoints_end_timestamp is None
+
 
 def test_validate_login():
     with monkeypatch_cognite_client() as client:
