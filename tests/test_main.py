@@ -1,6 +1,8 @@
 from pathlib import Path
 
 import pytest
+import datetime
+import time
 
 from cognite.client.testing import monkeypatch_cognite_client
 from cognite.replicator.__main__ import (
@@ -8,7 +10,16 @@ from cognite.replicator.__main__ import (
     _get_config_path,
     _validate_login,
     create_cli_parser,
+    _get_datapoints_end_timestamp,
 )
+
+
+def test_get_datapoints_end_timestamp():
+    now = int(datetime.datetime(2019, 1, 31, 12).timestamp())
+    timeseries_delay_seconds = 604800
+    datapoints_end_timestamp = _get_datapoints_end_timestamp(now, timeseries_delay_seconds)
+
+    assert datapoints_end_timestamp == int(datetime.datetime(2019, 1, 24, 12).timestamp()) * 1000
 
 
 def test_validate_login():

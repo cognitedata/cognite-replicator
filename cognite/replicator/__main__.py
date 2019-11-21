@@ -18,7 +18,7 @@ import sys
 import time
 from enum import Enum, auto, unique
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import yaml
 
@@ -82,6 +82,14 @@ def _get_config_path(config_arg: Optional[str]) -> Path:
     return config_file
 
 
+def _get_datapoints_end_timestamp(current_timestamp: int, timeseries_delay_seconds: int) -> Union[int, None]:
+    """Get an end timestamp based on current timestamp and delay parameter."""
+    datapoints_end_timestamp = None
+    if timeseries_delay_seconds is not None:
+        datapoints_end_timestamp = (current_timestamp - int(timeseries_delay_seconds)) * 1000
+    return datapoints_end_timestamp
+
+
 def main():
     args = create_cli_parser().parse_args()
     with open(_get_config_path(args.config)) as config_file:
@@ -92,10 +100,8 @@ def main():
     delete_replicated_if_not_in_src = config.get("delete_if_removed_in_source", False)
     delete_not_replicated_in_dst = config.get("delete_if_not_replicated", False)
 
-    datapoints_end_timestamp = None
     timeseries_delay_seconds = config.get("timeseries_delay_seconds")
-    if timeseries_delay_seconds is not None:
-        datapoints_end_timestamp = (int(time.time()) - int(timeseries_delay_seconds)) * 1000
+    datapoints_end_timestamp = _get_datapoints_end_timestamp(int(time.time()), timeseries_delay_seconds)
 
     src_api_key = os.environ.get(config.get("src_api_key_env_var", "COGNITE_SOURCE_API_KEY"))
     dst_api_key = os.environ.get(config.get("dst_api_key_env_var", "COGNITE_DESTINATION_API_KEY"))
