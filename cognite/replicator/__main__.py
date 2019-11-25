@@ -15,10 +15,9 @@ import argparse
 import logging
 import os
 import sys
-import time
 from enum import Enum, auto, unique
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 
 import yaml
 
@@ -91,9 +90,6 @@ def main():
 
     delete_replicated_if_not_in_src = config.get("delete_if_removed_in_source", False)
     delete_not_replicated_in_dst = config.get("delete_if_not_replicated", False)
-
-    datapoints_end_timestamp = config.get("datapoints_end_timestamp")
-    datapoints_start_timestamp = config.get("datapoints_start_timestamp")
 
     src_api_key = os.environ.get(config.get("src_api_key_env_var", "COGNITE_SOURCE_API_KEY"))
     dst_api_key = os.environ.get(config.get("dst_api_key_env_var", "COGNITE_DESTINATION_API_KEY"))
@@ -168,8 +164,8 @@ def main():
             num_threads=config.get("number_of_threads"),
             limit=config.get("datapoint_limit"),
             external_ids=config.get("timeseries_external_ids"),
-            start=datapoints_start_timestamp,
-            end=datapoints_end_timestamp,
+            start=config.get("datapoints_start"),
+            end=config.get("datapoints_end"),
         )
 
 
