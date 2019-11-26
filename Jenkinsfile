@@ -24,6 +24,14 @@ podTemplate(
             resourceLimitCpu: '1000m',
             resourceLimitMemory: '1000Mi',
             ttyEnabled: true),
+        containerTemplate(name: 'gitleaks',
+            command: '/bin/cat -',
+            image: 'eu.gcr.io/cognitedata/gitleaks:latest',
+            resourceRequestCpu: '300m',
+            resourceRequestMemory: '500Mi',
+            resourceLimitCpu: '1',
+            resourceLimitMemory: '1Gi',
+            ttyEnabled: true)
     ],
     volumes: [
         secretVolume(secretName: 'pypi-credentials', mountPath: '/pypi', readOnly: true),
@@ -45,8 +53,16 @@ podTemplate(
         def gitCommit
         container('jnlp') {
             stage('Checkout') {
-                checkout(scm)
-                gitCommit = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+                scmVars = checkout(scm)
+                gitCommit = scmVars.GIT_COMMIT
+            }
+        }
+
+        container('gitleaks') {
+            stage('Gitleaks scan for secrets') {
+                withCredentials([usernamePassword(credentialsId: 'jenkins-cognite', passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GH_USER')]) {
+                    sh('gitleaks --repo-path=`pwd` --verbose --redact')
+                }
             }
         }
 
