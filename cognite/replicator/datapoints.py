@@ -7,6 +7,7 @@ from typing import Any, Callable, List, Optional, Tuple, Union
 from cognite.client import CogniteClient
 from cognite.client.data_classes import Datapoint, Datapoints
 from cognite.client.exceptions import CogniteAPIError
+from cognite.client.utils._time import timestamp_to_ms
 
 
 def _get_time_range(src_datapoint: Datapoints, dst_datapoint: Datapoints) -> Tuple[int, int]:
@@ -90,10 +91,9 @@ def replicate_datapoints(
         latest_src_dp = Datapoints(timestamp=[src_datapoint_transform(latest_src_dp[0]).timestamp])
 
     _start, _end = _get_time_range(latest_src_dp, latest_dst_dp)
-    if start is None:
-        start = _start
-    if end is None:
-        end = _end
+
+    start = _start if start is None else timestamp_to_ms(start)
+    end = _end if end is None else timestamp_to_ms(end)
 
     if timerange_transform:
         start, end = timerange_transform(start, end)
