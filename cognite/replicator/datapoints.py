@@ -92,14 +92,8 @@ def replicate_datapoints(
 
     _start, _end = _get_time_range(latest_src_dp, latest_dst_dp)
 
-    if start is None:
-        start = _start
-    else:
-        start = timestamp_to_ms(start)
-    if end is None:
-        end = _end
-    else:
-        end = timestamp_to_ms(end)
+    start = _start if start is None else timestamp_to_ms(start)
+    end = _end if end is None else timestamp_to_ms(end)
 
     if timerange_transform:
         start, end = timerange_transform(start, end)
