@@ -140,6 +140,7 @@ def main():
             config.get("number_of_threads"),
             delete_replicated_if_not_in_src=delete_replicated_if_not_in_src,
             delete_not_replicated_in_dst=delete_not_replicated_in_dst,
+            target_external_ids=config.get("timeseries_external_ids"),
             exclude_pattern=config.get("timeseries_exclude_pattern"),
         )
 
@@ -158,7 +159,13 @@ def main():
 
     if Resource.DATAPOINTS in resources_to_replicate:
         datapoints.replicate(
-            src_client, dst_client, num_threads=config.get("number_of_threads"), limit=config.get("datapoint_limit")
+            src_client,
+            dst_client,
+            num_threads=config.get("number_of_threads"),
+            limit=config.get("datapoint_limit"),
+            external_ids=config.get("timeseries_external_ids"),
+            start=config.get("datapoints_start"),
+            end=config.get("datapoints_end"),
         )
 
 
