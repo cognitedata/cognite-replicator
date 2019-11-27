@@ -60,46 +60,39 @@ podTemplate(
 
         container('gitleaks') {
             stage('Gitleaks scan for secrets') {
-                withCredentials([usernamePassword(credentialsId: 'jenkins-cognite', passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GH_USER')]) {
-                    sh('gitleaks --repo-path=`pwd` --verbose --redact')
-                }
+                sh('gitleaks --repo-path=`pwd` --verbose --redact')
             }
         }
 
         container('python') {
-            stage('Install poetry') {
+            stage('Install dependencies') {
                 sh('pip3 install poetry')
-            }
-            stage('Install all dependencies') {
                 sh('pip3 install twine')
                 sh('poetry config settings.virtualenvs.create false')
                 sh('poetry install')
             }
-            stage('Validate code format') {
+            stage('Validate code') {
                 sh("black --check .")
                 sh("isort --check-only -rc .")
-            }
-            stage('Run unittests') {
-                sh("pyenv local 3.6.6 3.7.4 3.8.0")
-                sh("tox")
-                junit(allowEmptyResults: true, testResults: '**/test-report.xml')
-                summarizeTestResults()
             }
             stage('Build') {
                 sh("poetry build")
             }
-            stage('Build Docs') {
+            stage('Run tests') {
+                sh("pyenv local 3.6.6 3.7.4 3.8.0")
+                sh("tox")
+                junit(allowEmptyResults: true, testResults: '**/test-report.xml')
+                summarizeTestResults()
+                sh('bash </codecov-script/upload-report.sh')
+                step([$class: 'CoberturaPublisher', coberturaReportFile: 'coverage.xml'])
+            }
+            stage('Build docs') {
                 dir('./docs'){
                     sh("sphinx-build -W -b html ./source ./build")
                 }
             }
-            stage('Upload coverage reports') {
-                sh('bash </codecov-script/upload-report.sh')
-                step([$class: 'CoberturaPublisher', coberturaReportFile: 'coverage.xml'])
-            }
-
             if (env.BRANCH_NAME == 'master') {
-                stage('Release to pypi') {
+                stage('Release to PyPI') {
                     sh("twine upload --verbose --config-file /pypi/.pypirc dist/* || echo 'version exists'")
                 }
             }
@@ -108,8 +101,6 @@ podTemplate(
         container('docker') {
             stage('Build docker image') {
                 sh("docker build -t ${imageName}:${gitCommit} .")
-            }
-            stage('Login to docker hub') {
                 sh('cat /dockerhub-credentials/DOCKER_PASSWORD | docker login -u "$(cat /dockerhub-credentials/DOCKER_USERNAME)" --password-stdin')
             }
             if (env.CHANGE_ID) {
@@ -122,10 +113,10 @@ podTemplate(
             } else if (env.BRANCH_NAME == 'master') {
                 stage('Push to GCR') {
                     def currentVersion = sh(returnStdout: true, script: 'sed -n -e "/^__version__/p" cognite/replicator/_version.py | cut -d\\" -f2').trim()
-                    sh("docker tag ${imageName}:${gitCommit} ${imageName}:latest")
-                    sh("docker tag ${imageName}:${gitCommit} ${imageName}:${currentVersion}")
-                    sh("docker push ${imageName}:${currentVersion}")
-                    sh("docker push ${imageName}:latest")
+                    sh('docker tag ${imageName}:${gitCommit} ${imageName}:latest')
+                    sh('docker tag ${imageName}:${gitCommit} ${imageName}:${currentVersion}')
+                    sh('docker push ${imageName}:${currentVersion}')
+                    sh('docker push ${imageName}:latest')
                 }
             }
         }
