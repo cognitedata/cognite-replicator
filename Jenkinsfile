@@ -78,11 +78,6 @@ podTemplate(
             stage('Build') {
                 sh("poetry build")
             }
-            stage('Build docs') {
-                dir('./docs'){
-                    sh("sphinx-build -W -b html ./source ./build")
-                }
-            }
             stage('Run tests') {
                 sh("pyenv local 3.6.6 3.7.4 3.8.0")
                 sh("tox")
@@ -90,6 +85,11 @@ podTemplate(
                 summarizeTestResults()
                 sh('bash </codecov-script/upload-report.sh')
                 step([$class: 'CoberturaPublisher', coberturaReportFile: 'coverage.xml'])
+            }
+            stage('Build docs') {
+                dir('./docs'){
+                    sh("sphinx-build -W -b html ./source ./build")
+                }
             }
             if (env.BRANCH_NAME == 'master') {
                 stage('Release to PyPI') {
