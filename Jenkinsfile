@@ -60,9 +60,7 @@ podTemplate(
 
         container('gitleaks') {
             stage('Gitleaks scan for secrets') {
-                withCredentials([usernamePassword(credentialsId: 'jenkins-cognite', passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GH_USER')]) {
-                    sh('gitleaks --repo-path=`pwd` --verbose --redact')
-                }
+                sh('gitleaks --repo-path=`pwd` --verbose --redact')
             }
         }
 
