@@ -66,11 +66,10 @@ podTemplate(
 
         container('python') {
             stage('Install dependencies') {
-                sh('''
-                pip3 install poetry
-                pip3 install twine
-                poetry config settings.virtualenvs.create false
-                poetry install''')
+                sh('pip3 install poetry')
+                sh('pip3 install twine')
+                sh('poetry config settings.virtualenvs.create false')
+                sh('poetry install')
             }
             stage('Validate code') {
                 sh("black --check .")
@@ -114,11 +113,10 @@ podTemplate(
             } else if (env.BRANCH_NAME == 'master') {
                 stage('Push to GCR') {
                     def currentVersion = sh(returnStdout: true, script: 'sed -n -e "/^__version__/p" cognite/replicator/_version.py | cut -d\\" -f2').trim()
-                    sh('''
-                    docker tag ${imageName}:${gitCommit} ${imageName}:latest
-                    docker tag ${imageName}:${gitCommit} ${imageName}:${currentVersion}
-                    docker push ${imageName}:${currentVersion}
-                    docker push ${imageName}:latest''')
+                    sh('docker tag ${imageName}:${gitCommit} ${imageName}:latest')
+                    sh('docker tag ${imageName}:${gitCommit} ${imageName}:${currentVersion}')
+                    sh('docker push ${imageName}:${currentVersion}')
+                    sh('docker push ${imageName}:latest')
                 }
             }
         }
