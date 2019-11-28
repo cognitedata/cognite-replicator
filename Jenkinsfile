@@ -113,10 +113,10 @@ podTemplate(
             } else if (env.BRANCH_NAME == 'master') {
                 stage('Push to GCR') {
                     def currentVersion = sh(returnStdout: true, script: 'sed -n -e "/^__version__/p" cognite/replicator/_version.py | cut -d\\" -f2').trim()
-                    sh('docker tag ${imageName}:${gitCommit} ${imageName}:latest')
-                    sh('docker tag ${imageName}:${gitCommit} ${imageName}:${currentVersion}')
-                    sh('docker push ${imageName}:${currentVersion}')
-                    sh('docker push ${imageName}:latest')
+                    sh("docker tag ${imageName}:${gitCommit} ${imageName}:latest")
+                    sh("docker tag ${imageName}:${gitCommit} ${imageName}:${currentVersion}")
+                    sh("docker push ${imageName}:${currentVersion}")
+                    sh("docker push ${imageName}:latest")
                 }
             }
         }
