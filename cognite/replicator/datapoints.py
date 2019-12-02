@@ -246,11 +246,13 @@ def replicate(
         start: Timestamp to start replication onwards from; if not specified starts at most recent datapoint
         end: If specified, limits replication to datapoints earlier than the end time
         exclude_pattern: Regex pattern; time series whose names match will not be replicated from
-    """    
+    """
 
     if external_ids and exclude_pattern:
-        raise ValueError(f"List of time series AND a regex exclusion rule was given! Either remove the filter {exclude_pattern} or the list of time series {external_ids}")
-    elif external_ids is not None: # Specified list of time series is given
+        raise ValueError(
+            f"List of time series AND a regex exclusion rule was given! Either remove the filter {exclude_pattern} or the list of time series {external_ids}"
+        )
+    elif external_ids is not None:  # Specified list of time series is given
         ts_src = client_src.time_series.retrieve_multiple(external_ids=external_ids)
         ts_dst = client_dst.time_series.retrieve_multiple(external_ids=external_ids)
         src_ext_id_list = [ts_obj.external_id for ts_obj in ts_src]
@@ -259,7 +261,7 @@ def replicate(
         ts_dst = client_dst.time_series.list(limit=None)
         filtered_ts_src = []
         skipped_ts = []
-        if exclude_pattern: # Filtering based on regex rule given
+        if exclude_pattern:  # Filtering based on regex rule given
             compiled_re = re.compile(exclude_pattern)
             for ts in ts_src:
                 if compiled_re.search(ts.external_id):
@@ -269,11 +271,11 @@ def replicate(
             src_ext_id_list = filtered_ts_src
             logging.info(f"Excluding time series: {skipped_ts}, due to regex rule: {exclude_pattern}")
             # Should probably change to logging.debug after a while
-        else: # Expects to replicate all shared time series
+        else:  # Expects to replicate all shared time series
             src_ext_id_list = [ts_obj.external_id for ts_obj in ts_src]
     logging.info(f"Number of time series in source: {len(ts_src)}")
     logging.info(f"Number of time series in destination: {len(ts_dst)}")
-    
+
     dst_ext_id_list = set([ts_obj.external_id for ts_obj in ts_dst])
     shared_external_ids = [ext_id for ext_id in src_ext_id_list if ext_id in dst_ext_id_list and ext_id]
     logging.info(
