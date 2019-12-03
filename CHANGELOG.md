@@ -12,12 +12,17 @@ Changes are grouped as follows
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities.
 
-
 ## [Planned]
 - Support for replicating Sequences
 - Support for replicating file data
 
 ## [Unreleased]
+
+## [0.7.3] - 2019-12-02
+
+## Added
+- Config parameter "timeseries_exclude_pattern" will now have effect on datapoints, opposed to only time series.
+- The replicator will raise an exception if timeseries_exclude_pattern and timeseries_external_ids is given.
 
 ## [0.7.2] - 2019-11-15
 

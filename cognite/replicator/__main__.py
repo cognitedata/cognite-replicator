@@ -159,13 +159,15 @@ def main():
 
     if Resource.DATAPOINTS in resources_to_replicate:
         datapoints.replicate(
-            src_client,
-            dst_client,
+            client_src=src_client,
+            client_dst=dst_client,
+            batch_size=config.get("batch_size"),
             num_threads=config.get("number_of_threads"),
             limit=config.get("datapoint_limit"),
             external_ids=config.get("timeseries_external_ids"),
             start=config.get("datapoints_start"),
             end=config.get("datapoints_end"),
+            exclude_pattern=config.get("timeseries_exclude_pattern"),
         )
 
 
