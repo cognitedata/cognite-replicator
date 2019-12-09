@@ -23,4 +23,3 @@ datapoints_end: 1w-ago                              # Must be an integer timesta
 timeseries_external_ids:                            # List of timeseries external_ids to replicate
   - external-id-1:value
   - external-id-2:value
-ignore_old_datapoints: true                         # Ignore datapoint replication with timestamps older than 1971, due to api restrictions. Default: true

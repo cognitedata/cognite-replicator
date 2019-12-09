@@ -12,9 +12,10 @@ from cognite.client.utils._time import timestamp_to_ms
 
 
 def _get_time_range(src_datapoint: Datapoints, dst_datapoint: Datapoints) -> Tuple[int, int]:
+    # 31536000000 Because of api restictions on datapoints before 1971
     # +1 because datapoint retrieval time ranges are inclusive on start and exclusive on end
-    start_time = 0 if not dst_datapoint else dst_datapoint.timestamp[0] + 1
-    end_time = 0 if not src_datapoint else src_datapoint.timestamp[0] + 1
+    start_time = 31536000000 if not dst_datapoint else dst_datapoint.timestamp[0] + 1
+    end_time = 31536000000 if not src_datapoint else src_datapoint.timestamp[0] + 1
     return start_time, end_time
 
 
@@ -227,7 +228,6 @@ def replicate(
     start: Union[int, str] = None,
     end: Union[int, str] = None,
     exclude_pattern: str = None,
-    ignore_old_datapoints: bool = True,
 ):
     """
     Replicates data points from the source project into the destination project for all time series that
@@ -247,7 +247,6 @@ def replicate(
         start: Timestamp to start replication onwards from; if not specified starts at most recent datapoint
         end: If specified, limits replication to datapoints earlier than the end time
         exclude_pattern: Regex pattern; time series whose names match will not be replicated from
-        ignore_old_datapoints: Ignore datapoints with timestamps older than unix time 0 in order to avoid API errors.
     """
 
     if external_ids and exclude_pattern:
@@ -285,10 +284,6 @@ def replicate(
     logging.info(
         f"Number of common time series external ids between destination and source: {len(shared_external_ids)}"
     )
-    # Api restrictions
-    if ignore_old_datapoints:
-        logging.info("Ignoring datapoints older than 1971")
-        start = 31536000000
 
     if batch_size is None:
         batch_size = ceil(len(shared_external_ids) / num_threads)

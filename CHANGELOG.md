@@ -20,8 +20,10 @@ Changes are grouped as follows
 
 ## [0.7.4] - 2019-12-09
 
+## Changed
+- Default value for getting fetching datapoints 0 -> 31536000000, due to api restrictions
+
 ## Added
-- All datapoint replication now starts at deafult from
 - Option for batch size specification with respect to datapoint replication
 - Cleanup
 

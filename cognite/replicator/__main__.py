@@ -168,7 +168,6 @@ def main():
             start=config.get("datapoints_start"),
             end=config.get("datapoints_end"),
             exclude_pattern=config.get("timeseries_exclude_pattern"),
-            ignore_old_datapoints=config.get("ignore_old_datapoints"),
         )
 
 
