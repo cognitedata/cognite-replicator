@@ -18,6 +18,14 @@ Changes are grouped as follows
 
 ## [Unreleased]
 
+## [0.7.4] - 2019-12-09
+
+## Added
+- All datapoint replication now starts at deafult from
+- Option for batch size specification with respect to datapoint replication
+- Cleanup
+
+
 ## [0.7.3] - 2019-12-02
 
 ## Added

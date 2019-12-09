@@ -227,6 +227,7 @@ def replicate(
     start: Union[int, str] = None,
     end: Union[int, str] = None,
     exclude_pattern: str = None,
+    ignore_old_datapoints: bool = True,
 ):
     """
     Replicates data points from the source project into the destination project for all time series that
@@ -246,6 +247,7 @@ def replicate(
         start: Timestamp to start replication onwards from; if not specified starts at most recent datapoint
         end: If specified, limits replication to datapoints earlier than the end time
         exclude_pattern: Regex pattern; time series whose names match will not be replicated from
+        ignore_old_datapoints: Ignore datapoints with timestamps older than unix time 0 in order to avoid API errors.
     """
 
     if external_ids and exclude_pattern:
@@ -266,10 +268,12 @@ def replicate(
             for ts in ts_src:
                 if compiled_re.search(ts.external_id):
                     skipped_ts.append(ts.external_id)
-                elif not compiled_re.search(ts.external_id):
+                else:
                     filtered_ts_src.append(ts.external_id)
             src_ext_id_list = filtered_ts_src
-            logging.info(f"Excluding time series: {skipped_ts}, due to regex rule: {exclude_pattern}")
+            logging.info(
+                f"Excluding datapoints from {len(skipped_ts)} time series, due to regex rule: {exclude_pattern}. Sample: {skipped_ts[:5]}"
+            )
             # Should probably change to logging.debug after a while
         else:  # Expects to replicate all shared time series
             src_ext_id_list = [ts_obj.external_id for ts_obj in ts_src]
@@ -281,6 +285,11 @@ def replicate(
     logging.info(
         f"Number of common time series external ids between destination and source: {len(shared_external_ids)}"
     )
+    # Api restrictions
+    if ignore_old_datapoints:
+        logging.info("Ignoring datapoints older than 1971")
+        start = 31536000000
+
     if batch_size is None:
         batch_size = ceil(len(shared_external_ids) / num_threads)
     num_batches = ceil(len(shared_external_ids) / batch_size)

@@ -20,7 +20,6 @@ from pathlib import Path
 from typing import Optional
 
 import yaml
-
 from cognite.client import CogniteClient
 from cognite.client.exceptions import CogniteAPIError
 
@@ -161,13 +160,14 @@ def main():
         datapoints.replicate(
             client_src=src_client,
             client_dst=dst_client,
-            batch_size=config.get("batch_size"),
+            batch_size=config.get("batch_size_datapoints"),
             num_threads=config.get("number_of_threads"),
             limit=config.get("datapoint_limit"),
             external_ids=config.get("timeseries_external_ids"),
             start=config.get("datapoints_start"),
             end=config.get("datapoints_end"),
             exclude_pattern=config.get("timeseries_exclude_pattern"),
+            ignore_old_datapoints=config.get("ignore_old_datapoints"),
         )
 
 
