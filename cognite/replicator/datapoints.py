@@ -12,10 +12,9 @@ from cognite.client.utils._time import timestamp_to_ms
 
 
 def _get_time_range(src_datapoint: Datapoints, dst_datapoint: Datapoints) -> Tuple[int, int]:
-    # 31536000000 Because of api restictions on datapoints before 1971
     # +1 because datapoint retrieval time ranges are inclusive on start and exclusive on end
-    start_time = 31536000000 if not dst_datapoint else dst_datapoint.timestamp[0] + 1
-    end_time = 31536000000 if not src_datapoint else src_datapoint.timestamp[0] + 1
+    start_time = 0 if not dst_datapoint else dst_datapoint.timestamp[0] + 1
+    end_time = 0 if not src_datapoint else src_datapoint.timestamp[0] + 1
     return start_time, end_time
 
 
@@ -102,7 +101,6 @@ def replicate_datapoints(
 
     # Api Restrictions
     start = max(start, 31536000000)  # 1971
-    # end = min(end,2524608000000) # 2050 (Better to get api error than discarding datapoints?)
 
     logging.debug(f"Job {job_id}: Ext_id: {ts_external_id} Retrieving datapoints between {start} and {end}")
     datapoints_count = 0
