@@ -100,6 +100,10 @@ def replicate_datapoints(
     if timerange_transform:
         start, end = timerange_transform(start, end)
 
+    # Api Restrictions
+    start = max(start, 31536000000)  # 1971
+    # end = min(end,2524608000000) # 2050 (Better to get api error than discarding datapoints?)
+
     logging.debug(f"Job {job_id}: Ext_id: {ts_external_id} Retrieving datapoints between {start} and {end}")
     datapoints_count = 0
     while start < end:
