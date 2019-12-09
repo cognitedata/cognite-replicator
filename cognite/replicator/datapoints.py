@@ -266,10 +266,10 @@ def replicate(
             for ts in ts_src:
                 if compiled_re.search(ts.external_id):
                     skipped_ts.append(ts.external_id)
-                elif not compiled_re.search(ts.external_id):
+                else:
                     filtered_ts_src.append(ts.external_id)
             src_ext_id_list = filtered_ts_src
-            logging.info(f"Excluding time series: {skipped_ts}, due to regex rule: {exclude_pattern}")
+            logging.info(f"Excluding datapoints from {len(skipped_ts)} time series: {skipped_ts}, due to regex rule: {exclude_pattern}")
             # Should probably change to logging.debug after a while
         else:  # Expects to replicate all shared time series
             src_ext_id_list = [ts_obj.external_id for ts_obj in ts_src]
