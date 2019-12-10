@@ -99,6 +99,9 @@ def replicate_datapoints(
     if timerange_transform:
         start, end = timerange_transform(start, end)
 
+    # Api Restrictions
+    start = max(start, 31536000000)  # 1971
+
     logging.debug(f"Job {job_id}: Ext_id: {ts_external_id} Retrieving datapoints between {start} and {end}")
     datapoints_count = 0
     while start < end:
@@ -266,10 +269,12 @@ def replicate(
             for ts in ts_src:
                 if compiled_re.search(ts.external_id):
                     skipped_ts.append(ts.external_id)
-                elif not compiled_re.search(ts.external_id):
+                else:
                     filtered_ts_src.append(ts.external_id)
             src_ext_id_list = filtered_ts_src
-            logging.info(f"Excluding time series: {skipped_ts}, due to regex rule: {exclude_pattern}")
+            logging.info(
+                f"Excluding datapoints from {len(skipped_ts)} time series, due to regex rule: {exclude_pattern}. Sample: {skipped_ts[:5]}"
+            )
             # Should probably change to logging.debug after a while
         else:  # Expects to replicate all shared time series
             src_ext_id_list = [ts_obj.external_id for ts_obj in ts_src]
@@ -281,6 +286,7 @@ def replicate(
     logging.info(
         f"Number of common time series external ids between destination and source: {len(shared_external_ids)}"
     )
+
     if batch_size is None:
         batch_size = ceil(len(shared_external_ids) / num_threads)
     num_batches = ceil(len(shared_external_ids) / batch_size)

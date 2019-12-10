@@ -161,7 +161,7 @@ def main():
         datapoints.replicate(
             client_src=src_client,
             client_dst=dst_client,
-            batch_size=config.get("batch_size"),
+            batch_size=config.get("batch_size_datapoints"),
             num_threads=config.get("number_of_threads"),
             limit=config.get("datapoint_limit"),
             external_ids=config.get("timeseries_external_ids"),
