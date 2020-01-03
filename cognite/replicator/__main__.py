@@ -98,12 +98,14 @@ def main():
         api_key=src_api_key,
         project=config.get("src_project"),
         client_name=config.get("client_name"),
+        base_url=config.get("src_baseurl", "https://api.cognitedata.com"),
         timeout=config.get("client_timeout"),
     )
     dst_client = CogniteClient(
         api_key=dst_api_key,
         project=config.get("dst_project"),
         client_name=config.get("client_name"),
+        base_url=config.get("dst_baseurl", "https://api.cognitedata.com"),
         timeout=config.get("client_timeout"),
     )
 
