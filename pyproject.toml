@@ -29,7 +29,7 @@ python = "^3.6"
 pyyaml = "^5.1.0"
 
 [tool.poetry.dev-dependencies]
-black = {version = "19.3b0", allows-prereleases = true}
+black = {version = "19.3b0", allow-prereleases = true}
 isort = "^4.3"
 pre-commit = "^1.18"
 pytest = "^5.1.1"
