@@ -18,6 +18,9 @@ Changes are grouped as follows
 
 ## [Unreleased]
 
+## [0.7.5] - 2020-01-03
+- Support configurable base url
+
 ## [0.7.4] - 2019-12-09
 
 ## Changed
