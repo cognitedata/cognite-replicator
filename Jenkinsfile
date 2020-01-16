@@ -68,7 +68,7 @@ podTemplate(
             stage('Install dependencies') {
                 sh('pip3 install poetry')
                 sh('pip3 install twine')
-                sh('poetry config settings.virtualenvs.create false')
+                sh('poetry config virtualenvs.create false')
                 sh('poetry install')
             }
             stage('Validate code') {
