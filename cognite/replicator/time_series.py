@@ -91,6 +91,7 @@ def copy_ts(
     project_src: str,
     runtime: int,
     client: CogniteClient,
+    dst_ts: List[TimeSeries]
 ):
     """
     Creates/updates time series objects and then attempts to create and update these time series in the destination.
@@ -109,7 +110,7 @@ def copy_ts(
             ts.asset_id = None
 
     create_ts, update_ts, unchanged_ts = replication.make_objects_batch(
-        src_ts, src_id_dst_ts, src_dst_ids_assets, create_time_series, update_time_series, project_src, runtime
+        src_ts, src_id_dst_ts, src_dst_ids_assets, create_time_series, update_time_series, project_src, runtime, dst_ts=dst_ts
     )
 
     logging.info(f"Creating {len(create_ts)} new time series and updating {len(update_ts)} existing time series.")
@@ -158,9 +159,9 @@ def replicate(
     project_dst = client_dst.config.project
 
     if target_external_ids:
-        ts_src = client_src.time_series.retrieve_multiple(external_ids=target_external_ids)
+        ts_src = client_src.time_series.retrieve_multiple(external_ids=target_external_ids,ignore_unknown_ids=True)
         try:
-            ts_dst = client_dst.time_series.retrieve_multiple(external_ids=target_external_ids)
+            ts_dst = client_dst.time_series.retrieve_multiple(external_ids=target_external_ids,ignore_unknown_ids=True)
         except CogniteNotFoundError:
             ts_dst = TimeSeriesList([])
     else:
@@ -210,6 +211,7 @@ def replicate(
             project_src=project_src,
             replicated_runtime=replicated_runtime,
             client=client_dst,
+            dst_ts=ts_dst
         )
     else:
         copy_ts(
@@ -219,6 +221,7 @@ def replicate(
             project_src=project_src,
             runtime=replicated_runtime,
             client=client_dst,
+            dst_ts=ts_dst
         )
 
     logging.info(

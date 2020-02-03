@@ -256,8 +256,8 @@ def replicate(
             f"List of time series AND a regex exclusion rule was given! Either remove the filter {exclude_pattern} or the list of time series {external_ids}"
         )
     elif external_ids is not None:  # Specified list of time series is given
-        ts_src = client_src.time_series.retrieve_multiple(external_ids=external_ids)
-        ts_dst = client_dst.time_series.retrieve_multiple(external_ids=external_ids)
+        ts_src = client_src.time_series.retrieve_multiple(external_ids=external_ids,ignore_unknown_ids=True)
+        ts_dst = client_dst.time_series.retrieve_multiple(external_ids=external_ids,ignore_unknown_ids=True)
         src_ext_id_list = [ts_obj.external_id for ts_obj in ts_src]
     else:
         ts_src = client_src.time_series.list(limit=None)
