@@ -189,8 +189,9 @@ def make_objects_batch(
 
     # make a set of external ids to loop through
     dst_ts_ext_id_set = set()
-    for ts in dst_ts:
-        dst_ts_ext_id_set.add(ts.external_id)
+    if dst_ts:
+        for ts in dst_ts:
+            dst_ts_ext_id_set.add(ts.external_id)
 
     for src_obj in src_objects:
         dst_obj = src_id_dst_map.get(src_obj.id)
