@@ -189,7 +189,7 @@ def make_objects_batch(
 
     # make a set of external ids to loop through
     if dst_ts:
-        dst_ts_ext_id_set={ts.external_id for ts in dst_ts}
+        dst_ts_ext_id_set = {ts.external_id for ts in dst_ts}
     else:
         dst_ts_ext_id_set = set()
 
