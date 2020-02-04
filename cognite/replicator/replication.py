@@ -173,7 +173,7 @@ def make_objects_batch(
         project_src: The name of the project the object is being replicated from.
         replicated_runtime: The timestamp to be used in the new replicated metadata.
         depth: The depth of the asset within the asset hierarchy, only used for making assets.
-
+        dst_ts: List of timeseries in the destination - Will be used for comparison if current timeseries where not copied by the replicator
     Returns:
         create_objects: A list of all the new objects to be posted to CDF.
         update_objects: A list of all the updated objects to be updated in CDF.
