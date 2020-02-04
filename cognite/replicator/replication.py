@@ -187,6 +187,11 @@ def make_objects_batch(
 
     kwargs = {"depth": depth} if depth is not None else {}  # Only used on assets
 
+    # make a set of external ids to loop through
+    dst_ts_ext_id_set = set()
+    for ts in dst_ts:
+        dst_ts_ext_id_set.add(ts.external_id)
+
     for src_obj in src_objects:
         dst_obj = src_id_dst_map.get(src_obj.id)
         if dst_obj:
@@ -196,7 +201,7 @@ def make_objects_batch(
             else:
                 unchanged_objects.append(dst_obj)
         elif dst_ts:
-            if any(x for x in dst_ts if x.external_id == src_obj.external_id):
+            if any(x for x in dst_ts_ext_id_set if x == src_obj.external_id):
                 unchanged_objects.append(dst_obj)
         else:
             new_asset = create(src_obj, src_dst_ids_assets, project_src, replicated_runtime, **kwargs)
