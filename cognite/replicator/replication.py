@@ -9,6 +9,7 @@ from cognite.client.data_classes import Event, FileMetadata, TimeSeries
 from cognite.client.data_classes.assets import Asset
 from cognite.client.data_classes.raw import Row
 
+
 def make_id_object_map(
     objects: List[Union[Asset, Event, FileMetadata, TimeSeries]]
 ) -> Dict[int, Union[Asset, Event, FileMetadata, TimeSeries]]:
