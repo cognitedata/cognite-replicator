@@ -188,10 +188,10 @@ def make_objects_batch(
     kwargs = {"depth": depth} if depth is not None else {}  # Only used on assets
 
     # make a set of external ids to loop through
-    dst_ts_ext_id_set = set()
     if dst_ts:
-        for ts in dst_ts:
-            dst_ts_ext_id_set.add(ts.external_id)
+        dst_ts_ext_id_set={ts.external_id for ts in dst_ts}
+    else:
+        dst_ts_ext_id_set = set()
 
     for src_obj in src_objects:
         dst_obj = src_id_dst_map.get(src_obj.id)
