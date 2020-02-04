@@ -9,14 +9,6 @@ from cognite.client.data_classes import Event, FileMetadata, TimeSeries
 from cognite.client.data_classes.assets import Asset
 from cognite.client.data_classes.raw import Row
 
-
-def contains(list, filter):
-    for x in list:
-        if filter(x):
-            return True
-    return False
-
-
 def make_id_object_map(
     objects: List[Union[Asset, Event, FileMetadata, TimeSeries]]
 ) -> Dict[int, Union[Asset, Event, FileMetadata, TimeSeries]]:
@@ -203,7 +195,7 @@ def make_objects_batch(
             else:
                 unchanged_objects.append(dst_obj)
         elif dst_ts:
-            if contains(dst_ts, lambda x: x.external_id == "VAL_23-PT-9253:X.Value"):
+            if any(x for x in dst_ts if x.external_id == src_obj.external_id):
                 unchanged_objects.append(dst_obj)
         else:
             new_asset = create(src_obj, src_dst_ids_assets, project_src, replicated_runtime, **kwargs)

@@ -103,6 +103,7 @@ def copy_ts(
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
         client: The client corresponding to the destination project.
+        dst_ts: List of timeseries in the destination - Will be used for comparison if current timeseries where not copied by the replicator
     """
     logging.info(f"Starting to replicate {len(src_ts)} time series.")
     for ts in src_ts:  # for unlinkable time_series, remove asset id to avoid insertion error
@@ -131,6 +132,9 @@ def copy_ts(
         logging.info(f"Updating {len(update_ts)} time series.")
         updated_ts = replication.retry(client.time_series.update, update_ts)
         logging.info(f"Successfully updated {len(updated_ts)} time series.")
+
+    if unchanged_ts:
+        logging.info(f"{len(unchanged_ts)} time series will not be changed.")
 
 
 def replicate(
