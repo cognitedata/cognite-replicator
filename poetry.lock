@@ -115,7 +115,7 @@ description = "Client library for Cognite Data Fusion (CDF)"
 name = "cognite-sdk-core"
 optional = false
 python-versions = ">=3.5"
-version = "1.4.0"
+version = "1.4.10"
 
 [package.dependencies]
 requests = ">=2.21.0,<3.0.0"
