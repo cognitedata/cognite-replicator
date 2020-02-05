@@ -19,6 +19,6 @@ WORKDIR /code
 COPY . /code
 
 # Project initialization:
-RUN poetry config settings.virtualenvs.create false && poetry install --no-dev --no-interaction --no-ansi
+RUN poetry config virtualenvs.create false && poetry install --no-dev --no-interaction --no-ansi
 
 ENTRYPOINT ["python", "-m", "cognite.replicator"]
