@@ -155,6 +155,7 @@ def make_objects_batch(
     project_src: str,
     replicated_runtime: int,
     depth: Optional[int] = None,
+    dst_ts: Optional[TimeSeries] = None,
 ) -> Tuple[
     List[Union[Asset, Event, FileMetadata, TimeSeries]],
     List[Union[Asset, Event, FileMetadata, TimeSeries]],
@@ -173,7 +174,7 @@ def make_objects_batch(
         project_src: The name of the project the object is being replicated from.
         replicated_runtime: The timestamp to be used in the new replicated metadata.
         depth: The depth of the asset within the asset hierarchy, only used for making assets.
-
+        dst_ts: List of timeseries in the destination - Will be used for comparison if current timeseries where not copied by the replicator
     Returns:
         create_objects: A list of all the new objects to be posted to CDF.
         update_objects: A list of all the updated objects to be updated in CDF.
@@ -186,6 +187,12 @@ def make_objects_batch(
 
     kwargs = {"depth": depth} if depth is not None else {}  # Only used on assets
 
+    # make a set of external ids to loop through
+    if dst_ts:
+        dst_ts_ext_id_set = {ts.external_id for ts in dst_ts}
+    else:
+        dst_ts_ext_id_set = set()
+
     for src_obj in src_objects:
         dst_obj = src_id_dst_map.get(src_obj.id)
         if dst_obj:
@@ -193,6 +200,9 @@ def make_objects_batch(
                 dst_obj = update(src_obj, dst_obj, src_dst_ids_assets, project_src, replicated_runtime, **kwargs)
                 update_objects.append(dst_obj)
             else:
+                unchanged_objects.append(dst_obj)
+        elif dst_ts:
+            if src_obj.external_id in dst_ts_ext_id_set:
                 unchanged_objects.append(dst_obj)
         else:
             new_asset = create(src_obj, src_dst_ids_assets, project_src, replicated_runtime, **kwargs)

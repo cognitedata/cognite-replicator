@@ -18,6 +18,12 @@ Changes are grouped as follows
 
 ## [Unreleased]
 
+## [0.7.6] - 2020-02-04
+
+## Fixed
+- Does not fail if timeseries does not exist
+- Support copy to existing timeseries that were not copied by the replicator
+
 ## [0.7.5] - 2020-01-03
 - Support configurable base url
 
