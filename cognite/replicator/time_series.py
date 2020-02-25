@@ -77,7 +77,7 @@ def _has_security_category(ts: TimeSeries) -> bool:
 
 
 def _is_service_account_metric(ts: TimeSeries) -> bool:
-    return "service_account_metrics" in ts.name
+    return ts.name is not None and "service_account_metrics" in ts.name
 
 
 def _is_copyable(ts: TimeSeries) -> bool:
