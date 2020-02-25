@@ -249,7 +249,7 @@ def thread(
     project_src: str,
     replicated_runtime: int,
     client: CogniteClient,
-    dst_ts: Optional[TimeSeries] = None
+    dst_ts: Optional[TimeSeries] = None,
 ):
     """
     Split up objects to replicate them in batches and thread each batch.
@@ -286,7 +286,7 @@ def thread(
                     project_src,
                     replicated_runtime,
                     client,
-                    dst_ts
+                    dst_ts,
                 ),
             )
         )
