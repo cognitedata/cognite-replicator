@@ -249,6 +249,7 @@ def thread(
     project_src: str,
     replicated_runtime: int,
     client: CogniteClient,
+    dst_ts: Optional[TimeSeries] = None
 ):
     """
     Split up objects to replicate them in batches and thread each batch.
@@ -262,6 +263,7 @@ def thread(
         project_src: The name of the project the object is being replicated from.
         replicated_runtime: The timestamp to be used in the new replicated metadata.
         client: The Cognite Client for the destination project.
+        dst_ts: List of timeseries in the destination - Will be used for comparison if current timeseries where not copied by the replicator
 
     """
 
@@ -284,6 +286,7 @@ def thread(
                     project_src,
                     replicated_runtime,
                     client,
+                    dst_ts
                 ),
             )
         )
