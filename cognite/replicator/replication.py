@@ -203,7 +203,10 @@ def make_objects_batch(
                 unchanged_objects.append(dst_obj)
         elif dst_ts:
             if src_obj.external_id in dst_ts_ext_id_set:
-                unchanged_objects.append(dst_obj)
+                unchanged_objects.append(src_obj)
+            else:
+                new_asset = create(src_obj, src_dst_ids_assets, project_src, replicated_runtime, **kwargs)
+                create_objects.append(new_asset)
         else:
             new_asset = create(src_obj, src_dst_ids_assets, project_src, replicated_runtime, **kwargs)
             create_objects.append(new_asset)
