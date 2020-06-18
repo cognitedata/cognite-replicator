@@ -291,6 +291,7 @@ def replicate(
         end: If specified, limits replication to datapoints earlier than the end time
         exclude_pattern: Regex pattern; time series whose names match will not be replicated from
         value_manipluation_lambda_fnc: A basic lambda function can be provided to manipulate datapoints as a string.
+                                        It will be applied to the value of each datapoint in the timeseries.
     """
 
     if external_ids and exclude_pattern:
