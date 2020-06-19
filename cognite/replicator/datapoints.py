@@ -42,6 +42,7 @@ def _get_chunk(lst: List[Any], num_chunks: int, chunk_number: int) -> List[Any]:
 
     return lst[start_index:end_index]
 
+
 def evaluate_lambda_function(lambda_fnc_str: str):
     """Returns callable object by evaluating lambda function string.
 
@@ -56,8 +57,7 @@ def evaluate_lambda_function(lambda_fnc_str: str):
         lambda_fnc = eval(lambda_fnc_str)
         return lambda_fnc
     except Exception as e:
-        logging.error(f"An error occurred when using value manipulation "
-                      f"lambda function. {lambda_fnc_str}")
+        logging.error(f"An error occurred when using value manipulation " f"lambda function. {lambda_fnc_str}")
         logging.error(e)
         return None
 
@@ -153,13 +153,13 @@ def replicate_datapoints(
                 if lambda_fnc:
                     for src_datapoint in datapoints:
                         try:
-                            transformed_datapoint = src_datapoint
-                            transformed_datapoint.value = lambda_fnc(src_datapoint.value)
-                            transformed_timestamps.append(transformed_datapoint.timestamp)
-                            transformed_values.append(transformed_datapoint.value)
+                            transformed_timestamps.append(src_datapoint.timestamp)
+                            transformed_values.append(lambda_fnc(src_datapoint.value))
                         except Exception as e:
-                            logging.error(f"Could not manipulate the datapoint (value={src_datapoint.value}," +
-                                          f" timestamp={src_datapoint.timestamp}). Error: {e}")
+                            logging.error(
+                                f"Could not manipulate the datapoint (value={src_datapoint.value},"
+                                + f" timestamp={src_datapoint.timestamp}). Error: {e}"
+                            )
                     datapoints = Datapoints(timestamp=transformed_timestamps, value=transformed_values)
 
             if not mock_run:
@@ -187,7 +187,7 @@ def batch_replicate(
     timerange_transform: Optional[Callable[[Tuple[int, int]], Tuple[int, int]]] = None,
     start: Union[int, str] = None,
     end: Union[int, str] = None,
-    value_manipluation_lambda_fnc: str = None
+    value_manipluation_lambda_fnc: str = None,
 ):
     """
     Replicates datapoints for each time series specified by the external id list.
@@ -270,7 +270,7 @@ def replicate(
     start: Union[int, str] = None,
     end: Union[int, str] = None,
     exclude_pattern: str = None,
-    value_manipluation_lambda_fnc: str = None
+    value_manipluation_lambda_fnc: str = None,
 ):
     """
     Replicates data points from the source project into the destination project for all time series that
