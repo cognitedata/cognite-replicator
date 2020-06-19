@@ -42,25 +42,6 @@ def _get_chunk(lst: List[Any], num_chunks: int, chunk_number: int) -> List[Any]:
 
     return lst[start_index:end_index]
 
-def evaluate_lambda_function(lambda_fnc_str: str):
-    """Returns callable object by evaluating lambda function string.
-
-    Args:
-        lambda_fnc_str: lambda function string for datapoint.value manipulation
-
-    Returns:
-        Callable function
-
-    """
-    try:
-        lambda_fnc = eval(lambda_fnc_str)
-        return lambda_fnc
-    except Exception as e:
-        logging.error(f"An error occurred when using value manipulation "
-                      f"lambda function. {lambda_fnc_str}")
-        logging.error(e)
-        return None
-
 
 def replicate_datapoints(
     client_src: CogniteClient,
@@ -74,7 +55,6 @@ def replicate_datapoints(
     timerange_transform: Optional[Callable[[Tuple[int, int]], Tuple[int, int]]] = None,
     start: Union[int, str] = None,
     end: Union[int, str] = None,
-    value_manipluation_lambda_fnc: str = None,
 ) -> Tuple[bool, int]:
     """
     Copies data points from the source tenant into the destination project, for the given time series.
@@ -94,7 +74,6 @@ def replicate_datapoints(
         timerange_transform: Function to set the time range boundaries (start, end) arbitrarily.
         start: Timestamp to start replication onwards from; if not specified starts at most recent datapoint
         end: If specified, limits replication to datapoints earlier than the end time
-        value_manipluation_lambda_fnc: A basic lambda function can be provided to manipulate datapoints as a string.
 
     Returns:
         A tuple of the success status (True if no failures) and the number of datapoints successfully replicated
@@ -146,22 +125,6 @@ def replicate_datapoints(
                     transformed_values.append(transformed_datapoint.value)
                 datapoints = Datapoints(timestamp=transformed_timestamps, value=transformed_values)
 
-            if value_manipluation_lambda_fnc:
-                transformed_values = []
-                transformed_timestamps = []
-                lambda_fnc = evaluate_lambda_function(value_manipluation_lambda_fnc)
-                if lambda_fnc:
-                    for src_datapoint in datapoints:
-                        try:
-                            transformed_datapoint = src_datapoint
-                            transformed_datapoint.value = lambda_fnc(src_datapoint.value)
-                            transformed_timestamps.append(transformed_datapoint.timestamp)
-                            transformed_values.append(transformed_datapoint.value)
-                        except Exception as e:
-                            logging.error(f"Could not manipulate the datapoint (value={src_datapoint.value}," +
-                                          f" timestamp={src_datapoint.timestamp}). Error: {e}")
-                    datapoints = Datapoints(timestamp=transformed_timestamps, value=transformed_values)
-
             if not mock_run:
                 client_dst.datapoints.insert(datapoints, external_id=ts_external_id)
         except CogniteAPIError as exc:
@@ -187,7 +150,6 @@ def batch_replicate(
     timerange_transform: Optional[Callable[[Tuple[int, int]], Tuple[int, int]]] = None,
     start: Union[int, str] = None,
     end: Union[int, str] = None,
-    value_manipluation_lambda_fnc: str = None
 ):
     """
     Replicates datapoints for each time series specified by the external id list.
@@ -204,7 +166,6 @@ def batch_replicate(
         timerange_transform: Function to set the time range boundaries (start, end) arbitrarily.
         start: Timestamp to start replication onwards from; if not specified starts at most recent datapoint
         end: If specified, limits replication to datapoints earlier than the end time
-        value_manipluation_lambda_fnc: A basic lambda function can be provided to manipulate datapoints as a string.
     """
 
     def log_status(total_ts_count):
@@ -241,7 +202,6 @@ def batch_replicate(
             timerange_transform=timerange_transform,
             start=start,
             end=end,
-            value_manipluation_lambda_fnc=value_manipluation_lambda_fnc,
         )
 
         if not success_status:
@@ -270,7 +230,6 @@ def replicate(
     start: Union[int, str] = None,
     end: Union[int, str] = None,
     exclude_pattern: str = None,
-    value_manipluation_lambda_fnc: str = None
 ):
     """
     Replicates data points from the source project into the destination project for all time series that
@@ -290,8 +249,6 @@ def replicate(
         start: Timestamp to start replication onwards from; if not specified starts at most recent datapoint
         end: If specified, limits replication to datapoints earlier than the end time
         exclude_pattern: Regex pattern; time series whose names match will not be replicated from
-        value_manipluation_lambda_fnc: A basic lambda function can be provided to manipulate datapoints as a string.
-                                        It will be applied to the value of each datapoint in the timeseries.
     """
 
     if external_ids and exclude_pattern:
@@ -347,7 +304,6 @@ def replicate(
             timerange_transform,
             start,
             end,
-            value_manipluation_lambda_fnc,
         )
         for job_id in range(num_batches)
     ]
