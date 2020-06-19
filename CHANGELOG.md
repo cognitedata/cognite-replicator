@@ -18,13 +18,6 @@ Changes are grouped as follows
 
 ## [Unreleased]
 
-## [0.8.0] - 2020-06-19
-
-## Added
-- value_manipluation_lambda_fnc parameter (optional) added to datapoints.replicate function. A lambda function string
-  can be provided. This function takes each datapoint.value and gets applied to each point of a given timeseries.
-  Example: "lambda x: x*15"
-
 ## [0.7.6] - 2020-02-04
 
 ## Fixed
