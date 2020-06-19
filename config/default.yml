@@ -21,6 +21,7 @@ log_level: INFO                                     # Logging level
 timeseries_exclude_pattern:                         # Regex pattern to prevent replication of matching timeseries. Example: ^SYN_
 datapoints_start: 1546297200                        # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
 datapoints_end: 1w-ago                              # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
+value_manipluation_lambda_fnc:                      # A basic lambda function can be provided to manipulate datapoints as a string. Will be applied to the value of each data point. Example: "lambda x: x+15"
 timeseries_external_ids:                            # List of timeseries external_ids to replicate
   - external-id-1:value
   - external-id-2:value
