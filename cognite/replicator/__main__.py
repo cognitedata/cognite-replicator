@@ -170,6 +170,7 @@ def main():
             start=config.get("datapoints_start"),
             end=config.get("datapoints_end"),
             exclude_pattern=config.get("timeseries_exclude_pattern"),
+            value_manipluation_lambda_fnc=config.get("value_manipluation_lambda_fnc"),
         )
 
 
