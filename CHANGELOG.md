@@ -18,6 +18,11 @@ Changes are grouped as follows
 
 ## [Unreleased]
 
+## [0.8.1] - 2020-07-06
+
+## Fixed
+- Typo fix: value_manipluation_lambda_fnc parameter (optional) renamed as value_manipulation_lambda_fnc
+
 ## [0.8.0] - 2020-06-19
 
 ## Added
