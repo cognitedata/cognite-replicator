@@ -72,7 +72,7 @@ def copy_files(
     project_src: str,
     runtime: int,
     client: CogniteClient,
-    dst_ts : None,
+    dst_ts = None,
 ):
     """
     Creates/updates file objects and then attempts to create and update these objects in the destination.
@@ -194,7 +194,6 @@ def replicate(
             project_src=project_src,
             runtime=replicated_runtime,
             client=client_dst,
-            dst_ts=None,
         )
 
     logging.info(
