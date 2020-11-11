@@ -162,4 +162,4 @@ and no exclusion of final datapoint
 ### Fixed
 - Time series replication no longer attempts to create security category-protected time series
 - Use pre-commit hooks to run black and unit tests
-- Send logs to google cloud stackdriver if configured, needed the right dependencies.
+- Send logs to google cloud stackdriver if configured, needed the right dependencies
