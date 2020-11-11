@@ -1,14 +1,17 @@
-resources:                                          # Which resource types to replicate
-  - assets
-  - events
-  - timeseries
-  - datapoints
+resources:                                          # Which resource types to replicate]
+  #- all
+  #- assets
+  #- events
+  #- timeseries
+  #- raw
+  #- datapoints
+  - files
 src_api_key_env_var: COGNITE_SOURCE_API_KEY         # Name of env variable for CDF API KEY of the source project
 dst_api_key_env_var: COGNITE_DESTINATION_API_KEY    # Name of env variable for CDF API KEY of the destination project
-src_project: source_project_name                    # Project that src_api_key belongs to
-dst_project: dest_project_name                      # Project that dst_api_key belongs to
+src_project: fusion                                 # Project that src_api_key belongs to
+dst_project: 3d-hackathon                           # Project that dst_api_key belongs to
 #src_baseurl: https://greenfield.cognitedata.com     # Optional - source base url if not api.cognitedata.com
-#dst_baseurl: https://greenfield.cognitedata.com     # Optional - destination base url if not api.cognitedata.com
+dst_baseurl: https://greenfield.cognitedata.com     # Optional - destination base url if not api.cognitedata.com
 delete_if_removed_in_source: false                  # Remove objects that were replicated and are now deleted in source
 delete_if_not_replicated: false                     # Remove all objects in destination that aren't from source
 batch_size: 10000                                   # Number of items in each batch
@@ -20,8 +23,8 @@ log_path: log                                       # Folder to save logs to
 log_level: INFO                                     # Logging level
 timeseries_exclude_pattern:                         # Regex pattern to prevent replication of matching timeseries. Example: ^SYN_
 datapoints_start: 1546297200                        # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
-datapoints_end: 1w-ago                              # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
+datapoints_end: 12w-ago                             # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
 value_manipulation_lambda_fnc: "lambda x: x*0.2"    # Lambda function as a string if value manipulation for datapoints is needed.
 timeseries_external_ids:                            # List of timeseries external_ids to replicate
-  - external-id-1:value
-  - external-id-2:value
+  #- external-id-1:value
+  #- external-id-2:value
