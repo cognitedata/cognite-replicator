@@ -132,6 +132,8 @@ def main():
             config.get("number_of_threads"),
             delete_replicated_if_not_in_src=delete_replicated_if_not_in_src,
             delete_not_replicated_in_dst=delete_not_replicated_in_dst,
+            target_external_ids=config.get("events_external_ids"),
+            exclude_pattern=config.get("events_exclude_pattern"),
         )
 
     if Resource.TIMESERIES in resources_to_replicate:
@@ -154,6 +156,8 @@ def main():
             config.get("number_of_threads"),
             delete_replicated_if_not_in_src=delete_replicated_if_not_in_src,
             delete_not_replicated_in_dst=delete_not_replicated_in_dst,
+            target_external_ids=config.get("files_external_ids"),
+            exclude_pattern=config.get("files_exclude_pattern"),
         )
 
     if Resource.RAW in resources_to_replicate:
