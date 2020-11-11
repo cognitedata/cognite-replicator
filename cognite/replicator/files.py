@@ -72,6 +72,7 @@ def copy_files(
     project_src: str,
     runtime: int,
     client: CogniteClient,
+    dst_ts : None,
 ):
     """
     Creates/updates file objects and then attempts to create and update these objects in the destination.
@@ -83,6 +84,7 @@ def copy_files(
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
         client: The client corresponding to the destination project.
+        dst_ts: Is None for events, is called from replication's thread() fn for timeseries.
 
     """
     logging.debug(f"Starting to replicate {len(src_files)} files.")
@@ -192,6 +194,7 @@ def replicate(
             project_src=project_src,
             runtime=replicated_runtime,
             client=client_dst,
+            dst_ts=None,
         )
 
     logging.info(
