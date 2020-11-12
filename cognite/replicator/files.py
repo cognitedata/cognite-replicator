@@ -1,7 +1,7 @@
 import logging
 import mimetypes
 import time
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from cognite.client import CogniteClient
 from cognite.client.data_classes import FileMetadata, FileMetadataList
