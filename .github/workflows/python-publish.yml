@@ -25,10 +25,15 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install setuptools wheel twine
-    - name: Build and publish
+
+    - name: Build package
+      run: poetry build
+
+    - name: Build docs
+      run: cd docs && sphinx-build -W -b html ./source ./build
+
+    - name: Release to PyPI
       env:
         TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-      run: |
-        python setup.py sdist bdist_wheel
-        twine upload dist/*
+      run: twine upload --verbose dist/* || echo 'Version exists'
