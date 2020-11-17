@@ -51,7 +51,7 @@ jobs:
           poetry install
       - name: Run tests
         run: |
-          poetry run pytest -v --cov-report xml:coverage.xml --cov=src
+          poetry run pytest -v --cov-report xml:coverage.xml --cov
           coverage xml
       - name: Codecov report
         uses: codecov/codecov-action@v1
