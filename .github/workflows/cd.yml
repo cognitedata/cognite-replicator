@@ -1,32 +1,19 @@
+name: Publish Docker image
 on:
   push:
     branches:
       - master
-
 jobs:
-  build-master:
-    name: Build, push, and deploy master image
+  push_to_registry:
+    name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Check out the repo
         uses: actions/checkout@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Login to GCR
-        uses: docker/login-action@v1
+      - name: Push to Docker Hub
+        uses: docker/build-push-action@v1
         with:
-          registry: eu.gcr.io
-          username: _json_key
-          password: ${{ secrets.COGNITE_GCR_JSON_KEY }}
-
-      - name: Build and push
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: |
-            eu.gcr.io/${{ secrets.PROJECT_ID}}/cognite-replicator:latest
-            eu.gcr.io/${{ secrets.PROJECT_ID }}/cognite-replicator:${{ github.sha }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: cognite/cognite-replicator-dev
+          tag_with_ref: true
