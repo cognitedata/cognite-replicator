@@ -17,9 +17,10 @@ Changes are grouped as follows
 - Support for replicating file data
 
 ## [Unreleased]
+## [0.8.2] - 2020-11-18
 
-## [0.8.2] - 2020-11-11
-
+## Changed
+- CI/CD from Jenkins to github actions
 ## Fixed
 - Fix broken behavior: add arg to copy functions of events and files replicators (code was broken as a result of the addition of a 7th arg to the invoking replication.thread function)
 - Add filtering by external id that existed in time series to events and files replicators
