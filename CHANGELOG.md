@@ -17,6 +17,10 @@ Changes are grouped as follows
 - Support for replicating file data
 
 ## [Unreleased]
+## [0.8.2] - 2020-11-18
+
+## Changed
+- CI/CD from Jenkins to github actions
 
 ## [0.8.1] - 2020-07-06
 
