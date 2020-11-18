@@ -35,11 +35,12 @@ pre-commit = "^1.18"
 pytest = "^5.1.1"
 pytest-cov = "^2.7.1"
 pytest-mock = "^1.11.2"
-sphinx = "^2.0"
-sphinx-rtd-theme = "^0.4"
+sphinx = "^2.4.4"
+sphinx-rtd-theme = "^0.4.3"
 toml = "^0.10.0"
 tox = "^3.14"
 tox-pyenv = "^1.1"
+twine = "^3.1.1"
 
 [tool.poetry.scripts]
 replicator = 'cognite.replicator.__main__:main'
