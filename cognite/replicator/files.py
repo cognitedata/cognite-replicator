@@ -72,7 +72,7 @@ def copy_files(
     project_src: str,
     runtime: int,
     client: CogniteClient,
-    dst_ts = None,
+    dst_ts=None,
 ):
     """
     Creates/updates file objects and then attempts to create and update these objects in the destination.
