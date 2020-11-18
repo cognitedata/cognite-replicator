@@ -52,4 +52,4 @@ def test_copy_events():
     ]
     id_mapping = {i: i * 111 for i in range(1, 10)}
     with monkeypatch_cognite_client() as client_dst:
-        copy_events(events_src, {}, id_mapping, "src-project-name", 1000000, client_dst)
+        copy_events(events_src, {}, id_mapping, "src-project-name", 1000000, client_dst, None)

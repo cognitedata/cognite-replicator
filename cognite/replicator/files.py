@@ -71,7 +71,7 @@ def copy_files(
     src_dst_ids_assets: Dict[int, int],
     project_src: str,
     runtime: int,
-    client: CogniteClient
+    client: CogniteClient,
     src_filter: List[FileMetadata],
 ):
     """
