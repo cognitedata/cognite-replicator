@@ -35,9 +35,6 @@ jobs:
     - name: Build package
       run: poetry build
 
-    - name: Build docs
-      run: cd docs && sphinx-build -W -b html ./source ./build
-
     - name: Release to PyPI
       env:
         TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
