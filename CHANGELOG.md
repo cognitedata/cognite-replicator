@@ -21,9 +21,6 @@ Changes are grouped as follows
 
 ## Changed
 - CI/CD from Jenkins to github actions
-
-## [0.8.2] - 2020-11-11
-
 ## Fixed
 - Fix broken behavior: add arg to copy functions of events and files replicators (code was broken as a result of the addition of a 7th arg to the invoking replication.thread function)
 

@@ -79,7 +79,7 @@ def copy_events(
     project_src: str,
     runtime: int,
     client: CogniteClient,
-    dst_ts = None, 
+    dst_ts=None,
 ):
     """
     Creates/updates event objects and then attempts to create and update these objects in the destination.
