@@ -23,6 +23,8 @@ Changes are grouped as follows
 - CI/CD from Jenkins to github actions
 ## Fixed
 - Fix broken behavior: add arg to copy functions of events and files replicators (code was broken as a result of the addition of a 7th arg to the invoking replication.thread function)
+- Add filtering by external id that existed in time series to events and files replicators
+- Add exclude pattern by regex that existed in time series to events and files replicators
 
 ## [0.8.1] - 2020-07-06
 

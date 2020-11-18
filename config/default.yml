@@ -18,10 +18,21 @@ client_timeout: 120                                 # Seconds for clients to tim
 client_name: cognite-replicator                     # Name of client
 log_path: log                                       # Folder to save logs to
 log_level: INFO                                     # Logging level
-timeseries_exclude_pattern:                         # Regex pattern to prevent replication of matching timeseries. Example: ^SYN_
+events_exclude_pattern:                             # Optional - Regex pattern to prevent replication of matching events. Example: ^SYN_
+timeseries_exclude_pattern:                         # Optional - Regex pattern to prevent replication of matching timeseries. Example: ^SYN_
+files_exclude_pattern:                              # Optional - Regex pattern to prevent replication of matching files. Example: ^SYN_
 datapoints_start: 1546297200                        # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
 datapoints_end: 1w-ago                              # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
 value_manipulation_lambda_fnc: "lambda x: x*0.2"    # Lambda function as a string if value manipulation for datapoints is needed.
-timeseries_external_ids:                            # List of timeseries external_ids to replicate
-  - external-id-1:value
-  - external-id-2:value
+events_external_ids:                                # Optional - List of events external_ids to replicate
+  #- external-id-1
+  #- external-id-2
+  #- external-id-3
+timeseries_external_ids:                            # Optional - List of timeseries external_ids to replicate
+  #- external-id-1
+  #- external-id-2
+  #- external-id-3
+files_external_ids:                                 # Optional - List of files external_ids to replicate
+  #- external-id-1
+  #- external-id-2
+  #- external-id-3
