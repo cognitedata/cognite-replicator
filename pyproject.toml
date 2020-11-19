@@ -41,6 +41,7 @@ toml = "^0.10.0"
 tox = "^3.14"
 tox-pyenv = "^1.1"
 twine = "^3.1.1"
+pytz = "*"
 
 [tool.poetry.scripts]
 replicator = 'cognite.replicator.__main__:main'
