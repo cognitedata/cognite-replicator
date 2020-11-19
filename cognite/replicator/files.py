@@ -65,11 +65,8 @@ def update_file(
     dst_file.source_modified_time = src_file.source_modified_time
     return dst_file
 
-def create_and_upload_file(
-        file_metadata: FileMetadata,
-        client_src: CogniteClient,
-        client_dst: CogniteClient,
-    ) -> None:
+
+def create_and_upload_file(file_metadata: FileMetadata, client_src: CogniteClient, client_dst: CogniteClient) -> None:
     file_bytes = client_src.files.download_bytes(external_id=file_metadata.external_id)
     client_dst.upload(
         content=file_bytes,
@@ -82,6 +79,7 @@ def create_and_upload_file(
         source_created_time=file_metadata.source_created_time,
         source_modified_time=file_metadata.source_modified_time,
     )
+
 
 def copy_files(
     src_files: List[FileMetadata],
@@ -127,18 +125,12 @@ def copy_files(
         for file in create_files:
             response = None
             try:
-                response = replication.retry(
-                    lambda f: create_and_upload_file(f, client_src, client_dst),
-                    file
-                )
+                response = replication.retry(lambda f: create_and_upload_file(f, client_src, client_dst), file)
             except CogniteAPIError as exc:
                 logging.error(f"Failed to create file {file.name}. {exc}")
                 if "Invalid MIME type" in exc.message:
                     file.mime_type = None
-                    response = replication.retry(
-                        lambda f: create_and_upload_file(f, client_src, client_dst),
-                        file
-                    )
+                    response = replication.retry(lambda f: create_and_upload_file(f, client_src, client_dst), file)
             if response:
                 create_urls.append(response)
         logging.debug(f"Successfully created {len(create_urls)} files.")
@@ -206,7 +198,9 @@ def replicate(
 
     if skip_unlinkable or skip_nonasset or exclude_pattern:
         pre_filter_length = len(files_src)
-        files_src = replication.filter_objects(files_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset, lambda _: True)
+        files_src = replication.filter_objects(
+            files_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset, lambda _: True
+        )
         logging.info(f"Filtered out {pre_filter_length - len(files_src)} files. {len(files_src)} files remain.")
 
     replicated_runtime = int(time.time()) * 1000
