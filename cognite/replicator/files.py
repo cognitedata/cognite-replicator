@@ -196,11 +196,18 @@ def replicate(
         f"that have been replicated then it will be linked."
     )
 
+    compiled_re = None
+    if exclude_pattern:
+        compiled_re = re.compile(exclude_pattern)
+
+    def filter_fn(ts):
+        if exclude_pattern:
+            return compiled_re.search(ts.external_id) is None
+        return True
+
     if skip_unlinkable or skip_nonasset or exclude_pattern:
         pre_filter_length = len(files_src)
-        files_src = replication.filter_objects(
-            files_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset, lambda _: True
-        )
+        files_src = replication.filter_objects(files_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset, filter_fn)
         logging.info(f"Filtered out {pre_filter_length - len(files_src)} files. {len(files_src)} files remain.")
 
     replicated_runtime = int(time.time()) * 1000
