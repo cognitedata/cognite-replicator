@@ -1,11 +1,12 @@
 import logging
 import mimetypes
+import re
 import time
 from typing import Dict, List, Optional
 
 from cognite.client import CogniteClient
 from cognite.client.data_classes import FileMetadata, FileMetadataList
-from cognite.client.exceptions import CogniteAPIError
+from cognite.client.exceptions import CogniteAPIError, CogniteNotFoundError
 
 from . import replication
 
@@ -64,6 +65,23 @@ def update_file(
     dst_file.source_modified_time = src_file.source_modified_time
     return dst_file
 
+def create_and_upload_file(
+        file_metadata: FileMetadata,
+        client_src: CogniteClient,
+        client_dst: CogniteClient,
+    ) -> None:
+    file_bytes = client_src.files.download_bytes(external_id=file_metadata.external_id)
+    client_dst.upload(
+        content=file_bytes,
+        name=file_metadata.name,
+        external_id=file_metadata.external_id,
+        source=file_metadata.source,
+        mime_type=file_metadata.mime_type,
+        metadata=file_metadata.metadata,
+        asset_ids=file_metadata.asset_ids,
+        source_created_time=file_metadata.source_created_time,
+        source_modified_time=file_metadata.source_modified_time,
+    )
 
 def copy_files(
     src_files: List[FileMetadata],
@@ -71,7 +89,8 @@ def copy_files(
     src_dst_ids_assets: Dict[int, int],
     project_src: str,
     runtime: int,
-    client: CogniteClient,
+    client_src: CogniteClient,
+    client_dst: CogniteClient,
     src_filter: List[FileMetadata],
 ):
     """
@@ -83,7 +102,8 @@ def copy_files(
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
-        client: The client corresponding to the destination project.
+        client_src: The client corresponding to the source project.
+        client_dst: The client corresponding to the destination project.
         src_filter: List of files in the destination - Will be used for comparison if current files where not copied by the replicator
     """
     logging.debug(f"Starting to replicate {len(src_files)} files.")
@@ -107,20 +127,25 @@ def copy_files(
         for file in create_files:
             response = None
             try:
-                response = replication.retry(client.files.create, file)
+                response = replication.retry(
+                    lambda f: create_and_upload_file(f, client_src, client_dst),
+                    file
+                )
             except CogniteAPIError as exc:
                 logging.error(f"Failed to create file {file.name}. {exc}")
                 if "Invalid MIME type" in exc.message:
                     file.mime_type = None
-                    response = replication.retry(client.files.create, file)
-
+                    response = replication.retry(
+                        lambda f: create_and_upload_file(f, client_src, client_dst),
+                        file
+                    )
             if response:
                 create_urls.append(response)
         logging.debug(f"Successfully created {len(create_urls)} files.")
 
     if update_files:
         logging.debug(f"Attempting to update {len(update_files)} files.")
-        update_files = replication.retry(client.files.update, update_files)
+        update_files = replication.retry(client_dst.files.update, update_files)
         logging.debug(f"Successfully updated {len(update_files)} files.")
 
     logging.info(f"Created {len(create_urls)} new files and updated {len(update_files)} existing files.")
@@ -179,18 +204,9 @@ def replicate(
         f"that have been replicated then it will be linked."
     )
 
-    compiled_re = None
-    if exclude_pattern:
-        compiled_re = re.compile(exclude_pattern)
-
-    def filter_fn(ts):
-        if exclude_pattern:
-            return _is_copyable(ts) and compiled_re.search(ts.external_id) is None
-        return _is_copyable(ts)
-
     if skip_unlinkable or skip_nonasset or exclude_pattern:
         pre_filter_length = len(files_src)
-        files_src = replication.filter_objects(files_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset, filter_fn)
+        files_src = replication.filter_objects(files_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset, lambda _: True)
         logging.info(f"Filtered out {pre_filter_length - len(files_src)} files. {len(files_src)} files remain.")
 
     replicated_runtime = int(time.time()) * 1000
@@ -220,7 +236,8 @@ def replicate(
             src_dst_ids_assets=src_dst_ids_assets,
             project_src=project_src,
             runtime=replicated_runtime,
-            client=client_dst,
+            client_src=client_src,
+            client_dst=client_dst,
             src_filter=files_dst,
         )
 
