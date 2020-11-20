@@ -67,7 +67,7 @@ def update_file(
 
 
 def create_and_upload_file(file_metadata: FileMetadata, client_src: CogniteClient, client_dst: CogniteClient) -> None:
-    file_bytes = client_src.files.download_bytes(id=file_metadata.id)
+    file_bytes = client_src.files.download_bytes(id=file_metadata.external_id)
     client_dst.files.upload_bytes(
         content=file_bytes,
         name=file_metadata.name,
