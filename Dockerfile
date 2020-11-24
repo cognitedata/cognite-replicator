@@ -8,7 +8,7 @@ ENV PYTHONFAULTHANDLER=1 \
   PIP_NO_CACHE_DIR=off \
   PIP_DISABLE_PIP_VERSION_CHECK=on \
   PIP_DEFAULT_TIMEOUT=100 \
-  POETRY_VERSION=0.12.16
+  POETRY_VERSION=1.0.3
 
 # System deps:
 RUN pip install "poetry==$POETRY_VERSION"
@@ -19,6 +19,6 @@ WORKDIR /code
 COPY . /code
 
 # Project initialization:
-RUN poetry config settings.virtualenvs.create false && poetry install --no-dev --no-interaction --no-ansi
+RUN poetry config virtualenvs.create false && poetry install --no-dev --no-interaction --no-ansi
 
 ENTRYPOINT ["python", "-m", "cognite.replicator"]
