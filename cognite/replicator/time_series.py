@@ -1,6 +1,7 @@
 import logging
 import re
 import time
+import queue
 from typing import Dict, List, Optional
 
 from cognite.client import CogniteClient
@@ -92,6 +93,7 @@ def copy_ts(
     runtime: int,
     client: CogniteClient,
     src_filter: List[TimeSeries],
+    jobs: queue.Queue = None,
 ):
     """
     Creates/updates time series objects and then attempts to create and update these time series in the destination.
@@ -105,37 +107,59 @@ def copy_ts(
         client: The client corresponding to the destination project.
         src_filter: List of timeseries in the destination - Will be used for comparison if current timeseries where not copied by the replicator
     """
-    logging.info(f"Starting to replicate {len(src_ts)} time series.")
-    for ts in src_ts:  # for unlinkable time_series, remove asset id to avoid insertion error
-        if ts.asset_id is not None and ts.asset_id not in src_dst_ids_assets:
-            ts.asset_id = None
 
-    create_ts, update_ts, unchanged_ts = replication.make_objects_batch(
-        src_ts,
-        src_id_dst_ts,
-        src_dst_ids_assets,
-        create_time_series,
-        update_time_series,
-        project_src,
-        runtime,
-        src_filter=src_filter,
-    )
+    if jobs:
+        use_queue_logic = True
+        do_while = not jobs.empty()
+    else:
+        use_queue_logic = False
+        do_while = True
 
-    logging.info(f"Creating {len(create_ts)} new time series and updating {len(update_ts)} existing time series.")
+    while do_while:
+        if use_queue_logic:
+            chunk = jobs.get()
+            chunk_ts = src_ts[chunk[0]:chunk[1]]
+        else:
+            chunk_ts = src_ts
 
-    if create_ts:
-        logging.info(f"Creating {len(create_ts)} time series.")
-        created_ts = replication.retry(client.time_series.create, create_ts)
-        logging.info(f"Successfully created {len(created_ts)} time series.")
+        logging.info(f"Starting to replicate {len(chunk_ts)} time series.")
+        for ts in chunk_ts:  # for unlinkable time_series, remove asset id to avoid insertion error
+            if ts.asset_id is not None and ts.asset_id not in src_dst_ids_assets:
+                ts.asset_id = None
 
-    if update_ts:
-        logging.info(f"Updating {len(update_ts)} time series.")
-        updated_ts = replication.retry(client.time_series.update, update_ts)
-        logging.info(f"Successfully updated {len(updated_ts)} time series.")
+        create_ts, update_ts, unchanged_ts = replication.make_objects_batch(
+            chunk_ts,
+            src_id_dst_ts,
+            src_dst_ids_assets,
+            create_time_series,
+            update_time_series,
+            project_src,
+            runtime,
+            src_filter=src_filter,
+        )
 
-    if unchanged_ts:
-        logging.info(f"{len(unchanged_ts)} time series will not be changed.")
+        logging.info(f"Creating {len(create_ts)} new time series and updating {len(update_ts)} existing time series.")
 
+        if create_ts:
+            logging.debug(f"Creating {len(create_ts)} time series.")
+            created_ts = replication.retry(client.time_series.create, create_ts)
+            logging.debug(f"Successfully created {len(created_ts)} time series.")
+
+        if update_ts:
+            logging.debug(f"Updating {len(update_ts)} time series.")
+            updated_ts = replication.retry(client.time_series.update, update_ts)
+            logging.debug(f"Successfully updated {len(updated_ts)} time series.")
+
+        if unchanged_ts:
+            logging.info(f"{len(unchanged_ts)} time series will not be changed.")
+
+        logging.info(f"Created {len(create_ts)} new time series and updating {len(update_ts)} existing time series.")
+
+        if use_queue_logic:
+            jobs.task_done()
+            do_while = not jobs.empty()
+        else:
+            do_while = False
 
 def replicate(
     client_src: CogniteClient,
@@ -215,6 +239,7 @@ def replicate(
     if len(ts_src) > batch_size:
         replication.thread(
             num_threads=num_threads,
+            batch_size=batch_size,
             copy=copy_ts,
             src_objects=ts_src,
             src_id_dst_obj=src_id_dst_ts,

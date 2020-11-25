@@ -1,5 +1,6 @@
 import logging
 import time
+import queue
 from typing import Dict, List, Optional
 
 from cognite.client import CogniteClient
@@ -80,6 +81,7 @@ def copy_events(
     runtime: int,
     client: CogniteClient,
     src_filter: List[Event],
+    jobs: queue.Queue = None,
 ):
     """
     Creates/updates event objects and then attempts to create and update these objects in the destination.
@@ -93,33 +95,53 @@ def copy_events(
         client: The client corresponding to the destination project.
         src_filter: List of events in the destination - Will be used for comparison if current events where not copied by the replicator
     """
-    logging.debug(f"Starting to replicate {len(src_events)} events.")
 
-    create_events, update_events, unchanged_events = replication.make_objects_batch(
-        src_events,
-        src_id_dst_event,
-        src_dst_ids_assets,
-        create_event,
-        update_event,
-        project_src,
-        runtime,
-        src_filter=src_filter,
-    )
+    if jobs:
+        use_queue_logic = True
+        do_while = not jobs.empty()
+    else:
+        use_queue_logic = False
+        do_while = True
 
-    logging.info(f"Creating {len(create_events)} new events and updating {len(update_events)} existing events.")
+    while do_while:
+        if use_queue_logic:
+            chunk = jobs.get()
+            chunk_events = src_events[chunk[0]:chunk[1]]
+        else:
+            chunk_events = src_events
 
-    if create_events:
-        logging.debug(f"Attempting to create {len(create_events)} events.")
-        create_events = replication.retry(client.events.create, create_events)
-        logging.debug(f"Successfully created {len(create_events)} events.")
+        logging.debug(f"Starting to replicate {len(chunk_events)} events.")
 
-    if update_events:
-        logging.debug(f"Attempting to update {len(update_events)} events.")
-        update_events = replication.retry(client.events.update, update_events)
-        logging.debug(f"Successfully updated {len(update_events)} events.")
+        create_events, update_events, unchanged_events = replication.make_objects_batch(
+            chunk_events,
+            src_id_dst_event,
+            src_dst_ids_assets,
+            create_event,
+            update_event,
+            project_src,
+            runtime,
+            src_filter=src_filter,
+        )
 
-    logging.info(f"Created {len(create_events)} new events and updated {len(update_events)} existing events.")
+        logging.info(f"Creating {len(create_events)} new events and updating {len(update_events)} existing events.")
 
+        if create_events:
+            logging.debug(f"Attempting to create {len(create_events)} events.")
+            create_events = replication.retry(client.events.create, create_events)
+            logging.debug(f"Successfully created {len(create_events)} events.")
+
+        if update_events:
+            logging.debug(f"Attempting to update {len(update_events)} events.")
+            update_events = replication.retry(client.events.update, update_events)
+            logging.debug(f"Successfully updated {len(update_events)} events.")
+
+        logging.info(f"Created {len(create_events)} new events and updated {len(update_events)} existing events.")
+
+        if use_queue_logic:
+            jobs.task_done()
+            do_while = not jobs.empty()
+        else:
+            do_while = False
 
 def replicate(
     client_src: CogniteClient,
@@ -201,6 +223,7 @@ def replicate(
     if len(events_src) > batch_size:
         replication.thread(
             num_threads=num_threads,
+            batch_size=batch_size,
             copy=copy_events,
             src_objects=events_src,
             src_id_dst_obj=src_id_dst_event,
