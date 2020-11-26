@@ -106,7 +106,7 @@ def copy_events(
     while do_while:
         if use_queue_logic:
             chunk = jobs.get()
-            chunk_events = src_events[chunk[0]:chunk[1]]
+            chunk_events = src_events[chunk[0] : chunk[1]]
         else:
             chunk_events = src_events
 
@@ -142,6 +142,7 @@ def copy_events(
             do_while = not jobs.empty()
         else:
             do_while = False
+
 
 def replicate(
     client_src: CogniteClient,

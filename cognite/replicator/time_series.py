@@ -118,7 +118,7 @@ def copy_ts(
     while do_while:
         if use_queue_logic:
             chunk = jobs.get()
-            chunk_ts = src_ts[chunk[0]:chunk[1]]
+            chunk_ts = src_ts[chunk[0] : chunk[1]]
         else:
             chunk_ts = src_ts
 
@@ -160,6 +160,7 @@ def copy_ts(
             do_while = not jobs.empty()
         else:
             do_while = False
+
 
 def replicate(
     client_src: CogniteClient,

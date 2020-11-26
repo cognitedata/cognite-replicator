@@ -284,11 +284,11 @@ def thread(
         else:
             jobs.put([i, i + remaining])
         i += batch_size
-    
-    #chunk_size = len(src_objects) // num_threads
-    #logging.info(f"Thread chunk size: {chunk_size}")
-    #remainder = len(src_objects) % num_threads
-    #logging.info(f"Thread remainder size: {remainder}\n")
+
+    # chunk_size = len(src_objects) // num_threads
+    # logging.info(f"Thread chunk size: {chunk_size}")
+    # remainder = len(src_objects) % num_threads
+    # logging.info(f"Thread remainder size: {remainder}\n")
 
     for t in range(num_threads):
         threads.append(
