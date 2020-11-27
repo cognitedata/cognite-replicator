@@ -1,5 +1,6 @@
 import logging
 import threading
+import queue
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import requests
@@ -246,6 +247,7 @@ def retry(
 
 def thread(
     num_threads: int,
+    batch_size: int,
     copy,
     src_objects: List[Union[Event, FileMetadata, TimeSeries]],
     src_id_dst_obj: Dict[int, Union[Event, FileMetadata, TimeSeries]],
@@ -271,33 +273,39 @@ def thread(
                     Will be used for comparison if current event/timeseries/files where not copied by the replicator.
 
     """
-
+    jobs = queue.Queue()
     threads = []
-    chunk_size = len(src_objects) // num_threads
-    logging.info(f"Thread chunk size: {chunk_size}")
-    remainder = len(src_objects) % num_threads
-    logging.info(f"Thread remainder size: {remainder}\n")
 
     i = 0
+    while i < len(src_objects):
+        remaining = len(src_objects) - i
+        if remaining >= batch_size:
+            jobs.put([i, i + batch_size])
+        else:
+            jobs.put([i, i + remaining])
+        i += batch_size
+
+    # chunk_size = len(src_objects) // num_threads
+    # logging.info(f"Thread chunk size: {chunk_size}")
+    # remainder = len(src_objects) % num_threads
+    # logging.info(f"Thread remainder size: {remainder}\n")
+
     for t in range(num_threads):
-        cs = chunk_size + int(t < remainder)
         threads.append(
             threading.Thread(
                 target=copy,
                 args=(
-                    src_objects[i : i + cs],
+                    src_objects,
                     src_id_dst_obj,
                     src_dst_ids_assets,
                     project_src,
                     replicated_runtime,
                     client,
                     src_filter,
+                    jobs,
                 ),
             )
         )
-        i += cs
-
-    assert i == len(src_objects)
 
     for count, t in enumerate(threads, start=1):
         t.start()

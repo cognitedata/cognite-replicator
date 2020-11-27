@@ -1,6 +1,7 @@
 import logging
 import mimetypes
 import time
+import queue
 from typing import Dict, List, Optional
 
 from cognite.client import CogniteClient
@@ -73,6 +74,7 @@ def copy_files(
     runtime: int,
     client: CogniteClient,
     src_filter: List[FileMetadata],
+    jobs: queue.Queue = None,
 ):
     """
     Creates/updates file objects and then attempts to create and update these objects in the destination.
@@ -86,44 +88,65 @@ def copy_files(
         client: The client corresponding to the destination project.
         src_filter: List of files in the destination - Will be used for comparison if current files where not copied by the replicator
     """
-    logging.debug(f"Starting to replicate {len(src_files)} files.")
 
-    create_files, update_files, unchanged_files = replication.make_objects_batch(
-        src_files,
-        src_id_dst_file,
-        src_dst_ids_assets,
-        create_file,
-        update_file,
-        project_src,
-        runtime,
-        src_filter=src_filter,
-    )
+    if jobs:
+        use_queue_logic = True
+        do_while = not jobs.empty()
+    else:
+        use_queue_logic = False
+        do_while = True
 
-    logging.info(f"Creating {len(create_files)} new files and updating {len(update_files)} existing files.")
+    while do_while:
+        if use_queue_logic:
+            chunk = jobs.get()
+            chunk_files = src_files[chunk[0] : chunk[1]]
+        else:
+            chunk_files = src_files
 
-    create_urls = []
-    if create_files:
-        logging.debug(f"Attempting to create {len(create_files)} files.")
-        for file in create_files:
-            response = None
-            try:
-                response = replication.retry(client.files.create, file)
-            except CogniteAPIError as exc:
-                logging.error(f"Failed to create file {file.name}. {exc}")
-                if "Invalid MIME type" in exc.message:
-                    file.mime_type = None
+        logging.debug(f"Starting to replicate {len(chunk_files)} files.")
+
+        create_files, update_files, unchanged_files = replication.make_objects_batch(
+            chunk_files,
+            src_id_dst_file,
+            src_dst_ids_assets,
+            create_file,
+            update_file,
+            project_src,
+            runtime,
+            src_filter=src_filter,
+        )
+
+        logging.info(f"Creating {len(create_files)} new files and updating {len(update_files)} existing files.")
+
+        create_urls = []
+        if create_files:
+            logging.debug(f"Attempting to create {len(create_files)} files.")
+            for file in create_files:
+                response = None
+                try:
                     response = replication.retry(client.files.create, file)
+                except CogniteAPIError as exc:
+                    logging.error(f"Failed to create file {file.name}. {exc}")
+                    if "Invalid MIME type" in exc.message:
+                        file.mime_type = None
+                        response = replication.retry(client.files.create, file)
 
-            if response:
-                create_urls.append(response)
-        logging.debug(f"Successfully created {len(create_urls)} files.")
+                if response:
+                    create_urls.append(response)
+            logging.debug(f"Successfully created {len(create_urls)} files.")
 
-    if update_files:
-        logging.debug(f"Attempting to update {len(update_files)} files.")
-        update_files = replication.retry(client.files.update, update_files)
-        logging.debug(f"Successfully updated {len(update_files)} files.")
+        if update_files:
+            logging.debug(f"Attempting to update {len(update_files)} files.")
+            update_files = replication.retry(client.files.update, update_files)
+            logging.debug(f"Successfully updated {len(update_files)} files.")
 
-    logging.info(f"Created {len(create_urls)} new files and updated {len(update_files)} existing files.")
+        logging.info(f"Created {len(create_urls)} new files and updated {len(update_files)} existing files.")
+
+        if use_queue_logic:
+            jobs.task_done()
+            do_while = not jobs.empty()
+        else:
+            do_while = False
 
 
 def replicate(
@@ -204,6 +227,7 @@ def replicate(
     if len(files_src) > batch_size:
         replication.thread(
             num_threads=num_threads,
+            batch_size=batch_size,
             copy=copy_files,
             src_objects=files_src,
             src_id_dst_obj=src_id_dst_file,
