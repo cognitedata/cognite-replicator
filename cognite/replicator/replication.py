@@ -279,20 +279,35 @@ def thread(
     i = 0
     for t in range(num_threads):
         cs = chunk_size + int(t < remainder)
-        threads.append(
-            threading.Thread(
-                target=copy,
-                args=(
-                    src_objects[i : i + cs],
-                    src_id_dst_obj,
-                    src_dst_ids_assets,
-                    project_src,
-                    replicated_runtime,
-                    client,
-                    dst_ts,
-                ),
+        if dst_ts is None:
+            threads.append(
+                threading.Thread(
+                    target=copy,
+                    args=(
+                        src_objects[i: i + cs],
+                        src_id_dst_obj,
+                        src_dst_ids_assets,
+                        project_src,
+                        replicated_runtime,
+                        client
+                    ),
+                )
             )
-        )
+        else:
+            threads.append(
+                threading.Thread(
+                    target=copy,
+                    args=(
+                        src_objects[i : i + cs],
+                        src_id_dst_obj,
+                        src_dst_ids_assets,
+                        project_src,
+                        replicated_runtime,
+                        client,
+                        dst_ts,
+                    ),
+                )
+            )
         i += cs
 
     assert i == len(src_objects)
