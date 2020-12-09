@@ -392,3 +392,34 @@ def find_objects_to_delete_if_not_in_src(
             if int(obj.metadata["_replicatedInternalId"]) not in src_obj_ids:
                 obj_ids_to_remove.append(obj.id)
     return obj_ids_to_remove
+
+
+def map_ids_from_external_ids(src_asset_map: Dict[str, Asset], dst_assets: List[Asset]):
+    """
+    Alternative to the existing_mapping for the cases when src and dst have the same assets
+    but dst assets don't have replication metadata
+
+    Parameters:
+        src_asset_map: a dict which maps external id to the asset object
+        dst_assets: a list of assets in the destination
+    """
+    ids = {}
+
+    for dst in dst_assets:
+        ids[src_asset_map[dst.external_id].id] = dst.id
+
+    return ids
+
+
+def make_asset_map(assets: List[Asset]):
+    """
+    Creates a map of external_id to asset from a list of assets
+
+    Parameters:
+        assets: a list of assets from which a map will be created
+    """
+    asset_map = {}
+    for asset in assets:
+        asset_map[asset.external_id] = asset
+
+    return asset_map
