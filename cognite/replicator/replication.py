@@ -411,7 +411,7 @@ def map_ids_from_external_ids(src_asset_map: Dict[str, Asset], dst_assets: List[
     return ids
 
 
-def make_asset_map(assets: List[Asset]):
+def make_external_id_obj_map(assets: List[Union[Asset, Sequence]]):
     """
     Creates a map of external_id to asset from a list of assets
 
@@ -423,3 +423,4 @@ def make_asset_map(assets: List[Asset]):
         asset_map[asset.external_id] = asset
 
     return asset_map
+
