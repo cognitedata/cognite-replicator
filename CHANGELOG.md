@@ -17,6 +17,14 @@ Changes are grouped as follows
 - Support for replicating file data
 
 ## [Unreleased]
+## [0.8.2] - 2020-11-18
+
+## Changed
+- CI/CD from Jenkins to github actions
+## Fixed
+- Fix broken behavior: add arg to copy functions of events and files replicators (code was broken as a result of the addition of a 7th arg to the invoking replication.thread function)
+- Add filtering by external id that existed in time series to events and files replicators
+- Add exclude pattern by regex that existed in time series to events and files replicators
 
 ## [0.8.1] - 2020-07-06
 
@@ -157,4 +165,4 @@ and no exclusion of final datapoint
 ### Fixed
 - Time series replication no longer attempts to create security category-protected time series
 - Use pre-commit hooks to run black and unit tests
-- Send logs to google cloud stackdriver if configured, needed the right dependencies.
+- Send logs to google cloud stackdriver if configured, needed the right dependencies

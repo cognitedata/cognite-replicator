@@ -53,7 +53,6 @@ For *Databricks* you can install it on a cluster. First, click on **Libraries** 
 import os
 
 from cognite.client import CogniteClient
-from cognite.replicator import assets, events, time_series, datapoints
 
 SRC_API_KEY = os.environ.get("COGNITE_SOURCE_API_KEY")
 DST_API_KEY = os.environ.get("COGNITE_DESTINATION_API_KEY")
@@ -62,14 +61,21 @@ PROJECT_DST = "Name of destination tenant"
 CLIENT_NAME = "cognite-replicator"
 BATCH_SIZE = 10000 # this is the max size of a batch to be posted
 NUM_THREADS= 10 # this is the max number of threads to be used
+SRC_BASE_URL = "https://api.cognitedata.com"
+DST_BASE_URL = "https://api.cognitedata.com"
+TIMEOUT = 90
 
-CLIENT_SRC = CogniteClient(api_key=SRC_API_KEY, project=PROJECT_SRC, client_name=CLIENT_NAME)
-CLIENT_DST = CogniteClient(api_key=DST_API_KEY, project=PROJECT_DST, client_name=CLIENT_NAME, timeout=90)
+if __name__ == '__main__': # this is necessary because threading
+    from cognite.replicator import assets, events, files, time_series, datapoints
 
-assets.replicate(CLIENT_SRC, CLIENT_DST)
-events.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
-time_series.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
-datapoints.replicate(CLIENT_SRC, CLIENT_DST)
+    CLIENT_SRC = CogniteClient(api_key=SRC_API_KEY, project=PROJECT_SRC, base_url=SRC_BASE_URL, client_name=CLIENT_NAME)
+    CLIENT_DST = CogniteClient(api_key=DST_API_KEY, project=PROJECT_DST, base_url=DST_BASE_URL, client_name=CLIENT_NAME, timeout=TIMEOUT)
+
+    assets.replicate(CLIENT_SRC, CLIENT_DST)
+    events.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
+    files.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
+    time_series.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
+    datapoints.replicate(CLIENT_SRC, CLIENT_DST)
 ```
 
 ### Run it from databricks notebook

@@ -1,6 +1,7 @@
 import logging
 import re
 import time
+import queue
 from typing import Dict, List, Optional
 
 from cognite.client import CogniteClient
@@ -91,7 +92,8 @@ def copy_ts(
     project_src: str,
     runtime: int,
     client: CogniteClient,
-    dst_ts: List[TimeSeries],
+    src_filter: List[TimeSeries],
+    jobs: queue.Queue = None,
 ):
     """
     Creates/updates time series objects and then attempts to create and update these time series in the destination.
@@ -103,38 +105,61 @@ def copy_ts(
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
         client: The client corresponding to the destination project.
-        dst_ts: List of timeseries in the destination - Will be used for comparison if current timeseries where not copied by the replicator
+        src_filter: List of timeseries in the destination - Will be used for comparison if current timeseries where not copied by the replicator
     """
-    logging.info(f"Starting to replicate {len(src_ts)} time series.")
-    for ts in src_ts:  # for unlinkable time_series, remove asset id to avoid insertion error
-        if ts.asset_id is not None and ts.asset_id not in src_dst_ids_assets:
-            ts.asset_id = None
 
-    create_ts, update_ts, unchanged_ts = replication.make_objects_batch(
-        src_ts,
-        src_id_dst_ts,
-        src_dst_ids_assets,
-        create_time_series,
-        update_time_series,
-        project_src,
-        runtime,
-        dst_ts=dst_ts,
-    )
+    if jobs:
+        use_queue_logic = True
+        do_while = not jobs.empty()
+    else:
+        use_queue_logic = False
+        do_while = True
 
-    logging.info(f"Creating {len(create_ts)} new time series and updating {len(update_ts)} existing time series.")
+    while do_while:
+        if use_queue_logic:
+            chunk = jobs.get()
+            chunk_ts = src_ts[chunk[0] : chunk[1]]
+        else:
+            chunk_ts = src_ts
 
-    if create_ts:
-        logging.info(f"Creating {len(create_ts)} time series.")
-        created_ts = replication.retry(client.time_series.create, create_ts)
-        logging.info(f"Successfully created {len(created_ts)} time series.")
+        logging.info(f"Starting to replicate {len(chunk_ts)} time series.")
+        for ts in chunk_ts:  # for unlinkable time_series, remove asset id to avoid insertion error
+            if ts.asset_id is not None and ts.asset_id not in src_dst_ids_assets:
+                ts.asset_id = None
 
-    if update_ts:
-        logging.info(f"Updating {len(update_ts)} time series.")
-        updated_ts = replication.retry(client.time_series.update, update_ts)
-        logging.info(f"Successfully updated {len(updated_ts)} time series.")
+        create_ts, update_ts, unchanged_ts = replication.make_objects_batch(
+            chunk_ts,
+            src_id_dst_ts,
+            src_dst_ids_assets,
+            create_time_series,
+            update_time_series,
+            project_src,
+            runtime,
+            src_filter=src_filter,
+        )
 
-    if unchanged_ts:
-        logging.info(f"{len(unchanged_ts)} time series will not be changed.")
+        logging.info(f"Creating {len(create_ts)} new time series and updating {len(update_ts)} existing time series.")
+
+        if create_ts:
+            logging.debug(f"Creating {len(create_ts)} time series.")
+            created_ts = replication.retry(client.time_series.create, create_ts)
+            logging.debug(f"Successfully created {len(created_ts)} time series.")
+
+        if update_ts:
+            logging.debug(f"Updating {len(update_ts)} time series.")
+            updated_ts = replication.retry(client.time_series.update, update_ts)
+            logging.debug(f"Successfully updated {len(updated_ts)} time series.")
+
+        if unchanged_ts:
+            logging.info(f"{len(unchanged_ts)} time series will not be changed.")
+
+        logging.info(f"Created {len(create_ts)} new time series and updating {len(update_ts)} existing time series.")
+
+        if use_queue_logic:
+            jobs.task_done()
+            do_while = not jobs.empty()
+        else:
+            do_while = False
 
 
 def replicate(
@@ -163,7 +188,7 @@ def replicate(
         from the source (Default=False).
         skip_unlinkable: If no assets exist in the destination for a time series, do not replicate it
         skip_nonasset: If a time series has no associated assets, do not replicate it
-        target_external_ids: List of specific time series external ids to replicate,
+        target_external_ids: List of specific time series external ids to replicate
         exclude_pattern: Regex pattern; time series whose names match will not be replicated
     """
     project_src = client_src.config.project
@@ -199,44 +224,45 @@ def replicate(
             return _is_copyable(ts) and compiled_re.search(ts.external_id) is None
         return _is_copyable(ts)
 
-    ts_src_filtered = replication.filter_objects(ts_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset, filter_fn)
-    logging.info(
-        f"Filtered out {len(ts_src) - len(ts_src_filtered)} time series. {len(ts_src_filtered)} time series remain."
-    )
+    if skip_unlinkable or skip_nonasset or exclude_pattern:
+        pre_filter_length = len(ts_src)
+        ts_src = replication.filter_objects(ts_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset, filter_fn)
+        logging.info(f"Filtered out {pre_filter_length - len(ts_src)} events. {len(ts_src)} events remain.")
 
     replicated_runtime = int(time.time()) * 1000
     logging.info(f"These copied/updated time series will have a replicated run time of: {replicated_runtime}.")
 
     logging.info(
-        f"Starting to copy and update {len(ts_src_filtered)} time series from "
+        f"Starting to copy and update {len(ts_src)} time series from "
         f"source ({project_src}) to destination ({project_dst})."
     )
 
-    if len(ts_src_filtered) > batch_size:
+    if len(ts_src) > batch_size:
         replication.thread(
             num_threads=num_threads,
+            batch_size=batch_size,
             copy=copy_ts,
-            src_objects=ts_src_filtered,
+            src_objects=ts_src,
             src_id_dst_obj=src_id_dst_ts,
             src_dst_ids_assets=src_dst_ids_assets,
             project_src=project_src,
             replicated_runtime=replicated_runtime,
             client=client_dst,
-            dst_ts=ts_dst,
+            src_filter=ts_dst,
         )
     else:
         copy_ts(
-            src_ts=ts_src_filtered,
+            src_ts=ts_src,
             src_id_dst_ts=src_id_dst_ts,
             src_dst_ids_assets=src_dst_ids_assets,
             project_src=project_src,
             runtime=replicated_runtime,
             client=client_dst,
-            dst_ts=ts_dst,
+            src_filter=ts_dst,
         )
 
     logging.info(
-        f"Finished copying and updating {len(ts_src_filtered)} time series from "
+        f"Finished copying and updating {len(ts_src)} time series from "
         f"source ({project_src}) to destination ({project_dst})."
     )
 

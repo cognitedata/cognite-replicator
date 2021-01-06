@@ -1,5 +1,6 @@
 import logging
 import threading
+import queue
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import requests
@@ -155,7 +156,7 @@ def make_objects_batch(
     project_src: str,
     replicated_runtime: int,
     depth: Optional[int] = None,
-    dst_ts: Optional[TimeSeries] = None,
+    src_filter: Optional[List[Union[Event, FileMetadata, TimeSeries]]] = None,
 ) -> Tuple[
     List[Union[Asset, Event, FileMetadata, Sequence, TimeSeries]],
     List[Union[Asset, Event, FileMetadata, Sequence, TimeSeries]],
@@ -174,7 +175,8 @@ def make_objects_batch(
         project_src: The name of the project the object is being replicated from.
         replicated_runtime: The timestamp to be used in the new replicated metadata.
         depth: The depth of the asset within the asset hierarchy, only used for making assets.
-        dst_ts: List of timeseries in the destination - Will be used for comparison if current timeseries where not copied by the replicator
+        src_filter: List of event/timeseries/files in the destination.
+                    Will be used for comparison if current event/timeseries/files where not copied by the replicator.
     Returns:
         create_objects: A list of all the new objects to be posted to CDF.
         update_objects: A list of all the updated objects to be updated in CDF.
@@ -188,10 +190,10 @@ def make_objects_batch(
     kwargs = {"depth": depth} if depth is not None else {}  # Only used on assets
 
     # make a set of external ids to loop through
-    if dst_ts:
-        dst_ts_ext_id_set = {ts.external_id for ts in dst_ts}
+    if src_filter:
+        src_filter_ext_id_set = {src_f.external_id for src_f in src_filter}
     else:
-        dst_ts_ext_id_set = set()
+        src_filter_ext_id_set = set()
 
     for src_obj in src_objects:
         dst_obj = src_id_dst_map.get(src_obj.id)
@@ -201,8 +203,8 @@ def make_objects_batch(
                 update_objects.append(dst_obj)
             else:
                 unchanged_objects.append(dst_obj)
-        elif dst_ts:
-            if src_obj.external_id in dst_ts_ext_id_set:
+        elif src_filter:
+            if src_obj.external_id in src_filter_ext_id_set:
                 unchanged_objects.append(src_obj)
             else:
                 new_asset = create(src_obj, src_dst_ids_assets, project_src, replicated_runtime, **kwargs)
@@ -245,6 +247,7 @@ def retry(
 
 def thread(
     num_threads: int,
+    batch_size: int,
     copy,
     src_objects: List[Union[Event, FileMetadata, TimeSeries]],
     src_id_dst_obj: Dict[int, Union[Event, FileMetadata, TimeSeries]],
@@ -252,7 +255,7 @@ def thread(
     project_src: str,
     replicated_runtime: int,
     client: CogniteClient,
-    dst_ts: Optional[TimeSeries] = None,
+    src_filter: Optional[List[Union[Event, FileMetadata, TimeSeries]]] = None,
 ):
     """
     Split up objects to replicate them in batches and thread each batch.
@@ -266,51 +269,43 @@ def thread(
         project_src: The name of the project the object is being replicated from.
         replicated_runtime: The timestamp to be used in the new replicated metadata.
         client: The Cognite Client for the destination project.
-        dst_ts: List of timeseries in the destination - Will be used for comparison if current timeseries where not copied by the replicator
+        src_filter: List of event/timeseries/files in the destination.
+                    Will be used for comparison if current event/timeseries/files where not copied by the replicator.
 
     """
-
+    jobs = queue.Queue()
     threads = []
-    chunk_size = len(src_objects) // num_threads
-    logging.info(f"Thread chunk size: {chunk_size}")
-    remainder = len(src_objects) % num_threads
-    logging.info(f"Thread remainder size: {remainder}\n")
 
     i = 0
-    for t in range(num_threads):
-        cs = chunk_size + int(t < remainder)
-        if dst_ts is None:
-            threads.append(
-                threading.Thread(
-                    target=copy,
-                    args=(
-                        src_objects[i: i + cs],
-                        src_id_dst_obj,
-                        src_dst_ids_assets,
-                        project_src,
-                        replicated_runtime,
-                        client
-                    ),
-                )
-            )
+    while i < len(src_objects):
+        remaining = len(src_objects) - i
+        if remaining >= batch_size:
+            jobs.put([i, i + batch_size])
         else:
-            threads.append(
-                threading.Thread(
-                    target=copy,
-                    args=(
-                        src_objects[i : i + cs],
-                        src_id_dst_obj,
-                        src_dst_ids_assets,
-                        project_src,
-                        replicated_runtime,
-                        client,
-                        dst_ts,
-                    ),
-                )
-            )
-        i += cs
+            jobs.put([i, i + remaining])
+        i += batch_size
 
-    assert i == len(src_objects)
+    # chunk_size = len(src_objects) // num_threads
+    # logging.info(f"Thread chunk size: {chunk_size}")
+    # remainder = len(src_objects) % num_threads
+    # logging.info(f"Thread remainder size: {remainder}\n")
+
+    for t in range(num_threads):
+        threads.append(
+            threading.Thread(
+                target=copy,
+                args=(
+                    src_objects,
+                    src_id_dst_obj,
+                    src_dst_ids_assets,
+                    project_src,
+                    replicated_runtime,
+                    client,
+                    src_filter,
+                    jobs,
+                ),
+            )
+        )
 
     for count, t in enumerate(threads, start=1):
         t.start()

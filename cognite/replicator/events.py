@@ -1,9 +1,12 @@
 import logging
+import re
 import time
-from typing import Dict, List
+import queue
+from typing import Dict, List, Optional
 
 from cognite.client import CogniteClient
-from cognite.client.data_classes import Event
+from cognite.client.data_classes import Event, EventList
+from cognite.client.exceptions import CogniteNotFoundError
 
 from . import replication
 
@@ -79,6 +82,8 @@ def copy_events(
     project_src: str,
     runtime: int,
     client: CogniteClient,
+    src_filter: List[Event],
+    jobs: queue.Queue = None,
 ):
     """
     Creates/updates event objects and then attempts to create and update these objects in the destination.
@@ -90,27 +95,55 @@ def copy_events(
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
         client: The client corresponding to the destination project.
-
+        src_filter: List of events in the destination - Will be used for comparison if current events where not copied by the replicator
     """
-    logging.debug(f"Starting to replicate {len(src_events)} events.")
 
-    create_events, update_events, unchanged_events = replication.make_objects_batch(
-        src_events, src_id_dst_event, src_dst_ids_assets, create_event, update_event, project_src, runtime
-    )
+    if jobs:
+        use_queue_logic = True
+        do_while = not jobs.empty()
+    else:
+        use_queue_logic = False
+        do_while = True
 
-    logging.info(f"Creating {len(create_events)} new events and updating {len(update_events)} existing events.")
+    while do_while:
+        if use_queue_logic:
+            chunk = jobs.get()
+            chunk_events = src_events[chunk[0] : chunk[1]]
+        else:
+            chunk_events = src_events
 
-    if create_events:
-        logging.debug(f"Attempting to create {len(create_events)} events.")
-        create_events = replication.retry(client.events.create, create_events)
-        logging.debug(f"Successfully created {len(create_events)} events.")
+        logging.debug(f"Starting to replicate {len(chunk_events)} events.")
 
-    if update_events:
-        logging.debug(f"Attempting to update {len(update_events)} events.")
-        update_events = replication.retry(client.events.update, update_events)
-        logging.debug(f"Successfully updated {len(update_events)} events.")
+        create_events, update_events, unchanged_events = replication.make_objects_batch(
+            chunk_events,
+            src_id_dst_event,
+            src_dst_ids_assets,
+            create_event,
+            update_event,
+            project_src,
+            runtime,
+            src_filter=src_filter,
+        )
 
-    logging.info(f"Created {len(create_events)} new events and updated {len(update_events)} existing events.")
+        logging.info(f"Creating {len(create_events)} new events and updating {len(update_events)} existing events.")
+
+        if create_events:
+            logging.debug(f"Attempting to create {len(create_events)} events.")
+            create_events = replication.retry(client.events.create, create_events)
+            logging.debug(f"Successfully created {len(create_events)} events.")
+
+        if update_events:
+            logging.debug(f"Attempting to update {len(update_events)} events.")
+            update_events = replication.retry(client.events.update, update_events)
+            logging.debug(f"Successfully updated {len(update_events)} events.")
+
+        logging.info(f"Created {len(create_events)} new events and updated {len(update_events)} existing events.")
+
+        if use_queue_logic:
+            jobs.task_done()
+            do_while = not jobs.empty()
+        else:
+            do_while = False
 
 
 def replicate(
@@ -122,6 +155,8 @@ def replicate(
     delete_not_replicated_in_dst: bool = False,
     skip_unlinkable: bool = False,
     skip_nonasset: bool = False,
+    target_external_ids: Optional[List[str]] = None,
+    exclude_pattern: str = None,
 ):
     """
     Replicates all the events from the source project into the destination project.
@@ -137,14 +172,23 @@ def replicate(
         from the source (Default=False).
         skip_unlinkable: If no assets exist in the destination for an event, do not replicate it
         skip_nonasset: If an event has no associated assets, do not replicate it
+        target_external_ids: List of specific events external ids to replicate
+        exclude_pattern: Regex pattern; events whose names match will not be replicated
     """
     project_src = client_src.config.project
     project_dst = client_dst.config.project
 
-    events_src = client_src.events.list(limit=None)
-    events_dst = client_dst.events.list(limit=None)
-    logging.info(f"There are {len(events_src)} existing events in source ({project_src}).")
-    logging.info(f"There are {len(events_dst)} existing events in destination ({project_dst}).")
+    if target_external_ids:
+        events_src = client_src.events.retrieve_multiple(external_ids=target_external_ids, ignore_unknown_ids=True)
+        try:
+            events_dst = client_dst.events.retrieve_multiple(external_ids=target_external_ids, ignore_unknown_ids=True)
+        except CogniteNotFoundError:
+            events_dst = EventList([])
+    else:
+        events_src = client_src.events.list(limit=None)
+        events_dst = client_dst.events.list(limit=None)
+        logging.info(f"There are {len(events_src)} existing events in source ({project_src}).")
+        logging.info(f"There are {len(events_dst)} existing events in destination ({project_dst}).")
 
     src_id_dst_event = replication.make_id_object_map(events_dst)
 
@@ -155,9 +199,20 @@ def replicate(
         f"that have been replicated then it will be linked."
     )
 
-    if skip_unlinkable or skip_nonasset:
+    compiled_re = None
+    if exclude_pattern:
+        compiled_re = re.compile(exclude_pattern)
+
+    def filter_fn(ts):
+        if exclude_pattern:
+            return _is_copyable(ts) and compiled_re.search(ts.external_id) is None
+        return _is_copyable(ts)
+
+    if skip_unlinkable or skip_nonasset or exclude_pattern:
         pre_filter_length = len(events_src)
-        events_src = replication.filter_objects(events_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset)
+        events_src = replication.filter_objects(
+            events_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset, filter_fn
+        )
         logging.info(f"Filtered out {pre_filter_length - len(events_src)} events. {len(events_src)} events remain.")
 
     replicated_runtime = int(time.time()) * 1000
@@ -171,6 +226,7 @@ def replicate(
     if len(events_src) > batch_size:
         replication.thread(
             num_threads=num_threads,
+            batch_size=batch_size,
             copy=copy_events,
             src_objects=events_src,
             src_id_dst_obj=src_id_dst_event,
@@ -178,6 +234,7 @@ def replicate(
             project_src=project_src,
             replicated_runtime=replicated_runtime,
             client=client_dst,
+            src_filter=events_dst,
         )
     else:
         copy_events(
@@ -187,6 +244,7 @@ def replicate(
             project_src=project_src,
             runtime=replicated_runtime,
             client=client_dst,
+            src_filter=events_dst,
         )
 
     logging.info(
