@@ -1,8 +1,7 @@
-@Library('jenkins-helpers@v0.1.12') _
+@Library('jenkins-helpers') _
 
 def label = "cognite-replicator-${UUID.randomUUID().toString()}"
 def imageName = "cognite/cognite-replicator"
-def devImageName = "cognite/cognite-replicator-dev"
 
 podTemplate(
     label: label,
@@ -12,7 +11,7 @@ podTemplate(
     ],
     containers: [
         containerTemplate(name: 'python',
-            image: 'eu.gcr.io/cognitedata/multi-python:7040fac',
+            image: 'eu.gcr.io/cognitedata/multi-python:2019-10-18T1122-3e874f7',
             command: '/bin/cat -',
             resourceRequestCpu: '1000m',
             resourceRequestMemory: '800Mi',
@@ -25,9 +24,16 @@ podTemplate(
             resourceLimitCpu: '1000m',
             resourceLimitMemory: '1000Mi',
             ttyEnabled: true),
+        containerTemplate(name: 'gitleaks',
+            command: '/bin/cat -',
+            image: 'eu.gcr.io/cognitedata/gitleaks:latest',
+            resourceRequestCpu: '300m',
+            resourceRequestMemory: '500Mi',
+            resourceLimitCpu: '1',
+            resourceLimitMemory: '1Gi',
+            ttyEnabled: true)
     ],
     volumes: [
-        secretVolume(secretName: 'jenkins-docker-builder', mountPath: '/jenkins-docker-builder', readOnly: true),
         secretVolume(secretName: 'pypi-credentials', mountPath: '/pypi', readOnly: true),
         secretVolume(secretName: 'cognitecicd-dockerhub', mountPath: '/dockerhub-credentials'),
         hostPathVolume(hostPath: '/var/run/docker.sock', mountPath: '/var/run/docker.sock'),
@@ -47,72 +53,69 @@ podTemplate(
         def gitCommit
         container('jnlp') {
             stage('Checkout') {
-                checkout(scm)
-                gitCommit = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+                scmVars = checkout(scm)
+                gitCommit = scmVars.GIT_COMMIT
+            }
+        }
+
+        container('gitleaks') {
+            stage('Gitleaks scan for secrets') {
+                sh('gitleaks --repo-path=`pwd` --verbose --redact')
             }
         }
 
         container('python') {
-            stage('Install poetry') {
-                sh("pip3 install poetry")
+            stage('Install dependencies') {
+                sh('pip3 install poetry')
+                sh('pip3 install twine')
+                sh('poetry config virtualenvs.create false')
+                sh('poetry install')
             }
-            stage('Install all dependencies') {
-                sh("pyenv local 3.6.6 3.7.2")
-                sh("poetry install")
-            }
-            stage('Test code') {
-                sh("poetry run tox")
-                junit(allowEmptyResults: true, testResults: '**/test-report.xml')
-                summarizeTestResults()
-            }
-            stage('Validate code format') {
-                sh("poetry run black -l 120 --check .")
+            stage('Validate code') {
+                sh("black --check .")
+                sh("isort --check-only -rc .")
             }
             stage('Build') {
                 sh("poetry build")
             }
-            stage('Build Docs') {
-                dir('./docs'){
-                    sh("poetry run sphinx-build -W -b html ./source ./build")
-                }
-            }
-            stage('Upload report to codecov.io') {
+            stage('Run tests') {
+                sh("pyenv local 3.6.6 3.7.4 3.8.0")
+                sh("tox")
+                junit(allowEmptyResults: true, testResults: '**/test-report.xml')
+                summarizeTestResults()
                 sh('bash </codecov-script/upload-report.sh')
                 step([$class: 'CoberturaPublisher', coberturaReportFile: 'coverage.xml'])
             }
-
-            def pipVersion = sh(returnStdout: true, script: 'poetry run yolk -V cognite-replicator | sort -n | tail -1 | cut -d\\  -f 2').trim()
-            def currentVersion = sh(returnStdout: true, script: 'sed -n -e "/^__version__/p" cognite/replicator/_version.py | cut -d\\" -f2').trim()
-            println("This version: " + currentVersion)
-            println("Latest pip version: " + pipVersion)
-
-             if (env.BRANCH_NAME == 'master' && currentVersion != pipVersion) {
-                 stage('Release') {
-                     sh("poetry run twine upload --config-file /pypi/.pypirc dist/*")
-                 }
-             }
+            stage('Build docs') {
+                dir('./docs'){
+                    sh("sphinx-build -W -b html ./source ./build")
+                }
+            }
+            if (env.BRANCH_NAME == 'master') {
+                stage('Release to PyPI') {
+                    sh("twine upload --verbose --config-file /pypi/.pypirc dist/* || echo 'version exists'")
+                }
+            }
         }
 
         container('docker') {
             stage('Build docker image') {
                 sh("docker build -t ${imageName}:${gitCommit} .")
-            }
-
-            stage('Login to docker hub') {
                 sh('cat /dockerhub-credentials/DOCKER_PASSWORD | docker login -u "$(cat /dockerhub-credentials/DOCKER_USERNAME)" --password-stdin')
             }
-
             if (env.CHANGE_ID) {
                 stage("Publish PR image") {
-                    def prImage = "${devImageName}:pr-${env.CHANGE_ID}"
+                    def prImage = "${imageName}-dev:pr-${env.CHANGE_ID}"
                     sh("docker tag ${imageName}:${gitCommit} ${prImage}")
                     sh("docker push ${prImage}")
                     pullRequest.comment("[pr-bot]\nRun this build with `docker run --rm -it ${prImage}`")
                 }
             } else if (env.BRANCH_NAME == 'master') {
                 stage('Push to GCR') {
+                    def currentVersion = sh(returnStdout: true, script: 'sed -n -e "/^__version__/p" cognite/replicator/_version.py | cut -d\\" -f2').trim()
                     sh("docker tag ${imageName}:${gitCommit} ${imageName}:latest")
-                    sh("docker push ${imageName}:${gitCommit}")
+                    sh("docker tag ${imageName}:${gitCommit} ${imageName}:${currentVersion}")
+                    sh("docker push ${imageName}:${currentVersion}")
                     sh("docker push ${imageName}:latest")
                 }
             }

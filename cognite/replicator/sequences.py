@@ -22,7 +22,7 @@ def create_sequence(src_seq: Sequence, src_dst_ids_assets: Dict[int, int], proje
         The replicated sequence to be created in the destination.
     """
     logging.debug(f"Creating a new sequence based on source sequence id {src_seq.id}")
-
+    # TODO: Bug happens at line 29 get_asset_ids returns empty list
     return Sequence(
         name=src_seq.name,
         description=src_seq.description,
@@ -136,6 +136,12 @@ def replicate(
 
     assets_dst = client_dst.assets.list(limit=None)
     src_dst_ids_assets = replication.existing_mapping(*assets_dst)
+
+    if not src_dst_ids_assets:
+        assets_src = client_src.assets.list(limit=None)
+        src_assets_map = replication.make_external_id_obj_map(assets_src)
+        src_dst_ids_assets = replication.map_ids_from_external_ids(src_assets_map, assets_dst)
+
     logging.info(
         f"If a sequence asset id is one of the {len(src_dst_ids_assets)} assets "
         f"that have been replicated then it will be linked."
@@ -194,3 +200,22 @@ def replicate(
             f"Deleted {len(ids_to_delete)} sequence in destination ({project_dst}) because"
             f"they were not replicated from source ({project_src})   "
         )
+
+def replicate_rows(client_src, client_dst):
+    seq_src = client_src.sequences.list(limit=None)
+    seq_dst = client_dst.sequences.list(limit=None)
+
+    dst_sequence_map = replication.make_external_id_obj_map(seq_dst)
+
+    for sequence in seq_src:
+        src_rows = client_src.sequences.data.retrieve(id=sequence.id, start=0, end=None)
+
+        # if nothing to copy continue to next sequence
+        if not src_rows.values:
+            continue
+
+        dst_rows = client_dst.sequences.data.retrieve(id=dst_sequence_map[sequence.external_id].id, start=0,end=None)
+
+        if not dst_rows.values:
+            client_dst.sequences.data.insert(rows=src_rows, id=dst_sequence_map[sequence.external_id].id,
+                                                        column_external_ids=src_rows.column_external_ids)

@@ -3,7 +3,13 @@ import time
 from cognite.client import CogniteClient
 from cognite.client.data_classes.assets import Asset
 from cognite.client.testing import monkeypatch_cognite_client
-from cognite.replicator.assets import build_asset_create, build_asset_update, create_hierarchy, find_children
+from cognite.replicator.assets import (
+    build_asset_create,
+    build_asset_update,
+    create_hierarchy,
+    find_children,
+    unlink_subtree_parents,
+)
 
 
 def test_build_asset_create():
@@ -72,8 +78,7 @@ def test_build_asset_update():
 
 
 def test_create_hierarchy_without_dst_list():
-    with monkeypatch_cognite_client():
-        c = CogniteClient()
+    with monkeypatch_cognite_client() as client:
         runtime = time.time() * 1000
         assets_src = [
             Asset(
@@ -109,3 +114,26 @@ def test_create_hierarchy_with_dst_list():
         Asset(id=555, name="Copy-Princess", metadata={"_replicatedInternalId": 5, "_replicatedTime": 1}),
         Asset(id=101, name="Adopted", metadata={}),
     ]
+
+
+def test_unlink_subtree_parents():
+    assets = [
+        Asset(id=1),
+        Asset(id=2, parent_id=1),
+        Asset(external_id="ext_1"),
+        Asset(external_id="ext_2", parent_external_id="ext_1", metadata={}),
+    ]
+    original_parent_ids = [asset.parent_id for asset in assets]
+    original_parent_external_ids = [asset.parent_external_id for asset in assets]
+    subtree_root_ids = [2]
+    subtree_root_external_ids = ["ext_2"]
+    unlink_subtree_parents(assets, subtree_ids=subtree_root_ids, subtree_external_ids=subtree_root_external_ids)
+    for i, asset in enumerate(assets):
+        if asset.id in subtree_root_ids or asset.external_id in subtree_root_external_ids:
+            assert asset.parent_id is None
+            assert asset.parent_external_id is None
+            assert asset.metadata.get("_replicatedOriginalParentId") == original_parent_ids[i]
+            assert asset.metadata.get("_replicatedOriginalParentExternalId") == original_parent_external_ids[i]
+        else:
+            assert asset.parent_id == original_parent_ids[i]
+            assert asset.parent_external_id == original_parent_external_ids[i]

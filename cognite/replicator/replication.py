@@ -155,6 +155,7 @@ def make_objects_batch(
     project_src: str,
     replicated_runtime: int,
     depth: Optional[int] = None,
+    dst_ts: Optional[TimeSeries] = None,
 ) -> Tuple[
     List[Union[Asset, Event, FileMetadata, Sequence, TimeSeries]],
     List[Union[Asset, Event, FileMetadata, Sequence, TimeSeries]],
@@ -173,7 +174,7 @@ def make_objects_batch(
         project_src: The name of the project the object is being replicated from.
         replicated_runtime: The timestamp to be used in the new replicated metadata.
         depth: The depth of the asset within the asset hierarchy, only used for making assets.
-
+        dst_ts: List of timeseries in the destination - Will be used for comparison if current timeseries where not copied by the replicator
     Returns:
         create_objects: A list of all the new objects to be posted to CDF.
         update_objects: A list of all the updated objects to be updated in CDF.
@@ -186,6 +187,12 @@ def make_objects_batch(
 
     kwargs = {"depth": depth} if depth is not None else {}  # Only used on assets
 
+    # make a set of external ids to loop through
+    if dst_ts:
+        dst_ts_ext_id_set = {ts.external_id for ts in dst_ts}
+    else:
+        dst_ts_ext_id_set = set()
+
     for src_obj in src_objects:
         dst_obj = src_id_dst_map.get(src_obj.id)
         if dst_obj:
@@ -194,6 +201,12 @@ def make_objects_batch(
                 update_objects.append(dst_obj)
             else:
                 unchanged_objects.append(dst_obj)
+        elif dst_ts:
+            if src_obj.external_id in dst_ts_ext_id_set:
+                unchanged_objects.append(src_obj)
+            else:
+                new_asset = create(src_obj, src_dst_ids_assets, project_src, replicated_runtime, **kwargs)
+                create_objects.append(new_asset)
         else:
             new_asset = create(src_obj, src_dst_ids_assets, project_src, replicated_runtime, **kwargs)
             create_objects.append(new_asset)
@@ -239,6 +252,7 @@ def thread(
     project_src: str,
     replicated_runtime: int,
     client: CogniteClient,
+    dst_ts: Optional[TimeSeries] = None,
 ):
     """
     Split up objects to replicate them in batches and thread each batch.
@@ -252,6 +266,7 @@ def thread(
         project_src: The name of the project the object is being replicated from.
         replicated_runtime: The timestamp to be used in the new replicated metadata.
         client: The Cognite Client for the destination project.
+        dst_ts: List of timeseries in the destination - Will be used for comparison if current timeseries where not copied by the replicator
 
     """
 
@@ -264,19 +279,35 @@ def thread(
     i = 0
     for t in range(num_threads):
         cs = chunk_size + int(t < remainder)
-        threads.append(
-            threading.Thread(
-                target=copy,
-                args=(
-                    src_objects[i : i + cs],
-                    src_id_dst_obj,
-                    src_dst_ids_assets,
-                    project_src,
-                    replicated_runtime,
-                    client,
-                ),
+        if dst_ts is None:
+            threads.append(
+                threading.Thread(
+                    target=copy,
+                    args=(
+                        src_objects[i: i + cs],
+                        src_id_dst_obj,
+                        src_dst_ids_assets,
+                        project_src,
+                        replicated_runtime,
+                        client
+                    ),
+                )
             )
-        )
+        else:
+            threads.append(
+                threading.Thread(
+                    target=copy,
+                    args=(
+                        src_objects[i : i + cs],
+                        src_id_dst_obj,
+                        src_dst_ids_assets,
+                        project_src,
+                        replicated_runtime,
+                        client,
+                        dst_ts,
+                    ),
+                )
+            )
         i += cs
 
     assert i == len(src_objects)
@@ -290,6 +321,20 @@ def thread(
         logging.info(f"Joined thread: {count}")
 
 
+def remove_replication_metadata(objects: Union[List[Asset], List[Event], List[TimeSeries]]):
+    """Removes the replication metadata from the passed resource list, so that the resources will look original.
+    See also clear_replication_metadata.
+
+    Parameters:
+        objects: The list of objects to strip replication metadata away from
+    """
+    for obj in objects:
+        if obj.metadata:
+            obj.metadata.pop("_replicatedInternalId", None)
+            obj.metadata.pop("_replicatedSource", None)
+            obj.metadata.pop("_replicatedTime", None)
+
+
 def clear_replication_metadata(client: CogniteClient):
     """Removes the replication metadata from all resources, so that the replicated tenant will look like an original.
     Sample use-case: clean up a demo-tenant so that extra data is not present.
@@ -300,27 +345,13 @@ def clear_replication_metadata(client: CogniteClient):
         client: The client to strip replication metadata away from
     """
 
-    def remove_replication_metadata(
-        objects: Union[List[Asset], List[Event], List[TimeSeries]],
-        update_fn: Callable[[Union[List[Asset], List[Event], List[TimeSeries]]], None],
-        object_name: str = "unspecified objects",
-    ):
-        logging.info(f"Starting {object_name}...")
-        for obj in objects:
-            if obj.metadata:
-                obj.metadata.pop("_replicatedInternalId", None)
-                obj.metadata.pop("_replicatedSource", None)
-                obj.metadata.pop("_replicatedTime", None)
-        update_fn(objects)
-        logging.info(f"Done {object_name}!")
-
     logging.info("Starting to clear replication metadata...")
     events_dst = client.events.list(limit=None)
     ts_dst = client.time_series.list(limit=None)
     assets_dst = client.assets.list(limit=None)
-    remove_replication_metadata(assets_dst, client.assets.update, "assets")
-    remove_replication_metadata(ts_dst, client.time_series.update, "time series")
-    remove_replication_metadata(events_dst, client.events.update, "events")
+    client.events.update(events_dst)
+    client.time_series.update(ts_dst)
+    client.assets.update(assets_dst)
     logging.info("Replication metadata cleared!")
 
 
@@ -361,3 +392,35 @@ def find_objects_to_delete_if_not_in_src(
             if int(obj.metadata["_replicatedInternalId"]) not in src_obj_ids:
                 obj_ids_to_remove.append(obj.id)
     return obj_ids_to_remove
+
+
+def map_ids_from_external_ids(src_asset_map: Dict[str, Asset], dst_assets: List[Asset]):
+    """
+    Alternative to the existing_mapping for the cases when src and dst have the same assets
+    but dst assets don't have replication metadata
+
+    Parameters:
+        src_asset_map: a dict which maps external id to the asset object
+        dst_assets: a list of assets in the destination
+    """
+    ids = {}
+
+    for dst in dst_assets:
+        ids[src_asset_map[dst.external_id].id] = dst.id
+
+    return ids
+
+
+def make_external_id_obj_map(assets: List[Union[Asset, Sequence]]):
+    """
+    Creates a map of external_id to asset from a list of assets
+
+    Parameters:
+        assets: a list of assets from which a map will be created
+    """
+    asset_map = {}
+    for asset in assets:
+        asset_map[asset.external_id] = asset
+
+    return asset_map
+
