@@ -1,0 +1,33 @@
+resources:                                          # Which resource types to replicate
+  - timeseries
+src_api_key_env_var: gaetantest_KEY         # Name of env variable for CDF API KEY of the source project
+dst_api_key_env_var: gaetanprod_KEY    # Name of env variable for CDF API KEY of the destination project
+src_project: gaetantest                    # Project that src_api_key belongs to
+dst_project: gaetanprod                      # Project that dst_api_key belongs to
+src_baseurl: https://greenfield.cognitedata.com     # Optional - source base url if not api.cognitedata.com
+#dst_baseurl: https://greenfield.cognitedata.com     # Optional - destination base url if not api.cognitedata.com
+#delete_if_removed_in_source: false                  # Remove objects that were replicated and are now deleted in source
+delete_if_not_replicated: false                     # Remove all objects in destination that aren't from source
+batch_size: 2                                   # Number of items in each batch 1-10000. Only applies to Raw, Events, Timeseries, and Files. (The SDK automatically chunks to 10000. This is used in conjuction with threads if you wanted smaller/more efficient threads for batches less than 10k. EX: 20 threads with 2000 batch sizes each.)
+#batch_size_datapoints:                              # Number of datapoints in each batch (The SDK will automatically paginate so it's generally not needed with a value here)
+number_of_threads: 2                               # Number of threads to use
+client_timeout: 120                                 # Seconds for clients to timeout
+client_name: jorge-cognite-replicator                     # Name of client
+log_path: log                                       # Folder to save logs to
+log_level: INFO                                     # Logging level
+events_exclude_pattern:                             # Optional - Regex pattern to prevent replication of matching events. Example: ^SYN_
+timeseries_exclude_pattern:                         # Optional - Regex pattern to prevent replication of matching timeseries. Example: ^SYN_
+files_exclude_pattern:                              # Optional - Regex pattern to prevent replication of matching files. Example: ^SYN_
+#datapoints_start: 1546297200                        # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
+#datapoints_end: 1w-ago                              # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
+#value_manipulation_lambda_fnc: "lambda x: x*0.2"    # Lambda function as a string if value manipulation for datapoints is needed.
+timeseries_external_ids:                            # Optional - List of timeseries external_ids to replicate
+  - replicator-test:my_ts_1
+  - replicator-test:my_ts_2
+  - replicator-test:my_ts_3
+  - replicator-test:my_ts_4
+  - replicator-test:my_ts_5
+timeseries_exclude_fields:                          # Only support name, description, metadata and metadata.customfield
+  - metadata.field_2
+  - description
+

@@ -146,6 +146,34 @@ def new_metadata(
     metadata["_replicatedInternalId"] = obj.id
     return metadata
 
+def restore_fields(
+    dst_obj : Union[Asset, Event, FileMetadata, TimeSeries],
+    dst_obj_dump : Dict[str, Any],
+    exclude_fields : List[str]
+)-> Union[Asset, Event, FileMetadata, TimeSeries]:
+    replicator_metadata_fields = ["_replicatedSource","_replicatedTime", "_replicatedInternalId"]
+    
+    for key in exclude_fields:
+        if key == "name":
+            dst_obj.name = dst_obj_dump["name"]
+        elif key == "description":
+            dst_obj.description = dst_obj_dump["description"]
+        elif key == "metadata":
+            replicator_metadata = {}
+
+            for replicator_metadata_field in replicator_metadata_fields:
+                if dst_obj.metadata[replicator_metadata_field]:
+                    replicator_metadata[replicator_metadata_field] = dst_obj.metadata[replicator_metadata_field]
+
+            dst_obj.metadata = dst_obj_dump["metadata"]
+            dst_obj.metadata = {**dst_obj.metadata, **replicator_metadata}
+
+        elif "metadata." in key:
+            metadata_key = key[key.index(".") + 1:]
+            if not(metadata_key in replicator_metadata_fields):
+                dst_obj.metadata[metadata_key] = dst_obj_dump["metadata"][metadata_key]
+
+    return dst_obj
 
 def make_objects_batch(
     src_objects: List[Union[Asset, Event, FileMetadata, TimeSeries]],
@@ -157,6 +185,7 @@ def make_objects_batch(
     replicated_runtime: int,
     depth: Optional[int] = None,
     src_filter: Optional[List[Union[Event, FileMetadata, TimeSeries]]] = None,
+    exclude_fields:Optional[List[str]] = None,
 ) -> Tuple[
     List[Union[Asset, Event, FileMetadata, TimeSeries]],
     List[Union[Asset, Event, FileMetadata, TimeSeries]],
@@ -199,7 +228,12 @@ def make_objects_batch(
         dst_obj = src_id_dst_map.get(src_obj.id)
         if dst_obj:
             if not src_obj.last_updated_time or src_obj.last_updated_time > int(dst_obj.metadata["_replicatedTime"]):
+                dst_obj_dump = dst_obj.dump()
                 dst_obj = update(src_obj, dst_obj, src_dst_ids_assets, project_src, replicated_runtime, **kwargs)
+
+                if exclude_fields:
+                    dst_obj = restore_fields(dst_obj,dst_obj_dump,exclude_fields)
+
                 update_objects.append(dst_obj)
             else:
                 unchanged_objects.append(dst_obj)
@@ -256,6 +290,7 @@ def thread(
     replicated_runtime: int,
     client: CogniteClient,
     src_filter: Optional[List[Union[Event, FileMetadata, TimeSeries]]] = None,
+    exclude_fields:Optional[List[str]] = None,
 ):
     """
     Split up objects to replicate them in batches and thread each batch.
@@ -303,9 +338,11 @@ def thread(
                     client,
                     src_filter,
                     jobs,
+                    exclude_fields,
                 ),
             )
         )
+
 
     for count, t in enumerate(threads, start=1):
         t.start()

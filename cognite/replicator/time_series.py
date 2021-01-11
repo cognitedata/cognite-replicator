@@ -9,7 +9,7 @@ from cognite.client.data_classes import TimeSeries, TimeSeriesList
 from cognite.client.exceptions import CogniteNotFoundError
 
 from . import replication
-
+#import replication
 
 def create_time_series(
     src_ts: TimeSeries, src_dst_ids_assets: Dict[int, int], project_src: str, runtime: int
@@ -94,6 +94,7 @@ def copy_ts(
     client: CogniteClient,
     src_filter: List[TimeSeries],
     jobs: queue.Queue = None,
+    exclude_fields:Optional[List[str]] = None,
 ):
     """
     Creates/updates time series objects and then attempts to create and update these time series in the destination.
@@ -136,6 +137,7 @@ def copy_ts(
             project_src,
             runtime,
             src_filter=src_filter,
+            exclude_fields=exclude_fields,
         )
 
         logging.info(f"Creating {len(create_ts)} new time series and updating {len(update_ts)} existing time series.")
@@ -173,6 +175,7 @@ def replicate(
     skip_nonasset: bool = False,
     target_external_ids: Optional[List[str]] = None,
     exclude_pattern: str = None,
+    exclude_fields: Optional[List[str]] = None,
 ):
     """
     Replicates all the time series from the source project into the destination project.
@@ -249,6 +252,7 @@ def replicate(
             replicated_runtime=replicated_runtime,
             client=client_dst,
             src_filter=ts_dst,
+            exclude_fields=exclude_fields
         )
     else:
         copy_ts(
@@ -259,6 +263,7 @@ def replicate(
             runtime=replicated_runtime,
             client=client_dst,
             src_filter=ts_dst,
+            exclude_fields=exclude_fields
         )
 
     logging.info(
