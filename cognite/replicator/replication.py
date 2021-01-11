@@ -1,15 +1,13 @@
 import logging
 import threading
 import queue
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-
 import requests
 
 from cognite.client import CogniteClient
 from cognite.client.data_classes import Event, FileMetadata, Sequence, TimeSeries
 from cognite.client.data_classes.assets import Asset
 from cognite.client.data_classes.raw import Row
-
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 def make_id_object_map(
     objects: List[Union[Asset, Event, FileMetadata, Sequence, TimeSeries]]
