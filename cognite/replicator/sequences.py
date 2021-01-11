@@ -201,6 +201,7 @@ def replicate(
             f"they were not replicated from source ({project_src})   "
         )
 
+
 def replicate_rows(client_src, client_dst):
     seq_src = client_src.sequences.list(limit=None)
     seq_dst = client_dst.sequences.list(limit=None)
@@ -214,8 +215,11 @@ def replicate_rows(client_src, client_dst):
         if not src_rows.values:
             continue
 
-        dst_rows = client_dst.sequences.data.retrieve(id=dst_sequence_map[sequence.external_id].id, start=0,end=None)
+        dst_rows = client_dst.sequences.data.retrieve(id=dst_sequence_map[sequence.external_id].id, start=0, end=None)
 
         if not dst_rows.values:
-            client_dst.sequences.data.insert(rows=src_rows, id=dst_sequence_map[sequence.external_id].id,
-                                                        column_external_ids=src_rows.column_external_ids)
+            client_dst.sequences.data.insert(
+                rows=src_rows,
+                id=dst_sequence_map[sequence.external_id].id,
+                column_external_ids=src_rows.column_external_ids,
+            )

@@ -9,6 +9,7 @@ from cognite.client.data_classes.assets import Asset
 from cognite.client.data_classes.raw import Row
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+
 def make_id_object_map(
     objects: List[Union[Asset, Event, FileMetadata, Sequence, TimeSeries]]
 ) -> Dict[int, Union[Asset, Event, FileMetadata, Sequence, TimeSeries]]:
@@ -416,4 +417,3 @@ def make_external_id_obj_map(assets: List[Union[Asset, Sequence]]):
         asset_map[asset.external_id] = asset
 
     return asset_map
-
