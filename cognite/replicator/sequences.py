@@ -1,9 +1,9 @@
 import logging
 import time
+from typing import Dict, List
 
 from cognite.client import CogniteClient
 from cognite.client.data_classes import Sequence
-from typing import Dict, List
 
 from . import replication
 

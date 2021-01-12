@@ -1,4 +1,5 @@
 from cognite.client.data_classes import Datapoints
+
 from cognite.replicator import datapoints
 
 

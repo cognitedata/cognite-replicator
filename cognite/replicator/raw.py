@@ -1,8 +1,8 @@
 import logging
+from typing import Dict, List, Tuple, Union
 
 from cognite.client import CogniteClient
 from cognite.client.data_classes.raw import Database, Row, Table
-from typing import Dict, List, Tuple, Union
 
 from . import replication
 

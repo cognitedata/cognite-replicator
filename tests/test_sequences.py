@@ -1,4 +1,5 @@
 from cognite.client.data_classes import Sequence
+
 from cognite.replicator.sequences import create_sequence, update_sequence
 
 
