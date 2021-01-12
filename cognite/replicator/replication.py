@@ -146,13 +146,32 @@ def new_metadata(
     metadata["_replicatedInternalId"] = obj.id
     return metadata
 
+
 def restore_fields(
-    dst_obj : Union[Asset, Event, FileMetadata, TimeSeries],
-    dst_obj_dump : Dict[str, Any],
-    exclude_fields : List[str]
-)-> Union[Asset, Event, FileMetadata, TimeSeries]:
-    replicator_metadata_fields = ["_replicatedSource","_replicatedTime", "_replicatedInternalId"]
-    
+    dst_obj: Union[Asset, Event, FileMetadata, TimeSeries], dst_obj_dump: Dict[str, Any], exclude_fields: List[str]
+) -> Union[Asset, Event, FileMetadata, TimeSeries]:
+    """
+    Restore the objects data according to exclude_fields defined.
+
+    Fields not restored
+        - **_replicatedSource**: The name of the project this object is replicated from.
+        - **_replicatedTime**: The timestamp of when the object was replicated, all objects created/updated in the same
+          execution will have the same timestamp.
+        - **_replicatedInternalId**: The internal id of the source object that the destination object
+          is being replicated from.
+
+    Args:
+        dst_obj: new object .
+        dst_obj_dump: previous object.
+        exclude_fields: List of fields:  Only support name, description, metadata and metadata.customfield.
+
+    Returns:
+        Object restored.
+
+    """
+
+    replicator_metadata_fields = ["_replicatedSource", "_replicatedTime", "_replicatedInternalId"]
+
     for key in exclude_fields:
         if key == "name":
             dst_obj.name = dst_obj_dump["name"]
@@ -169,11 +188,12 @@ def restore_fields(
             dst_obj.metadata = {**dst_obj.metadata, **replicator_metadata}
 
         elif "metadata." in key:
-            metadata_key = key[key.index(".") + 1:]
-            if not(metadata_key in replicator_metadata_fields):
+            metadata_key = key[key.index(".") + 1 :]
+            if not (metadata_key in replicator_metadata_fields):
                 dst_obj.metadata[metadata_key] = dst_obj_dump["metadata"][metadata_key]
 
     return dst_obj
+
 
 def make_objects_batch(
     src_objects: List[Union[Asset, Event, FileMetadata, TimeSeries]],
@@ -185,7 +205,7 @@ def make_objects_batch(
     replicated_runtime: int,
     depth: Optional[int] = None,
     src_filter: Optional[List[Union[Event, FileMetadata, TimeSeries]]] = None,
-    exclude_fields:Optional[List[str]] = None,
+    exclude_fields: Optional[List[str]] = None,
 ) -> Tuple[
     List[Union[Asset, Event, FileMetadata, TimeSeries]],
     List[Union[Asset, Event, FileMetadata, TimeSeries]],
@@ -206,6 +226,7 @@ def make_objects_batch(
         depth: The depth of the asset within the asset hierarchy, only used for making assets.
         src_filter: List of event/timeseries/files in the destination.
                     Will be used for comparison if current event/timeseries/files where not copied by the replicator.
+        exclude_fields: List of fields:  Only support name, description, metadata and metadata.customfield
     Returns:
         create_objects: A list of all the new objects to be posted to CDF.
         update_objects: A list of all the updated objects to be updated in CDF.
@@ -232,7 +253,7 @@ def make_objects_batch(
                 dst_obj = update(src_obj, dst_obj, src_dst_ids_assets, project_src, replicated_runtime, **kwargs)
 
                 if exclude_fields:
-                    dst_obj = restore_fields(dst_obj,dst_obj_dump,exclude_fields)
+                    dst_obj = restore_fields(dst_obj, dst_obj_dump, exclude_fields)
 
                 update_objects.append(dst_obj)
             else:
@@ -290,7 +311,7 @@ def thread(
     replicated_runtime: int,
     client: CogniteClient,
     src_filter: Optional[List[Union[Event, FileMetadata, TimeSeries]]] = None,
-    exclude_fields:Optional[List[str]] = None,
+    exclude_fields: Optional[List[str]] = None,
 ):
     """
     Split up objects to replicate them in batches and thread each batch.
@@ -342,7 +363,6 @@ def thread(
                 ),
             )
         )
-
 
     for count, t in enumerate(threads, start=1):
         t.start()

@@ -9,7 +9,9 @@ from cognite.client.data_classes import TimeSeries, TimeSeriesList
 from cognite.client.exceptions import CogniteNotFoundError
 
 from . import replication
-#import replication
+
+# import replication
+
 
 def create_time_series(
     src_ts: TimeSeries, src_dst_ids_assets: Dict[int, int], project_src: str, runtime: int
@@ -94,7 +96,7 @@ def copy_ts(
     client: CogniteClient,
     src_filter: List[TimeSeries],
     jobs: queue.Queue = None,
-    exclude_fields:Optional[List[str]] = None,
+    exclude_fields: Optional[List[str]] = None,
 ):
     """
     Creates/updates time series objects and then attempts to create and update these time series in the destination.
@@ -107,6 +109,7 @@ def copy_ts(
         runtime: The timestamp to be used in the new replicated metadata.
         client: The client corresponding to the destination project.
         src_filter: List of timeseries in the destination - Will be used for comparison if current timeseries where not copied by the replicator
+        exclude_fields: List of fields:  Only support name, description, metadata and metadata.customfield.
     """
 
     if jobs:
@@ -193,6 +196,7 @@ def replicate(
         skip_nonasset: If a time series has no associated assets, do not replicate it
         target_external_ids: List of specific time series external ids to replicate
         exclude_pattern: Regex pattern; time series whose names match will not be replicated
+        exclude_fields: List of fields:  Only support name, description, metadata and metadata.customfield
     """
     project_src = client_src.config.project
     project_dst = client_dst.config.project
@@ -252,7 +256,7 @@ def replicate(
             replicated_runtime=replicated_runtime,
             client=client_dst,
             src_filter=ts_dst,
-            exclude_fields=exclude_fields
+            exclude_fields=exclude_fields,
         )
     else:
         copy_ts(
@@ -263,7 +267,7 @@ def replicate(
             runtime=replicated_runtime,
             client=client_dst,
             src_filter=ts_dst,
-            exclude_fields=exclude_fields
+            exclude_fields=exclude_fields,
         )
 
     logging.info(
