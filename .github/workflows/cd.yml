@@ -27,4 +27,4 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: cognite/cognite-replicator-dev:latest
+          tags: cognite/cognite-replicator:latest
