@@ -1,5 +1,6 @@
 from cognite.client.data_classes import Event
 from cognite.client.testing import monkeypatch_cognite_client
+
 from cognite.replicator.events import copy_events, create_event, update_event
 
 

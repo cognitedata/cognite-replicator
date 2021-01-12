@@ -1,6 +1,7 @@
 import time
 
 from cognite.client.data_classes import FileMetadata
+
 from cognite.replicator.files import create_file, update_file
 
 

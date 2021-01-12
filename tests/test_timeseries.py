@@ -1,4 +1,5 @@
 from cognite.client.data_classes import TimeSeries
+
 from cognite.replicator.replication import filter_objects
 from cognite.replicator.time_series import _is_copyable
 

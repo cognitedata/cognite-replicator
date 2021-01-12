@@ -1,4 +1,5 @@
 from cognite.client.data_classes import Asset, Event, TimeSeries
+
 from cognite.replicator.replication import (
     existing_mapping,
     filter_objects,
