@@ -1,10 +1,9 @@
 import logging
-import threading
 import queue
+import threading
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import requests
-
 from cognite.client import CogniteClient
 from cognite.client.data_classes import Event, FileMetadata, TimeSeries
 from cognite.client.data_classes.assets import Asset

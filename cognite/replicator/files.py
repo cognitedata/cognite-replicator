@@ -1,8 +1,8 @@
 import logging
 import mimetypes
+import queue
 import re
 import time
-import queue
 from typing import Dict, List, Optional
 
 from cognite.client import CogniteClient

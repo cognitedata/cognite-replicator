@@ -20,7 +20,6 @@ from pathlib import Path
 from typing import Optional
 
 import yaml
-
 from cognite.client import CogniteClient
 from cognite.client.exceptions import CogniteAPIError
 

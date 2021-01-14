@@ -1,8 +1,8 @@
 from pathlib import Path
 
 import pytest
-
 from cognite.client.testing import monkeypatch_cognite_client
+
 from cognite.replicator.__main__ import (
     ENV_VAR_FOR_CONFIG_FILE_PATH,
     _get_config_path,

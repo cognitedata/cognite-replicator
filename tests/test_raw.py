@@ -1,4 +1,5 @@
 from cognite.client.data_classes.raw import Database, Row, Table
+
 from cognite.replicator.raw import get_not_created_names
 
 
