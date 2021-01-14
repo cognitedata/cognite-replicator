@@ -152,6 +152,7 @@ def restore_fields(
 ) -> Union[Asset, Event, FileMetadata, TimeSeries]:
     """
     Restore the objects data according to exclude_fields defined.
+    It only support for copy timeseries.
 
     Fields not restored
         - **_replicatedSource**: The name of the project this object is replicated from.
