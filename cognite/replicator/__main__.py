@@ -26,6 +26,9 @@ from cognite.client.exceptions import CogniteAPIError
 
 from . import assets, configure_logger, datapoints, events, files, raw, time_series
 
+# import assets, datapoints, events, files, raw, time_series
+# from __init__ import configure_logger
+
 ENV_VAR_FOR_CONFIG_FILE_PATH = "COGNITE_CONFIG_FILE"
 
 
@@ -146,6 +149,7 @@ def main():
             delete_not_replicated_in_dst=delete_not_replicated_in_dst,
             target_external_ids=config.get("timeseries_external_ids"),
             exclude_pattern=config.get("timeseries_exclude_pattern"),
+            exclude_fields=config.get("timeseries_exclude_fields"),
         )
 
     if Resource.FILES in resources_to_replicate:
