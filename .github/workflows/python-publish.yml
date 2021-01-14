@@ -30,7 +30,6 @@ jobs:
     - name: Check codestyle
       run: |
         black --check .
-        isort --check-only -rc .
 
     - name: Build package
       run: poetry build

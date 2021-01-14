@@ -5,14 +5,14 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import requests
 from cognite.client import CogniteClient
-from cognite.client.data_classes import Event, FileMetadata, TimeSeries
+from cognite.client.data_classes import Event, FileMetadata, Sequence, TimeSeries
 from cognite.client.data_classes.assets import Asset
 from cognite.client.data_classes.raw import Row
 
 
 def make_id_object_map(
-    objects: List[Union[Asset, Event, FileMetadata, TimeSeries]]
-) -> Dict[int, Union[Asset, Event, FileMetadata, TimeSeries]]:
+    objects: List[Union[Asset, Event, FileMetadata, Sequence, TimeSeries]]
+) -> Dict[int, Union[Asset, Event, FileMetadata, Sequence, TimeSeries]]:
     """
     Makes a dictionary with the source object id as the key and the object as the value for objects
     that have been replicated.
@@ -31,12 +31,12 @@ def make_id_object_map(
 
 
 def filter_objects(
-    objects: Union[List[Event], List[FileMetadata], List[TimeSeries]],
+    objects: Union[List[Event], List[FileMetadata], List[Sequence], List[TimeSeries]],
     src_dst_ids_assets: Dict[int, int],
     skip_unlinkable: bool = False,
     skip_nonasset: bool = False,
-    filter_fn: Optional[Callable[[Union[Event, FileMetadata, TimeSeries]], bool]] = None,
-) -> Union[List[Event], List[FileMetadata], List[TimeSeries]]:
+    filter_fn: Optional[Callable[[Union[Event, FileMetadata, Sequence, TimeSeries]], bool]] = None,
+) -> Union[List[Event], List[FileMetadata], List[Sequence], List[TimeSeries]]:
     """Filters out objects based on their assets and optionally custom filter logic
 
     Args:
@@ -118,7 +118,7 @@ def get_asset_ids(ids: List[int], src_dst_ids_assets: Dict[int, int]) -> Union[L
 
 
 def new_metadata(
-    obj: Union[Asset, Event, FileMetadata, TimeSeries], project_src: str, replicated_runtime: int
+    obj: Union[Asset, Event, FileMetadata, Sequence, TimeSeries], project_src: str, replicated_runtime: int
 ) -> Dict[str, Union[int, str]]:
     """
     Copies the objects metadata and adds three new fields to it providing information about the objects replication.
@@ -196,8 +196,8 @@ def restore_fields(
 
 
 def make_objects_batch(
-    src_objects: List[Union[Asset, Event, FileMetadata, TimeSeries]],
-    src_id_dst_map: Dict[int, Union[Asset, Event, FileMetadata, TimeSeries]],
+    src_objects: List[Union[Asset, Event, FileMetadata, Sequence, TimeSeries]],
+    src_id_dst_map: Dict[int, Union[Asset, Event, FileMetadata, Sequence, TimeSeries]],
     src_dst_ids_assets: Dict[int, int],
     create,
     update,
@@ -207,9 +207,9 @@ def make_objects_batch(
     src_filter: Optional[List[Union[Event, FileMetadata, TimeSeries]]] = None,
     exclude_fields: Optional[List[str]] = None,
 ) -> Tuple[
-    List[Union[Asset, Event, FileMetadata, TimeSeries]],
-    List[Union[Asset, Event, FileMetadata, TimeSeries]],
-    List[Union[Asset, Event, FileMetadata, TimeSeries]],
+    List[Union[Asset, Event, FileMetadata, Sequence, TimeSeries]],
+    List[Union[Asset, Event, FileMetadata, Sequence, TimeSeries]],
+    List[Union[Asset, Event, FileMetadata, Sequence, TimeSeries]],
 ]:
     """
     Create a batch of new objects from a list of source objects or update existing destination objects to their
@@ -272,8 +272,8 @@ def make_objects_batch(
 
 
 def retry(
-    function, objects: List[Union[Asset, Event, FileMetadata, TimeSeries, Row]], **kwargs
-) -> List[Union[Asset, Event, TimeSeries]]:
+    function, objects: List[Union[Asset, Event, FileMetadata, Row, Sequence, TimeSeries]], **kwargs
+) -> List[Union[Asset, Event, Sequence, TimeSeries]]:
     """
     Attempt to either create/update the objects, if it fails retry creating/updating the objects. This will retry up
     to three times.
@@ -286,7 +286,7 @@ def retry(
         A list of all the objects that were created or updated in CDF.
 
     """
-    ret: List[Union[Asset, Event, FileMetadata, TimeSeries, Row]] = []
+    ret: List[Union[Asset, Event, FileMetadata, Row, Sequence, TimeSeries]] = []
     if objects:
         tries = 3
         for i in range(tries):
@@ -409,7 +409,7 @@ def clear_replication_metadata(client: CogniteClient):
 
 def find_objects_to_delete_not_replicated_in_dst(
     dst_objects: List[Union[Asset, Event, FileMetadata, TimeSeries]]
-) -> List[Asset]:
+) -> List[int]:
     """
     Deleting all the assets in the destination that do not have the "_replicatedSource" in metadata, which
     means that is was not copied from the source, but created in the destination.
@@ -425,9 +425,9 @@ def find_objects_to_delete_not_replicated_in_dst(
 
 
 def find_objects_to_delete_if_not_in_src(
-    src_objects: List[Union[Asset, Event, FileMetadata, TimeSeries]],
-    dst_objects: List[Union[Asset, Event, FileMetadata, TimeSeries]],
-) -> List[Union[Asset, Event, FileMetadata, TimeSeries]]:
+    src_objects: List[Union[Asset, Event, FileMetadata, Sequence, TimeSeries]],
+    dst_objects: List[Union[Asset, Event, FileMetadata, Sequence, TimeSeries]],
+) -> List[int]:
     """
     Compare the destination and source assets and delete the ones that are no longer in the source.
 
@@ -444,3 +444,34 @@ def find_objects_to_delete_if_not_in_src(
             if int(obj.metadata["_replicatedInternalId"]) not in src_obj_ids:
                 obj_ids_to_remove.append(obj.id)
     return obj_ids_to_remove
+
+
+def map_ids_from_external_ids(src_asset_map: Dict[str, Asset], dst_assets: List[Asset]):
+    """
+    Alternative to the existing_mapping for the cases when src and dst have the same assets
+    but dst assets don't have replication metadata
+
+    Parameters:
+        src_asset_map: a dict which maps external id to the asset object
+        dst_assets: a list of assets in the destination
+    """
+    ids = {}
+
+    for dst in dst_assets:
+        ids[src_asset_map[dst.external_id].id] = dst.id
+
+    return ids
+
+
+def make_external_id_obj_map(assets: List[Union[Asset, Sequence]]):
+    """
+    Creates a map of external_id to asset from a list of assets
+
+    Parameters:
+        assets: a list of assets from which a map will be created
+    """
+    asset_map = {}
+    for asset in assets:
+        asset_map[asset.external_id] = asset
+
+    return asset_map
