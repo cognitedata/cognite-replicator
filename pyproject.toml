@@ -9,7 +9,6 @@ authors = [
     "Sofie Haug <sofie.haug@cognite.com>",
     "Torbjørn Opheim <torbjorn.opheim@cognite.com>",
     "Tristan Monger <tristan.monger@cognite.com>",
-    "Gaetan Helness <gaetan.helness@cognite.com>",
 ]
 readme = "README.md"
 packages = [
