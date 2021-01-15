@@ -10,8 +10,6 @@ from cognite.client.exceptions import CogniteNotFoundError
 
 from . import replication
 
-# import replication
-
 
 def create_time_series(
     src_ts: TimeSeries, src_dst_ids_assets: Dict[int, int], project_src: str, runtime: int

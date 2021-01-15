@@ -25,9 +25,6 @@ from cognite.client.exceptions import CogniteAPIError
 
 from . import assets, configure_logger, datapoints, events, files, raw, time_series
 
-# import assets, datapoints, events, files, raw, time_series
-# from __init__ import configure_logger
-
 ENV_VAR_FOR_CONFIG_FILE_PATH = "COGNITE_CONFIG_FILE"
 
 
