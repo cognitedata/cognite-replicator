@@ -81,12 +81,82 @@ def _get_config_path(config_arg: Optional[str]) -> Path:
     return config_file
 
 
+def get_lines_in_file(config_file):
+    """
+    Convert and return file to array lines. It excludes comment lines.
+    Args:
+        config_file: Config file
+    Returns:
+        Array of lines
+    """
+    lines = []
+
+    line = config_file.readline()
+    lines.append([1, line])
+
+    line_counter = 1
+    while line:
+        line = config_file.readline()
+        if not (line.lstrip().startswith("#")):
+            lines.append([line_counter, line])
+
+        line_counter += 1
+
+    print(len(lines))
+
+    return lines
+
+
+def get_repeat_line_numbers(lines):
+    """
+    Return repeated lines
+    Args:
+        lines: Array lines
+    Returns:
+        Array if line number
+    """
+    repeat_line_numbers = []
+
+    for line in lines:
+        lines_number_found = [x[0] for x in lines if x[1] == line[1]]
+        if len(lines_number_found) > 1:
+            repeat_line_numbers.append(line[0])
+
+    return repeat_line_numbers
+
+
+def get_no_repeat_lines_as_string(lines):
+    """
+    Read array lines and return lines without duplicates in single string
+    Args:
+        lines: Array lines
+    Returns:
+        single string
+    """
+    unique_lines = []
+
+    for line in lines:
+        if len(line[1]) > 0 and not (line[1] in unique_lines):
+            unique_lines.append(line[1])
+
+    return "".join(unique_lines)
+
+
 def main():
     args = create_cli_parser().parse_args()
     with open(_get_config_path(args.config)) as config_file:
-        config = yaml.safe_load(config_file.read())
+        config_file_lines = get_lines_in_file(config_file)
+        repeat_line_numbers = get_repeat_line_numbers(config_file_lines)
+        config_file_str = get_no_repeat_lines_as_string(config_file_lines)
+
+        config = yaml.safe_load(config_file_str)
 
     configure_logger(config.get("log_level", "INFO").upper(), Path(config.get("log_path", "log")))
+
+    if len(repeat_line_numbers) > 0:
+        for line_number in repeat_line_numbers:
+            line_found = [x for x in config_file_lines if x[0] == line_number][0]
+            logging.info(f"Config file - Repeat line {str(line_found[0])}: { line_found[1]}")
 
     delete_replicated_if_not_in_src = config.get("delete_if_removed_in_source", False)
     delete_not_replicated_in_dst = config.get("delete_if_not_replicated", False)
