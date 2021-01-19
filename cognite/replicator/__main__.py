@@ -215,6 +215,7 @@ def main():
             delete_not_replicated_in_dst=delete_not_replicated_in_dst,
             target_external_ids=config.get("timeseries_external_ids"),
             exclude_pattern=config.get("timeseries_exclude_pattern"),
+            exclude_fields=config.get("timeseries_exclude_fields"),
         )
 
     if Resource.FILES in resources_to_replicate:
