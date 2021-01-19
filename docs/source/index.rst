@@ -26,3 +26,6 @@ Documentation
 
 .. automodule:: cognite.replicator.time_series
     :members:
+
+.. automodule:: cognite.replicator.sequences
+    :members:

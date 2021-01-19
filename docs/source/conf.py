@@ -20,7 +20,7 @@ from cognite.replicator import __version__  # isort:skip
 
 # General information about the project.
 project = "cognite-replicator"
-copyright = "2019, Cognite AS"
+copyright = "2021, Cognite AS"
 author = "Cognite AS"
 
 # The short X.Y version.
