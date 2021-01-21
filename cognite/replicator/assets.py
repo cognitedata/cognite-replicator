@@ -1,11 +1,13 @@
 import logging
 import time
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, cast
 
 from cognite.client import CogniteClient
 from cognite.client.data_classes.assets import Asset, AssetList
 
 from . import replication
+
+# import replication
 
 
 def build_asset_create(
@@ -83,6 +85,34 @@ def find_children(assets: List[Asset], parents: Union[List[None], List[Asset]]) 
     return [asset for asset in assets if asset.parent_id in parent_ids]
 
 
+def create_assets_externalid_validation(assets: List[Asset], client: CogniteClient) -> List[Asset]:
+    """
+    Create assets and validate externalid already created.
+    Args:
+        assets: A list of the assets to create.
+        client: The client corresponding to the destination project.
+    """
+    ret: List[Asset] = []
+
+    external_ids = [x.external_id for x in assets]
+
+    assets_already_created = client.assets.retrieve_multiple(external_ids=external_ids, ignore_unknown_ids=True)
+
+    for item in assets_already_created:
+        ret.append(item)
+
+    ids_assets_already_created = [x.external_id for x in assets_already_created]
+
+    assets_missing = [x for x in assets if not (x.external_id in ids_assets_already_created)]
+    if len(assets_missing) > 0:
+        asset_created = cast(AssetList, client.assets.create(assets_missing))
+        if len(asset_created) > 0:
+            for item in asset_created:
+                ret.append(item)
+
+    return ret
+
+
 def create_hierarchy(
     src_assets: List[Asset],
     dst_assets: List[Asset],
@@ -130,7 +160,9 @@ def create_hierarchy(
         )
 
         logging.info(f"Attempting to create {len(create_assets)} assets.")
-        created_assets = replication.retry(client.assets.create, create_assets)
+        # created_assets = replication.retry(client.assets.create, create_assets)
+        created_assets = replication.retry(create_assets_externalid_validation, create_assets, client=client)
+
         logging.info(f"Attempting to update {len(update_assets)} assets.")
         updated_assets = replication.retry(client.assets.update, update_assets)
 
