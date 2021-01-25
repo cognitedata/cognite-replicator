@@ -1,11 +1,13 @@
 import logging
 import time
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, cast
 
 from cognite.client import CogniteClient
 from cognite.client.data_classes.assets import Asset, AssetList
 
 from . import replication
+
+# import replication
 
 
 def build_asset_create(
@@ -83,6 +85,38 @@ def find_children(assets: List[Asset], parents: Union[List[None], List[Asset]]) 
     return [asset for asset in assets if asset.parent_id in parent_ids]
 
 
+def create_assets_replicated_id_validation(assets: List[Asset], function_create, function_list) -> List[Asset]:
+    """
+    Create assets and validate that was not already created.
+    It takes more time to execute.
+    Args:
+        assets: A list of the assets to create.
+        function_create: Instance of CogniteClient.assets.create.
+        function_list: Instance of CogniteClient.assets.list
+    """
+    ret: List[Asset] = []
+    ids_assets_already_created: List[str] = []
+    assets_missing = []
+
+    for asset in assets:
+        assets_already_created = function_list(
+            limit=1, metadata={"_replicatedInternalId": asset.metadata["_replicatedInternalId"]}
+        )
+        if len(assets_already_created) > 0:
+            for item in assets_already_created:
+                ret.append(item)
+        else:
+            assets_missing.append(asset)
+
+    if len(assets_missing) > 0:
+        asset_created = cast(AssetList, function_create(assets_missing))
+        if len(asset_created) > 0:
+            for item in asset_created:
+                ret.append(item)
+
+    return ret
+
+
 def create_hierarchy(
     src_assets: List[Asset],
     dst_assets: List[Asset],
@@ -130,7 +164,14 @@ def create_hierarchy(
         )
 
         logging.info(f"Attempting to create {len(create_assets)} assets.")
-        created_assets = replication.retry(client.assets.create, create_assets)
+        # created_assets = replication.retry(client.assets.create, create_assets)
+        created_assets = replication.retry(
+            create_assets_replicated_id_validation,
+            create_assets,
+            function_create=client.assets.create,
+            function_list=client.assets.list,
+        )
+
         logging.info(f"Attempting to update {len(update_assets)} assets.")
         updated_assets = replication.retry(client.assets.update, update_assets)
 
