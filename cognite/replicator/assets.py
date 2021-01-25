@@ -99,9 +99,13 @@ def create_assets_replicated_id_validation(assets: List[Asset], function_create,
     assets_missing = []
 
     for asset in assets:
-        assets_already_created = function_list(
-            limit=1, metadata={"_replicatedInternalId": asset.metadata["_replicatedInternalId"]}
-        )
+        assets_already_created = []
+
+        if asset.metadata:
+            assets_already_created = function_list(
+                limit=1, metadata={"_replicatedInternalId": asset.metadata["_replicatedInternalId"]}
+            )
+
         if len(assets_already_created) > 0:
             for item in assets_already_created:
                 ret.append(item)
