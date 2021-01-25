@@ -1,7 +1,9 @@
 import time
 
+from cognite.client import CogniteClient
 from cognite.client.data_classes.assets import Asset
 from cognite.client.testing import monkeypatch_cognite_client
+
 from cognite.replicator.assets import (
     build_asset_create,
     build_asset_update,

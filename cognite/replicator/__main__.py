@@ -20,7 +20,6 @@ from pathlib import Path
 from typing import Optional
 
 import yaml
-
 from cognite.client import CogniteClient
 from cognite.client.exceptions import CogniteAPIError
 
@@ -146,6 +145,7 @@ def main():
             delete_not_replicated_in_dst=delete_not_replicated_in_dst,
             target_external_ids=config.get("timeseries_external_ids"),
             exclude_pattern=config.get("timeseries_exclude_pattern"),
+            exclude_fields=config.get("timeseries_exclude_fields"),
         )
 
     if Resource.FILES in resources_to_replicate:
