@@ -327,7 +327,7 @@ def thread(
         client: The Cognite Client for the destination project.
         src_filter: List of event/timeseries/files in the destination.
                     Will be used for comparison if current event/timeseries/files where not copied by the replicator.
-
+        exclude_fields: List of fields:  Only support name, description, metadata and metadata.customfield.
     """
     jobs = queue.Queue()
     threads = []
