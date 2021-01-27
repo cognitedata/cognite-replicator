@@ -84,6 +84,7 @@ def copy_events(
     client: CogniteClient,
     src_filter: List[Event],
     jobs: queue.Queue = None,
+    exclude_fields: Optional[List[str]] = None,
 ):
     """
     Creates/updates event objects and then attempts to create and update these objects in the destination.

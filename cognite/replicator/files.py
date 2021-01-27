@@ -76,6 +76,7 @@ def copy_files(
     client: CogniteClient,
     src_filter: List[FileMetadata],
     jobs: queue.Queue = None,
+    exclude_fields: Optional[List[str]] = None,
 ):
     """
     Creates/updates file objects and then attempts to create and update these objects in the destination.
