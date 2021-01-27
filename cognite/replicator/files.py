@@ -88,7 +88,9 @@ def copy_files(
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
         client: The client corresponding to the destination project.
-        src_filter: List of files in the destination - Will be used for comparison if current files where not copied by the replicator
+        src_filter: List of files in the destination - Will be used for comparison if current files where not copied by the replicator.
+        jobs: Shared job queue, this is initialized and managed by replication.py.
+        exclude_fields: List of fields:  Only support name, description, metadata and metadata.customfield.
     """
 
     if jobs:
