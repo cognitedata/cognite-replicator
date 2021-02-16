@@ -100,3 +100,20 @@ Wondering about upcoming or previous changes? Take a look at the [CHANGELOG](htt
 
 ## Contributing
 Want to contribute? Check out [CONTRIBUTING](https://github.com/cognitedata/cognite-replicator/blob/master/CONTRIBUTING.md).
+
+####
+Jobs for replicating to okd:
+
+- Step 1: Copy or modify config files under config, so that they contain the correct project names and url to CDF cluster.
+(follow example from okd-demo)
+- Step 2: Build and push dev image:
+
+docker build . -t eu.gcr.io/cognitedata-development/cognite-replicator:dev-$USER
+docker push eu.gcr.io/cognitedata-development/cognite-replicator:dev-$USER
+
+- Step 3: Create a kubernets job for replicating:
+cp job_template.yaml job_allresources.yaml
+Modify the job_allresource.yaml to contain the API keys, and reference to correct config file.
+kubectl apply -f job_allresource.yaml
+
+
