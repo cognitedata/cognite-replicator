@@ -1,0 +1,17 @@
+resources:
+  - assets
+  - events
+src_api_key_env_var: COGNITE_SOURCE_API_KEY         # Name of env variable for CDF API KEY of the source project
+dst_api_key_env_var: COGNITE_DESTINATION_API_KEY    # Name of env variable for CDF API KEY of the destination project
+src_project: publicdata                    # Project that src_api_key belongs to
+dst_project: okd-demo                      # Project that dst_api_key belongs to
+dst_baseurl: https://okd-dev-01.cognitedata.com     # Optional - destination base url if not api.cognitedata.com
+delete_if_removed_in_source: false                  # Remove objects that were replicated and are now deleted in source
+delete_if_not_replicated: false                     # Remove all objects in destination that aren't from source
+batch_size: 10000                                   # Number of items in each batch
+number_of_threads: 5                                # Number of threads to use
+client_timeout: 120                                 # Seconds for clients to timeout
+client_name: cdf-replicator                         # Name of client
+log_path: log                                       # Folder to save logs to
+log_level: debug                                    # Logging level
+datapoints_end: now                                 # Must be an integer timestamp or a "time-ago string" or 'now'
