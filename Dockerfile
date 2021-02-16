@@ -18,6 +18,8 @@ WORKDIR /code
 # Creating folders, and files for a project:
 COPY . /code
 
+COPY ./config/* /config/
+
 # Project initialization:
 RUN poetry config virtualenvs.create false && poetry install --no-dev --no-interaction --no-ansi
 
