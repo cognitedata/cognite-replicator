@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: publicdatareplicator-okd
+  namespace: default
+  labels:
+    team: starbase
+  annotations:
+    strategy.spinnaker.io/recreate: "true"
+spec:
+  template:
+    metadata:
+      labels:
+        team: starbase
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: cognitedatareplicator-publicdata
+          image: eu.gcr.io/cognitedata-development/cognite-replicator:<INSERT USER HERE>
+          imagePullPolicy: Always
+          env:
+            - name: COGNITE_DISABLE_PYPI_VERSION_CHECK
+              value: "true"
+            - name: COGNITE_SOURCE_API_KEY
+              value: <INSERT API KEY >
+            - name: COGNITE_DESTINATION_API_KEY
+              value: <INSERT API KEY >
+          resources:
+            requests:
+              cpu: "2"
+              memory: "16000Mi"
+            limits:
+              cpu: "8"
+              memory: "16000Mi"
+          args:
+            - /config/okd.yml
