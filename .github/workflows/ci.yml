@@ -29,8 +29,7 @@ jobs:
           github_token: ${{ secrets.github_token }}
           black: true
           black_args: "--line-length 120"
-          mypy: true
-          mypy_args: "--ignore-missing-imports"
+          mypy: false
 
   testing:
     name: Testing
