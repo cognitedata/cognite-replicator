@@ -7,9 +7,6 @@ from cognite.client.data_classes.assets import Asset, AssetList
 
 from . import replication
 
-# import replication
-
-
 def build_asset_create(
     src_asset: Asset, src_id_dst_map: Dict[int, int], project_src: str, runtime: int, depth: int
 ) -> Asset:
