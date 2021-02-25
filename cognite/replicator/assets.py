@@ -166,7 +166,6 @@ def create_hierarchy(
         )
 
         logging.info(f"Attempting to create {len(create_assets)} assets.")
-        # created_assets = replication.retry(client.assets.create, create_assets)
         created_assets = replication.retry(
             create_assets_replicated_id_validation,
             create_assets,
