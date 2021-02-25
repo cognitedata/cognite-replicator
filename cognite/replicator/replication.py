@@ -194,9 +194,6 @@ def restore_fields(
                 if metadata_key in dst_obj_dump["metadata"]:
                     dst_obj.metadata[metadata_key] = dst_obj_dump["metadata"][metadata_key]
 
-                # elif metadata_key in dst_obj.metadata:
-                #    dst_obj.metadata.pop(metadata_key, None)
-
     return dst_obj
 
 
