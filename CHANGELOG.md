@@ -20,13 +20,13 @@ Changes are grouped as follows
 
 ## Fixed
 - Notification and error handling for identical timeseries entries in the config file
-https://github.com/cognitedata/cognite-replicator/issues/126
+https://github.com/cognitedata/cognite-replicator/issues/126 
 
 ## [0.9.1] - 2020-01-15
 
 ## Changed
 - Possibility to ignore replication of some fields, like metadata
-https://github.com/cognitedata/cognite-replicator/issues/143
+https://github.com/cognitedata/cognite-replicator/issues/143 
 
 ## [0.9.0] - 2020-01-10
 
