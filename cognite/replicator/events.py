@@ -84,6 +84,7 @@ def copy_events(
     client: CogniteClient,
     src_filter: List[Event],
     jobs: queue.Queue = None,
+    exclude_fields: Optional[List[str]] = None,
 ):
     """
     Creates/updates event objects and then attempts to create and update these objects in the destination.
@@ -95,7 +96,9 @@ def copy_events(
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
         client: The client corresponding to the destination project.
-        src_filter: List of events in the destination - Will be used for comparison if current events where not copied by the replicator
+        src_filter: List of events in the destination - Will be used for comparison if current events where not copied by the replicator.
+        jobs: Shared job queue, this is initialized and managed by replication.py.
+        exclude_fields: List of fields:  Only support name, description, metadata and metadata.customfield.
     """
 
     if jobs:
