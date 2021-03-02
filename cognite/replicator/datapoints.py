@@ -310,10 +310,11 @@ def replicate(
         if exclude_pattern:  # Filtering based on regex rule given
             compiled_re = re.compile(exclude_pattern)
             for ts in ts_src:
-                if compiled_re.search(ts.external_id):
-                    skipped_ts.append(ts.external_id)
-                else:
-                    filtered_ts_src.append(ts.external_id)
+                if ts.external_id is not None:
+                    if compiled_re.search(ts.external_id):
+                        skipped_ts.append(ts.external_id)
+                    else:
+                        filtered_ts_src.append(ts.external_id)
             src_ext_id_list = filtered_ts_src
             logging.info(
                 f"Excluding datapoints from {len(skipped_ts)} time series, due to regex rule: {exclude_pattern}. Sample: {skipped_ts[:5]}"
