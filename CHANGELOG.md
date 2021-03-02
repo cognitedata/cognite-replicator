@@ -13,10 +13,26 @@ Changes are grouped as follows
 - `Security` in case of vulnerabilities.
 
 ## [Planned]
-- Support for replicating Sequences
+
 - Support for replicating file data
 
-## [Unreleased]
+## [0.9.2] - 2020-01-19
+
+## Fixed
+- Notification and error handling for identical timeseries entries in the config file
+https://github.com/cognitedata/cognite-replicator/issues/126 
+
+## [0.9.1] - 2020-01-15
+
+## Changed
+- Possibility to ignore replication of some fields, like metadata
+https://github.com/cognitedata/cognite-replicator/issues/143 
+
+## [0.9.0] - 2020-01-10
+
+## Changed
+- Support for replicating Sequences
+
 ## [0.8.2] - 2020-11-18
 
 ## Changed
