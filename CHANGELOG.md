@@ -14,7 +14,10 @@ Changes are grouped as follows
 
 ## [Planned]
 
-- Support for replicating file data
+
+## [0.9.6] - 2021-10-05
+## Fixed
+- Problems with dependency convergence, due to out of date cognite-sdk-core.
 
 ## [0.9.2] - 2020-01-19
 
