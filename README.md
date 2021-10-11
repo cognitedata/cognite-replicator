@@ -48,7 +48,54 @@ For *Databricks* you can install it on a cluster. First, click on **Libraries** 
 
 ## Usage
 
-### Setup as Python library
+### Setup as Python library with src using API keys and destination using OIDC creds
+ ```python
+import os
+
+from cognite.client import CogniteClient
+
+# Source
+SRC_API_KEY = os.environ.get("COGNITE_SOURCE_API_KEY")
+SRC_PROJECT = "Name of source tenant"
+
+# Destination
+CLIENT_ID = "Client ID from Azure"
+CLIENT_SECRET = os.environ.get("CDF_CLIENT_SECRET")
+CLUSTER = "Name of CDF cluster"
+SCOPES = [f"https://{CLUSTER}.cognitedata.com/.default"]
+TENANT_ID = "Tenant ID from Azure"
+TOKEN_URL = f"https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/token"
+DST_PROJECT = "Name of destination tenant"
+CLIENT_NAME = "Name of the client application"
+
+# Config
+BATCH_SIZE = 10000 # this is the max size of a batch to be posted
+NUM_THREADS= 10 # this is the max number of threads to be used
+TIMEOUT = 90
+
+if __name__ == '__main__': # this is necessary because threading
+    from cognite.replicator import assets, events, files, time_series, datapoints
+
+    CLIENT_SRC = CogniteClient(api_key=SRC_API_KEY, client_name=SRC_PROJECT)
+
+    CLIENT_DST = CogniteClient(
+        token_url=TOKEN_URL,
+        token_client_id=CLIENT_ID,
+        token_client_secret=CLIENT_SECRET,
+        token_scopes=SCOPES,
+        project=DST_PROJECT,
+        base_url=f"https://{CLUSTER}.cognitedata.com",
+        client_name=CLIENT_NAME,
+        debug=False,
+    )
+    assets.replicate(CLIENT_SRC, CLIENT_DST)
+    events.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
+    files.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
+    time_series.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
+    datapoints.replicate(CLIENT_SRC, CLIENT_DST)
+```
+
+### Setup as Python library with API keys
 ```python
 import os
 
