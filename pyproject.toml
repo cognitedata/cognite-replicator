@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cognite_replicator"
-version = "0.9.6"
+version = "0.9.7"
 description = "Python package for replicating data across CDF tenants. Copyright 2021 Cognite AS"
 license = "Apache-2.0"
 authors = [
@@ -26,9 +26,8 @@ classifiers = [
 [tool.poetry.dependencies]
 cognite-sdk-core = "^2.31.0"
 google-cloud-logging = "^1.12"
-python = "^3.9"
+python = "^3.6"
 pyyaml = "^5.1.0"
-pandas = "^1.3.3"
 
 [tool.poetry.dev-dependencies]
 black = {version = "19.3b0", allow-prereleases = true}
@@ -72,7 +71,7 @@ exclude = '''
 legacy_tox_ini = '''
 [tox]
 isolated_build = true
-envlist = py36,py37,py38,py39
+envlist = py36,py37,py38
 
 [testenv]
 # install pytest in the virtualenv where commands will be executed
