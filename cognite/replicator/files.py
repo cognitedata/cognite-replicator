@@ -210,10 +210,10 @@ def replicate(
     if exclude_pattern:
         compiled_re = re.compile(exclude_pattern)
 
-    def filter_fn(ts):
+    def filter_fn(file):
         if exclude_pattern:
-            return _is_copyable(ts) and compiled_re.search(ts.external_id) is None
-        return _is_copyable(ts)
+            return compiled_re.search(file.external_id) is None
+        return True
 
     if skip_unlinkable or skip_nonasset or exclude_pattern:
         pre_filter_length = len(files_src)

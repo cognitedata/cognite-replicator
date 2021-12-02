@@ -1,9 +1,12 @@
 import logging
+import queue
+import re
 import time
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from cognite.client import CogniteClient
-from cognite.client.data_classes import Sequence
+from cognite.client.data_classes import Sequence, SequenceList
+from cognite.client.exceptions import CogniteAPIError, CogniteNotFoundError
 
 from . import replication
 
@@ -69,6 +72,9 @@ def copy_seq(
     project_src: str,
     runtime: int,
     client: CogniteClient,
+    src_filter: List[Sequence],
+    jobs: queue.Queue = None,
+    exclude_fields: Optional[List[str]] = None,
 ):
     """
     Creates/updates sequence objects and then attempts to create and update these sequence in the destination.
@@ -80,23 +86,48 @@ def copy_seq(
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
         client: The client corresponding to the destination project.
+        jobs: Shared job queue, this is initialized and managed by replication.py.
+        exclude_fields: List of fields:  Only support name, description, metadata and metadata.customfield.
     """
-    logging.info(f"Starting to replicate {len(src_seq)} sequence.")
-    create_seq, update_seq, unchanged_seq = replication.make_objects_batch(
-        src_seq, src_id_dst_seq, src_dst_ids_assets, create_sequence, update_sequence, project_src, runtime
-    )
 
-    logging.info(f"Creating {len(create_seq)} new sequence and updating {len(update_seq)} existing sequence.")
+    if jobs:
+        use_queue_logic = True
+        do_while = not jobs.empty()
+    else:
+        use_queue_logic = False
+        do_while = True
 
-    if create_seq:
-        logging.info(f"Creating {len(create_seq)} sequence.")
-        created_seq = replication.retry(client.sequences.create, create_seq)
-        logging.info(f"Successfully created {len(created_seq)} sequence.")
+    while do_while:
+        if use_queue_logic:
+            chunk = jobs.get()
+            chunk_seq = src_seq[chunk[0] : chunk[1]]
+        else:
+            chunk_seq = src_seq
 
-    if update_seq:
-        logging.info(f"Updating {len(update_seq)} sequence.")
-        updated_seq = replication.retry(client.sequences.update, update_seq)
-        logging.info(f"Successfully updated {len(updated_seq)} sequence.")
+        logging.info(f"Starting to replicate {len(chunk_seq)} sequence.")
+
+        create_seq, update_seq, unchanged_seq = replication.make_objects_batch(
+            chunk_seq,
+            src_id_dst_seq,
+            src_dst_ids_assets,
+            create_sequence,
+            update_sequence,
+            project_src,
+            runtime,
+            src_filter=src_filter,
+        )
+
+        logging.info(f"Creating {len(create_seq)} new sequence and updating {len(update_seq)} existing sequence.")
+
+        if create_seq:
+            logging.info(f"Creating {len(create_seq)} sequence.")
+            created_seq = replication.retry(client.sequences.create, create_seq)
+            logging.info(f"Successfully created {len(created_seq)} sequence.")
+
+        if update_seq:
+            logging.info(f"Updating {len(update_seq)} sequence.")
+            updated_seq = replication.retry(client.sequences.update, update_seq)
+            logging.info(f"Successfully updated {len(updated_seq)} sequence.")
 
 
 def replicate(
@@ -108,6 +139,8 @@ def replicate(
     delete_not_replicated_in_dst: bool = False,
     skip_unlinkable: bool = False,
     skip_nonasset: bool = False,
+    target_external_ids: Optional[List[str]] = None,
+    exclude_pattern: str = None,
 ):
     """
     Replicates all the sequence from the source project into the destination project.
@@ -123,57 +156,76 @@ def replicate(
         from the source (Default=False).
         skip_unlinkable: If no assets exist in the destination for a sequence, do not replicate it
         skip_nonasset: If a sequence has no associated assets, do not replicate it
+        target_external_ids: List of specific sequences external ids to replicate
+        exclude_pattern: Regex pattern; sequences whose names match will not be replicated
     """
     project_src = client_src.config.project
     project_dst = client_dst.config.project
 
-    seq_src = client_src.sequences.list(limit=None)
-    seq_dst = client_dst.sequences.list(limit=None)
-    logging.info(f"There are {len(seq_src)} existing sequences in source ({project_src}).")
-    logging.info(f"There are {len(seq_dst)} existing sequences in destination ({project_dst}).")
+    if target_external_ids:
+        seq_src = client_src.sequences.retrieve_multiple(external_ids=target_external_ids, ignore_unknown_ids=True)
+        try:
+            seq_dst = client_dst.sequences.retrieve_multiple(external_ids=target_external_ids, ignore_unknown_ids=True)
+        except CogniteNotFoundError:
+            seq_dst = SequenceList([])
+    else:
+        seq_src = client_src.sequences.list(limit=None)
+        seq_dst = client_dst.sequences.list(limit=None)
+        logging.info(f"There are {len(seq_src)} existing sequences in source ({project_src}).")
+        logging.info(f"There are {len(seq_dst)} existing sequences in destination ({project_dst}).")
 
     src_id_dst_seq = replication.make_id_object_map(seq_dst)
 
     assets_dst = client_dst.assets.list(limit=None)
     src_dst_ids_assets = replication.existing_mapping(*assets_dst)
-
-    if not src_dst_ids_assets:
-        assets_src = client_src.assets.list(limit=None)
-        src_assets_map = replication.make_external_id_obj_map(assets_src)
-        src_dst_ids_assets = replication.map_ids_from_external_ids(src_assets_map, assets_dst)
-
     logging.info(
-        f"If a sequence asset id is one of the {len(src_dst_ids_assets)} assets "
+        f"If a sequences asset id is one of the {len(src_dst_ids_assets)} assets "
         f"that have been replicated then it will be linked."
     )
 
-    seq_src_filtered = replication.filter_objects(seq_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset)
-    logging.info(
-        f"Filtered out {len(seq_src) - len(seq_src_filtered)} sequences. {len(seq_src_filtered)} sequences remain."
-    )
+    compiled_re = None
+    if exclude_pattern:
+        compiled_re = re.compile(exclude_pattern)
+
+    def filter_fn(seq):
+        if exclude_pattern:
+            return compiled_re.search(seq.external_id) is None
+        return True
+
+    #if not src_dst_ids_assets:
+    #    assets_src = client_src.assets.list(limit=None)
+    #    src_assets_map = replication.make_external_id_obj_map(assets_src)
+    #    src_dst_ids_assets = replication.map_ids_from_external_ids(src_assets_map, assets_dst)
+
+    if skip_unlinkable or skip_nonasset or exclude_pattern:
+        pre_filter_length = len(seq_src)
+        ts_src = replication.filter_objects(seq_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset, filter_fn)
+        logging.info(f"Filtered out {pre_filter_length - len(ts_src)} events. {len(ts_src)} events remain.")
 
     replicated_runtime = int(time.time()) * 1000
     logging.info(f"These copied/updated sequences will have a replicated run time of: {replicated_runtime}.")
 
     logging.info(
-        f"Starting to copy and update {len(seq_src_filtered)} sequences from "
+        f"Starting to copy and update {len(seq_src)} sequences from "
         f"source ({project_src}) to destination ({project_dst})."
     )
 
-    if len(seq_src_filtered) > batch_size:
+    if len(seq_src) > batch_size:
         replication.thread(
             num_threads=num_threads,
+            batch_size=batch_size,
             copy=copy_seq,
-            src_objects=seq_src_filtered,
+            src_objects=seq_src,
             src_id_dst_obj=src_id_dst_seq,
             src_dst_ids_assets=src_dst_ids_assets,
             project_src=project_src,
             replicated_runtime=replicated_runtime,
             client=client_dst,
+            src_filter=seq_dst,
         )
     else:
         copy_seq(
-            src_seq=seq_src_filtered,
+            src_seq=seq_src,
             src_id_dst_seq=src_id_dst_seq,
             src_dst_ids_assets=src_dst_ids_assets,
             project_src=project_src,
@@ -182,7 +234,7 @@ def replicate(
         )
 
     logging.info(
-        f"Finished copying and updating {len(seq_src_filtered)} sequence from "
+        f"Finished copying and updating {len(seq_src)} sequence from "
         f"source ({project_src}) to destination ({project_dst})."
     )
 
