@@ -86,6 +86,7 @@ def copy_seq(
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
         client: The client corresponding to the destination project.
+        src_filter: List of sequences in the destination - Will be used for comparison if current sequence were not copied by the replicator.
         jobs: Shared job queue, this is initialized and managed by replication.py.
         exclude_fields: List of fields:  Only support name, description, metadata and metadata.customfield.
     """
@@ -129,6 +130,13 @@ def copy_seq(
             updated_seq = replication.retry(client.sequences.update, update_seq)
             logging.info(f"Successfully updated {len(updated_seq)} sequence.")
 
+        logging.info(f"Created {len(create_seq)} new sequences and updated {len(update_seq)} existing sequences.")
+
+        if use_queue_logic:
+            jobs.task_done()
+            do_while = not jobs.empty()
+        else:
+            do_while = False
 
 def replicate(
     client_src: CogniteClient,
@@ -199,8 +207,8 @@ def replicate(
 
     if skip_unlinkable or skip_nonasset or exclude_pattern:
         pre_filter_length = len(seq_src)
-        ts_src = replication.filter_objects(seq_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset, filter_fn)
-        logging.info(f"Filtered out {pre_filter_length - len(ts_src)} events. {len(ts_src)} events remain.")
+        seq_src = replication.filter_objects(seq_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset, filter_fn)
+        logging.info(f"Filtered out {pre_filter_length - len(seq_src)} events. {len(seq_src)} events remain.")
 
     replicated_runtime = int(time.time()) * 1000
     logging.info(f"These copied/updated sequences will have a replicated run time of: {replicated_runtime}.")
@@ -231,6 +239,7 @@ def replicate(
             project_src=project_src,
             runtime=replicated_runtime,
             client=client_dst,
+            src_filter=seq_dst,
         )
 
     logging.info(
