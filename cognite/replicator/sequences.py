@@ -138,6 +138,7 @@ def copy_seq(
         else:
             do_while = False
 
+
 def replicate(
     client_src: CogniteClient,
     client_dst: CogniteClient,
@@ -200,7 +201,7 @@ def replicate(
             return compiled_re.search(seq.external_id) is None
         return True
 
-    #if not src_dst_ids_assets:
+    # if not src_dst_ids_assets:
     #    assets_src = client_src.assets.list(limit=None)
     #    src_assets_map = replication.make_external_id_obj_map(assets_src)
     #    src_dst_ids_assets = replication.map_ids_from_external_ids(src_assets_map, assets_dst)
