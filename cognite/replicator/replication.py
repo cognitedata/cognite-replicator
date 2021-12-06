@@ -206,7 +206,7 @@ def make_objects_batch(
     project_src: str,
     replicated_runtime: int,
     depth: Optional[int] = None,
-    src_filter: Optional[List[Union[Event, FileMetadata, TimeSeries]]] = None,
+    src_filter: Optional[List[Union[Event, FileMetadata, Sequence, TimeSeries]]] = None,
     exclude_fields: Optional[List[str]] = None,
 ) -> Tuple[
     List[Union[Asset, Event, FileMetadata, Sequence, TimeSeries]],

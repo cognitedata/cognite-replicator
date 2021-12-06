@@ -96,7 +96,7 @@ def copy_events(
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
         client: The client corresponding to the destination project.
-        src_filter: List of events in the destination - Will be used for comparison if current events where not copied by the replicator.
+        src_filter: List of events in the destination - Will be used for comparison if current events were not copied by the replicator.
         jobs: Shared job queue, this is initialized and managed by replication.py.
         exclude_fields: List of fields:  Only support name, description, metadata and metadata.customfield.
     """
@@ -206,10 +206,10 @@ def replicate(
     if exclude_pattern:
         compiled_re = re.compile(exclude_pattern)
 
-    def filter_fn(ts):
+    def filter_fn(event):
         if exclude_pattern:
-            return _is_copyable(ts) and compiled_re.search(ts.external_id) is None
-        return _is_copyable(ts)
+            return compiled_re.search(event.external_id) is None
+        return True
 
     if skip_unlinkable or skip_nonasset or exclude_pattern:
         pre_filter_length = len(events_src)

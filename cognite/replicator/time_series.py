@@ -106,7 +106,7 @@ def copy_ts(
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
         client: The client corresponding to the destination project.
-        src_filter: List of timeseries in the destination - Will be used for comparison if current timeseries where not copied by the replicator.
+        src_filter: List of timeseries in the destination - Will be used for comparison if current timeseries were not copied by the replicator.
         jobs: Shared job queue, this is initialized and managed by replication.py.
         exclude_fields: List of fields:  Only support name, description, metadata and metadata.customfield.
     """
@@ -233,7 +233,7 @@ def replicate(
     if skip_unlinkable or skip_nonasset or exclude_pattern:
         pre_filter_length = len(ts_src)
         ts_src = replication.filter_objects(ts_src, src_dst_ids_assets, skip_unlinkable, skip_nonasset, filter_fn)
-        logging.info(f"Filtered out {pre_filter_length - len(ts_src)} events. {len(ts_src)} events remain.")
+        logging.info(f"Filtered out {pre_filter_length - len(ts_src)} time series. {len(ts_src)} time series remain.")
 
     replicated_runtime = int(time.time()) * 1000
     logging.info(f"These copied/updated time series will have a replicated run time of: {replicated_runtime}.")
