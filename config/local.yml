@@ -18,6 +18,7 @@ log_level: INFO                                     # Logging level
 events_exclude_pattern:                             # Optional - Regex pattern to prevent replication of matching events. Example: ^SYN_
 timeseries_exclude_pattern:                         # Optional - Regex pattern to prevent replication of matching timeseries. Example: ^SYN_
 files_exclude_pattern:                              # Optional - Regex pattern to prevent replication of matching files. Example: ^SYN_
+sequences_exclude_pattern:                          # Optional - Regex pattern to prevent replication of matching sequences. Example: ^SYN_
 #datapoints_start: 1546297200                        # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
 #datapoints_end: 1w-ago                              # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
 #value_manipulation_lambda_fnc: "lambda x: x*0.2"    # Lambda function as a string if value manipulation for datapoints is needed.
