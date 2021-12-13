@@ -271,5 +271,6 @@ def main():
             exclude_pattern=config.get("sequences_exclude_pattern"),
         )
 
+
 if __name__ == "__main__":
     main()

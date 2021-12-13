@@ -35,11 +35,7 @@ def _get_chunk(lst: List[Any], num_chunks: int, chunk_number: int) -> List[Any]:
 
 
 def replicate_sequence_rows(
-    client_src: CogniteClient,
-    client_dst: CogniteClient,
-    seq_external_id: str,
-    mock_run: bool = False,
-    job_id: int = 1,
+    client_src: CogniteClient, client_dst: CogniteClient, seq_external_id: str, mock_run: bool = False, job_id: int = 1
 ) -> Tuple[bool, int]:
     """
     Copies sequence rows from the source tenant into the destination project, for the given sequences.
@@ -57,7 +53,9 @@ def replicate_sequence_rows(
         A tuple of the success status (True if no failures) and the number of sequence rows successfully replicated
     """
     try:
-        latest_src_seq_rows = client_src.sequences.data.retrieve(external_id=seq_external_id, start=0, end=None, limit=None)
+        latest_src_seq_rows = client_src.sequences.data.retrieve(
+            external_id=seq_external_id, start=0, end=None, limit=None
+        )
     except CogniteAPIError as exc:
         logging.error(f"Job {job_id}: Failed for external id {seq_external_id}. {exc}")
         return False, 0
@@ -75,11 +73,7 @@ def replicate_sequence_rows(
 
 
 def batch_replicate(
-    client_src: CogniteClient,
-    client_dst: CogniteClient,
-    job_id: int,
-    ext_ids: List[str],
-    mock_run: bool = False,
+    client_src: CogniteClient, client_dst: CogniteClient, job_id: int, ext_ids: List[str], mock_run: bool = False
 ):
     """
     Replicates sequence rows for each sequences specified by the external id list.
@@ -115,11 +109,7 @@ def batch_replicate(
             log_status(i)
 
         success_status, sequence_rows_copied_count = replicate_sequence_rows(
-            client_src,
-            client_dst,
-            ext_id,
-            mock_run=mock_run,
-            job_id=job_id,
+            client_src, client_dst, ext_id, mock_run=mock_run, job_id=job_id
         )
 
         if not success_status:
@@ -190,25 +180,15 @@ def replicate(
 
     dst_ext_id_list = set([seq_obj.external_id for seq_obj in seq_dst])
     shared_external_ids = [ext_id for ext_id in src_ext_id_list if ext_id in dst_ext_id_list and ext_id]
-    logging.info(
-        f"Number of common sequences external ids between destination and source: {len(shared_external_ids)}"
-    )
+    logging.info(f"Number of common sequences external ids between destination and source: {len(shared_external_ids)}")
 
     if batch_size is None:
         batch_size = ceil(len(shared_external_ids) / num_threads)
     num_batches = ceil(len(shared_external_ids) / batch_size)
 
-    logging.info(
-        f"{num_batches} batches of size {batch_size}"
-    )
+    logging.info(f"{num_batches} batches of size {batch_size}")
     arg_list = [
-        (
-            client_src,
-            client_dst,
-            job_id,
-            _get_chunk(shared_external_ids, num_batches, job_id),
-            mock_run,
-        )
+        (client_src, client_dst, job_id, _get_chunk(shared_external_ids, num_batches, job_id), mock_run)
         for job_id in range(num_batches)
     ]
 
