@@ -74,7 +74,7 @@ NUM_THREADS= 10 # this is the max number of threads to be used
 TIMEOUT = 90
 
 if __name__ == '__main__': # this is necessary because threading
-    from cognite.replicator import assets, events, files, time_series, datapoints
+    from cognite.replicator import assets, events, files, time_series, datapoints, sequences, sequence_rows
 
     CLIENT_SRC = CogniteClient(api_key=SRC_API_KEY, client_name=SRC_PROJECT)
 
@@ -93,6 +93,8 @@ if __name__ == '__main__': # this is necessary because threading
     files.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
     time_series.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
     datapoints.replicate(CLIENT_SRC, CLIENT_DST)
+    sequences.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
+    sequence_rows.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
 ```
 
 ### Setup as Python library with API keys
@@ -113,7 +115,7 @@ DST_BASE_URL = "https://api.cognitedata.com"
 TIMEOUT = 90
 
 if __name__ == '__main__': # this is necessary because threading
-    from cognite.replicator import assets, events, files, time_series, datapoints
+    from cognite.replicator import assets, events, files, time_series, datapoints, sequences, sequence_rows
 
     CLIENT_SRC = CogniteClient(api_key=SRC_API_KEY, project=PROJECT_SRC, base_url=SRC_BASE_URL, client_name=CLIENT_NAME)
     CLIENT_DST = CogniteClient(api_key=DST_API_KEY, project=PROJECT_DST, base_url=DST_BASE_URL, client_name=CLIENT_NAME, timeout=TIMEOUT)
@@ -123,6 +125,8 @@ if __name__ == '__main__': # this is necessary because threading
     files.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
     time_series.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
     datapoints.replicate(CLIENT_SRC, CLIENT_DST)
+    sequences.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
+    sequence_rows.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
 ```
 
 ### Run it from databricks notebook

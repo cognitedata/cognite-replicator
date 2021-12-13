@@ -23,7 +23,7 @@ import yaml
 from cognite.client import CogniteClient
 from cognite.client.exceptions import CogniteAPIError
 
-from . import assets, configure_logger, datapoints, events, files, raw, time_series
+from . import assets, configure_logger, datapoints, events, files, raw, time_series, sequences, sequence_rows
 
 ENV_VAR_FOR_CONFIG_FILE_PATH = "COGNITE_CONFIG_FILE"
 
@@ -39,6 +39,8 @@ class Resource(Enum):
     TIMESERIES = auto()
     DATAPOINTS = auto()
     FILES = auto()
+    SEQUENCES = auto()
+    SEQUENCE_ROWS = auto()
 
 
 def create_cli_parser() -> argparse.ArgumentParser:
@@ -245,6 +247,28 @@ def main():
             end=config.get("datapoints_end"),
             exclude_pattern=config.get("timeseries_exclude_pattern"),
             value_manipulation_lambda_fnc=config.get("value_manipulation_lambda_fnc"),
+        )
+
+    if Resource.SEQUENCES in resources_to_replicate:
+        sequences.replicate(
+            src_client,
+            dst_client,
+            config.get("batch_size"),
+            config.get("number_of_threads"),
+            delete_replicated_if_not_in_src=delete_replicated_if_not_in_src,
+            delete_not_replicated_in_dst=delete_not_replicated_in_dst,
+            target_external_ids=config.get("sequences_external_ids"),
+            exclude_pattern=config.get("sequences_exclude_pattern"),
+        )
+
+    if Resource.SEQUENCE_ROWS in resources_to_replicate:
+        sequence_rows.replicate(
+            src_client,
+            dst_client,
+            config.get("batch_size"),
+            config.get("number_of_threads"),
+            target_external_ids=config.get("sequences_external_ids"),
+            exclude_pattern=config.get("sequences_exclude_pattern"),
         )
 
 

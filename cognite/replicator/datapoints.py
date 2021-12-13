@@ -282,7 +282,7 @@ def replicate(
         batch_size: The size of batches to split the external id list into. Defaults to num_threads.
         num_threads: The number of threads to be used.
         limit: The maximum number of data points to copy per time series
-        external_ids: A list of time series to replicate data points for
+        external_ids: A list of time series external ids to replicate data points for
         mock_run: If true, runs the replication without insert, printing what would happen
         partition_size: The maximum number of datapoints to retrieve per request
         src_datapoint_transform: Function to apply to all source datapoints before inserting into destination
@@ -296,7 +296,7 @@ def replicate(
 
     if external_ids and exclude_pattern:
         raise ValueError(
-            f"List of time series AND a regex exclusion rule was given! Either remove the filter {exclude_pattern} or the list of time series {external_ids}"
+            f"List of time series external ids AND a regex exclusion rule was given! Either remove the filter {exclude_pattern} or the list of time series {external_ids}"
         )
     elif external_ids is not None:  # Specified list of time series is given
         ts_src = client_src.time_series.retrieve_multiple(external_ids=external_ids, ignore_unknown_ids=True)

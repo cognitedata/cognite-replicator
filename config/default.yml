@@ -3,6 +3,8 @@ resources:                                          # Which resource types to re
   - events
   - timeseries
   - datapoints
+  - sequences
+  - sequence_rows
 src_api_key_env_var: COGNITE_SOURCE_API_KEY         # Name of env variable for CDF API KEY of the source project
 dst_api_key_env_var: COGNITE_DESTINATION_API_KEY    # Name of env variable for CDF API KEY of the destination project
 src_project: source_project_name                    # Project that src_api_key belongs to
@@ -21,6 +23,7 @@ log_level: INFO                                     # Logging level
 events_exclude_pattern:                             # Optional - Regex pattern to prevent replication of matching events. Example: ^SYN_
 timeseries_exclude_pattern:                         # Optional - Regex pattern to prevent replication of matching timeseries. Example: ^SYN_
 files_exclude_pattern:                              # Optional - Regex pattern to prevent replication of matching files. Example: ^SYN_
+sequences_exclude_pattern:                          # Optional - Regex pattern to prevent replication of matching sequences. Example: ^SYN_
 datapoints_start: 1546297200                        # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
 datapoints_end: 1w-ago                              # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
 value_manipulation_lambda_fnc: "lambda x: x*0.2"    # Lambda function as a string if value manipulation for datapoints is needed.
@@ -33,6 +36,10 @@ timeseries_external_ids:                            # Optional - List of timeser
   #- external-id-2
   #- external-id-3
 files_external_ids:                                 # Optional - List of files external_ids to replicate
+  #- external-id-1
+  #- external-id-2
+  #- external-id-3
+sequences_external_ids:                             # Optional - List of sequences external_ids to replicate
   #- external-id-1
   #- external-id-2
   #- external-id-3
