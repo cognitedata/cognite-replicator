@@ -201,6 +201,12 @@ def replicate(
 
     assets_dst = client_dst.assets.list(limit=None)
     src_dst_ids_assets = replication.existing_mapping(*assets_dst)
+
+    if not src_dst_ids_assets:
+        assets_src = client_src.assets.list(limit=None)
+        src_assets_map = replication.make_external_id_obj_map(assets_src)
+        src_dst_ids_assets = replication.map_ids_from_external_ids(src_assets_map, assets_dst)
+
     logging.info(
         f"If a files asset ids is one of the {len(src_dst_ids_assets)} assets "
         f"that have been replicated then it will be linked."
