@@ -146,6 +146,14 @@ configure_databricks_logger(log_level=logging.INFO)
 assets.replicate(CLIENT_SRC, CLIENT_DST)
 ```
 
+### Development
+
+Change the version in the files
+- replicator/_version.py
+- pyproject.toml
+- .github/workflows/cd.yml
+
+
 ## Changelog
 Wondering about upcoming or previous changes? Take a look at the [CHANGELOG](https://github.com/cognitedata/cognite-replicator/blob/master/CHANGELOG.md).
 

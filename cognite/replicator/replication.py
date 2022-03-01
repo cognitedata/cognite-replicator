@@ -460,8 +460,9 @@ def map_ids_from_external_ids(src_asset_map: Dict[str, Asset], dst_assets: List[
     ids = {}
 
     for dst in dst_assets:
-        ids[src_asset_map[dst.external_id].id] = dst.id
-
+        if src_asset_map.get(dst.external_id):
+            if ids.get(src_asset_map.get(dst.external_id)):
+                ids[src_asset_map[dst.external_id].id] = dst.id
     return ids
 
 
