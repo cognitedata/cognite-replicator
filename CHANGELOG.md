@@ -16,6 +16,11 @@ Changes are grouped as follows
 
 - Support for replicating file data
 
+## [1.0.1] - 2022-03-01
+
+## Fixed
+- Move to major version and bug fixes
+
 ## [0.9.2] - 2020-01-19
 
 ## Fixed
