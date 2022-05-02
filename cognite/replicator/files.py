@@ -186,9 +186,9 @@ def replicate(
     project_dst = client_dst.config.project
 
     if target_external_ids:
-        files_src = client_src.files.retrieve_multiple(external_ids=target_external_ids, ignore_unknown_ids=True)
+        files_src = client_src.files.retrieve_multiple(external_ids=target_external_ids)
         try:
-            files_dst = client_dst.files.retrieve_multiple(external_ids=target_external_ids, ignore_unknown_ids=True)
+            files_dst = client_dst.files.retrieve_multiple(external_ids=target_external_ids)
         except CogniteNotFoundError:
             files_dst = FileMetadataList([])
     else:
