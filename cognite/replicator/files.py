@@ -164,6 +164,7 @@ def replicate(
     skip_nonasset: bool = False,
     target_external_ids: Optional[List[str]] = None,
     exclude_pattern: str = None,
+    data_set_external_ids = None,
 ):
     """
     Replicates all the files from the source project into the destination project.
@@ -181,6 +182,7 @@ def replicate(
         skip_nonasset: If a file has no associated assets, do not replicate it
         target_external_ids: List of specific files external ids to replicate
         exclude_pattern: Regex pattern; files whose names match will not be replicated
+        data_set_external_ids: List of specific datasets where files are to be replicated.
     """
     project_src = client_src.config.project
     project_dst = client_dst.config.project
@@ -192,8 +194,12 @@ def replicate(
         except CogniteNotFoundError:
             files_dst = FileMetadataList([])
     else:
-        files_src = client_src.files.list(limit=None)
-        files_dst = client_dst.files.list(limit=None)
+        if data_set_external_ids:
+            files_src = client_src.files.list(limit=None, data_set_external_ids=data_set_external_ids)
+            files_dst = client_dst.files.list(limit=None, data_set_external_ids=data_set_external_ids)
+        else:
+            files_src = client_src.files.list(limit=None)
+            files_dst = client_dst.files.list(limit=None)
         logging.info(f"There are {len(files_src)} existing files in source ({project_src}).")
         logging.info(f"There are {len(files_dst)} existing files in destination ({project_dst}).")
 
