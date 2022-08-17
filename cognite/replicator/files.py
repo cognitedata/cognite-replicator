@@ -164,7 +164,7 @@ def replicate(
     skip_nonasset: bool = False,
     target_external_ids: Optional[List[str]] = None,
     exclude_pattern: str = None,
-    data_set_external_ids = None,
+    data_set_external_ids: Optional[List[str]] = None,
 ):
     """
     Replicates all the files from the source project into the destination project.
