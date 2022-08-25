@@ -13,7 +13,7 @@ from cognite.client.utils._time import timestamp_to_ms
 
 
 """ This is useful if there are many time series coming in at very different frequences """
-#def _get_time_range(src_datapoint: Datapoints, dst_datapoint: Datapoints) -> Tuple[int, int]:
+# def _get_time_range(src_datapoint: Datapoints, dst_datapoint: Datapoints) -> Tuple[int, int]:
 #    # +1 because datapoint retrieval time ranges are inclusive on start and exclusive on end
 #    start_time = 0 if not dst_datapoint else dst_datapoint.timestamp[0] + 1
 #    end_time = 0 if not src_datapoint else src_datapoint.timestamp[0] + 1
@@ -61,25 +61,27 @@ def evaluate_lambda_function(lambda_fnc_str: str):
         logging.error(e)
         return None
 
+
 def replicate_datapoints_several_ts(
-        client_src: CogniteClient,
-        client_dst: CogniteClient,
-        job_id: int, # = 1,
-        ext_ids: List[str],
-        limit: Optional[int] = None,
-        mock_run: bool = False,
-        partition_size: int = 100000,
-        src_datapoint_transform: Optional[Callable[[Datapoint], Datapoint]] = None,
-        timerange_transform: Optional[Callable[[Tuple[int, int]], Tuple[int, int]]] = None,
-        start: Union[int, str] = None,
-        end: Union[int, str] = None,
-        value_manipulation_lambda_fnc: str = None) -> Tuple[bool, int]:
+    client_src: CogniteClient,
+    client_dst: CogniteClient,
+    job_id: int,  # = 1,
+    ext_ids: List[str],
+    limit: Optional[int] = None,
+    mock_run: bool = False,
+    partition_size: int = 100000,
+    src_datapoint_transform: Optional[Callable[[Datapoint], Datapoint]] = None,
+    timerange_transform: Optional[Callable[[Tuple[int, int]], Tuple[int, int]]] = None,
+    start: Union[int, str] = None,
+    end: Union[int, str] = None,
+    value_manipulation_lambda_fnc: str = None,
+) -> Tuple[bool, int]:
     """
     Copies data points from the source tenant into the destination project, for the time series in the list.
     Fetches the last datapoints from a list of time series and starts replication at that timestamp for each respective time series. June 2022 update according to updates in sdk.
     """
 
-    logging.info('Number of time series into replicate function: ', len(ext_ids))
+    logging.info("Number of time series into replicate function: ", len(ext_ids))
 
     # Logging the beginning of the process
     logging.info(f"Job {job_id}: Starting datapoint replication for {len(ext_ids)} time series...")
@@ -87,14 +89,22 @@ def replicate_datapoints_several_ts(
     start_time = datetime.now()
 
     try:
-        dst_latest_datapoints = client_dst.datapoints.retrieve_latest(external_id=ext_ids)                          # getting the latest datapoints from the destination, timestamps
-        src_datapoint_queries = [DatapointsQuery(
-                                external_id=dst_latest_dp.external_id,
-                                start=dst_latest_dp[0].timestamp if len(dst_latest_dp) > 0 else replication_start, # 4 years
-                                end=replication_end) for dst_latest_dp in dst_latest_datapoints]                                  # creating queries for the datapoints starting with the latest datapoint
-        print('Queries ready: ', time.ctime())
-        src_datapoints_to_insert = client_src.datapoints.query(src_datapoint_queries)                                   # querying the source for the datapoints matching this query
-        print('Datapoints to insert ready', time.ctime())
+        dst_latest_datapoints = client_dst.datapoints.retrieve_latest(
+            external_id=ext_ids
+        )  # getting the latest datapoints from the destination, timestamps
+        src_datapoint_queries = [
+            DatapointsQuery(
+                external_id=dst_latest_dp.external_id,
+                start=dst_latest_dp[0].timestamp if len(dst_latest_dp) > 0 else replication_start,  # 4 years
+                end=replication_end,
+            )
+            for dst_latest_dp in dst_latest_datapoints
+        ]  # creating queries for the datapoints starting with the latest datapoint
+        print("Queries ready: ", time.ctime())
+        src_datapoints_to_insert = client_src.datapoints.query(
+            src_datapoint_queries
+        )  # querying the source for the datapoints matching this query
+        print("Datapoints to insert ready", time.ctime())
         insert_format_datapoints = []
 
         # Written this way as the insert_multiple function in the sdk does not support to insert a Datapoints object directly
@@ -134,22 +144,22 @@ def replicate_datapoints_several_ts(
                 if transformed_dps is not None:
                     list_of_datapoints = transformed_dps
                 else:
-                    list_of_datapoints = [{
-                            "timestamp": datapoints.timestamp[i],
-                            "value": datapoints.value[i]
-                        } for i in range(len(datapoints.timestamp))]
-                logging.info('Ext id: ', datapoints.external_id, ' Number of datapoints: ', len(list_of_datapoints))
+                    list_of_datapoints = [
+                        {"timestamp": datapoints.timestamp[i], "value": datapoints.value[i]}
+                        for i in range(len(datapoints.timestamp))
+                    ]
+                logging.info("Ext id: ", datapoints.external_id, " Number of datapoints: ", len(list_of_datapoints))
 
             # This assertion needs to be in place, because the API call crashes if one ts has no datapoints to insert
             if len(list_of_datapoints) > 0:
                 dict_to_insert["datapoints"] = list_of_datapoints
                 insert_format_datapoints.append(dict_to_insert)
 
-        print('Ready to insert datapoints...', time.ctime())
+        print("Ready to insert datapoints...", time.ctime())
         # insert the multiple lists of datapoints into CDF
         if not mock_run:
             client_dst.datapoints.insert_multiple(insert_format_datapoints)
-            print('DATAPOINTS INSERTED AT: ', time.ctime())
+            print("DATAPOINTS INSERTED AT: ", time.ctime())
 
     except CogniteAPIError as exc:
         logging.error(f"Job {job_id}: Failed for external ids {ext_ids}. {exc}")
@@ -157,14 +167,13 @@ def replicate_datapoints_several_ts(
 
     return (True, len(ext_ids))
 
-
     # actually appending
 
     # After-replication handling
 
-    #if not success_status:
+    # if not success_status:
     #    ....
-    #else:
+    # else:
     #    updated_timeseries_count += 1
     # total_datapoints_copied
 
@@ -193,6 +202,7 @@ def replicate(
     Args:
         client_src: The client corresponding to the source project.
         client_dst: The client corresponding to the destination project.
+        replication_start: Start time of the replication
         batch_size: The size of batches to split the external id list into. Defaults to num_threads.
         num_threads: The number of threads to be used.
         limit: The maximum number of data points to copy per time series
@@ -208,13 +218,13 @@ def replicate(
                                         It will be applied to the value of each datapoint in the timeseries.
     """
 
-    #Confusement in which method to use
+    # Confusement in which method to use
     if external_ids and exclude_pattern:
         raise ValueError(
             f"List of time series AND a regex exclusion rule was given! Either remove the filter {exclude_pattern} or the list of time series {external_ids}"
         )
 
-    #Replicate based on list of external ids
+    # Replicate based on list of external ids
     elif external_ids is not None:  # Specified list of time series is given
         ts_src = client_src.time_series.retrieve_multiple(external_ids=external_ids, ignore_unknown_ids=True)
         ts_dst = client_dst.time_series.retrieve_multiple(external_ids=external_ids, ignore_unknown_ids=True)
@@ -274,6 +284,6 @@ def replicate(
 
     if num_threads > 1:
         with mp.Pool(num_threads) as pool:
-            pool.starmap(replicate_datapoints_several_ts, arg_list)                            # batch_replicate
+            pool.starmap(replicate_datapoints_several_ts, arg_list)  # batch_replicate
     else:
         replicate_datapoints_several_ts(*arg_list[0])
