@@ -64,7 +64,6 @@ def evaluate_lambda_function(lambda_fnc_str: str):
 def replicate_datapoints_several_ts(
         client_src: CogniteClient,
         client_dst: CogniteClient,
-        replication_start: str,
         job_id: int, # = 1,
         ext_ids: List[str],
         limit: Optional[int] = None,
@@ -92,7 +91,7 @@ def replicate_datapoints_several_ts(
         src_datapoint_queries = [DatapointsQuery(
                                 external_id=dst_latest_dp.external_id,
                                 start=dst_latest_dp[0].timestamp if len(dst_latest_dp) > 0 else replication_start, # 4 years
-                                end='now') for dst_latest_dp in dst_latest_datapoints]                                  # creating queries for the datapoints starting with the latest datapoint
+                                end=replication_end) for dst_latest_dp in dst_latest_datapoints]                                  # creating queries for the datapoints starting with the latest datapoint
         print('Queries ready: ', time.ctime())
         src_datapoints_to_insert = client_src.datapoints.query(src_datapoint_queries)                                   # querying the source for the datapoints matching this query
         print('Datapoints to insert ready', time.ctime())
@@ -259,7 +258,6 @@ def replicate(
         (
             client_src,
             client_dst,
-            replication_start,
             job_id,
             _get_chunk(shared_external_ids, num_batches, job_id),
             limit,
@@ -267,8 +265,8 @@ def replicate(
             partition_size,
             src_datapoint_transform,
             timerange_transform,
-            start,
-            end,
+            replication_start,
+            replication_end,
             value_manipulation_lambda_fnc,
         )
         for job_id in range(num_batches)
