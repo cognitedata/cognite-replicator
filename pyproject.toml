@@ -24,9 +24,9 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-cognite-sdk-core = "^2.37.1"
+cognite-sdk = "^4.2.1"
 google-cloud-logging = "^1.12"
-python = "^3.6"
+python = "^3.8"
 pyyaml = "^5.1.0"
 
 [tool.poetry.dev-dependencies]
