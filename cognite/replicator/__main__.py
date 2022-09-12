@@ -41,6 +41,7 @@ import cognite.replicator.time_series
 
 ENV_VAR_FOR_CONFIG_FILE_PATH = "COGNITE_CONFIG_FILE"
 
+
 @unique
 class Resource(Enum):
     """CDF Resource types that can be replicated."""
