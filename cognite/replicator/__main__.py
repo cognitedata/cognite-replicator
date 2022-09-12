@@ -39,9 +39,7 @@ import cognite.replicator.replication
 import cognite.replicator.sequences
 import cognite.replicator.time_series
 
-# ENV_VAR_FOR_CONFIG_FILE_PATH = "../../config/default.yml"
-# ENV_VAR_FOR_CONFIG_FILE_PATH = "COGNITE_CONFIG_FILE"
-
+ENV_VAR_FOR_CONFIG_FILE_PATH = "COGNITE_CONFIG_FILE"
 
 @unique
 class Resource(Enum):
