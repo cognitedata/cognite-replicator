@@ -1,34 +1,67 @@
 resources:                                          # Which resource types to replicate
   - timeseries
-src_api_key_env_var:          # Name of env variable for CDF API KEY of the source project
-dst_api_key_env_var:     # Name of env variable for CDF API KEY of the destination project
-src_project:                     # Project that src_api_key belongs to
-dst_project:                       # Project that dst_api_key belongs to
-src_baseurl:      # Optional - source base url if not api.cognitedata.com
+  - datapoints
+
+#src_api_key_env_var: COGNITE_SOURCE_API_KEY         # Name of env variable for CDF API KEY of the source project
+#dst_api_key_env_var: COGNITE_DESTINATION_API_KEY    # Name of env variable for CDF API KEY of the destination project
+#src_project: source_project_name                    # Project that src_api_key belongs to
+#dst_project: dest_project_name                      # Project that dst_api_key belongs to
+#src_baseurl: https://greenfield.cognitedata.com     # Optional - source base url if not api.cognitedata.com
 #dst_baseurl: https://greenfield.cognitedata.com     # Optional - destination base url if not api.cognitedata.com
-#delete_if_removed_in_source: false                  # Remove objects that were replicated and are now deleted in source
+
+# API Key or OIDC authentication
+src_authenticate_api_key: False                       # True if the source is authenticated by API keys, False if it is authenticated by OICD
+dst_authenticate_api_key: False                      # True if the destination is authenticated by API keys, False if it is authenticated by OICD
+
+# OIDC PROJECTS --------------------------------------------------------------------------------------------------------
+# source CDF project identity variables
+src_boolean_client_secret: True                     # OIDC: whether the source project is being authenticated through a client secret or not
+src_TENANT_ID: d4febcbc-db24-4823-bffd-92fd05b9c6bc             # OIDC: azure AD tenant of the source CDF project
+src_CLIENT_ID: c239c8cf-7d64-40dd-bb78-5d2152fa6121             # OIDC: Azure client app registration ID of the source CDF project
+src_client_secret: COGNITE_SOURCE_CLIENT_SECRET                   # OIDC: Name of env variable for Client secret of source project
+src_api_key_env_var: COGNITE_SOURCE_API_KEY                       # Api Key: Name of env variable for CDF API KEY of the source project
+src_CDF_CLUSTER: bluefield                                      # cluster the source CDF project is running on
+src_COGNITE_PROJECT: sa-team                                    # name of the source project
+src_AUTHORITY_HOST_URI: "https://login.microsoftonline.com"       # login uri for the source project
+
+# destination CDF project variables
+dst_boolean_client_secret: True                        # OIDC: whether the destination project is being authenticated through a client secret or not
+dst_TENANT_ID: d4febcbc-db24-4823-bffd-92fd05b9c6bc            # OIDC: azure AD tenant of the source CDF project
+dst_CLIENT_ID: c585c868-4ce2-4753-89bd-d495d483833f            # OIDC: without client secret a0ed92d8-dab1-4f73-acb1-3c3a0c8c7261"             # Azure client app registration ID of the source CDF project
+dst_client_secret: COGNITE_DESTINATION_CLIENT_SECRET              # OIDC: Name of env variable for Client secret of source project
+dst_api_key_env_var: COGNITE_DESTINATION_API_KEY                  # Api Key: Name of env variable for CDF API KEY of the destination project
+dst_CDF_CLUSTER: greenfield                                     # cluster the source CDF project is running on
+dst_COGNITE_PROJECT: pierre-pernot                                      # name of the source project
+dst_AUTHORITY_HOST_URI: "https://login.microsoftonline.com"       # login uri for the source project
+
+high_frequence_variability: false                   # True if there are many time series being replicated which have new datapoints coming at very different freqences
+delete_if_removed_in_source: false                  # Remove objects that were replicated and are now deleted in source
 delete_if_not_replicated: false                     # Remove all objects in destination that aren't from source
-batch_size: 2                                   # Number of items in each batch 1-10000. Only applies to Raw, Events, Timeseries, and Files. (The SDK automatically chunks to 10000. This is used in conjuction with threads if you wanted smaller/more efficient threads for batches less than 10k. EX: 20 threads with 2000 batch sizes each.)
-#batch_size_datapoints:                              # Number of datapoints in each batch (The SDK will automatically paginate so it's generally not needed with a value here)
+batch_size: 10000                                   # Number of items in each batch 1-10000. Only applies to Raw, Events, Timeseries, and Files. (The SDK automatically chunks to 10000. This is used in conjuction with threads if you wanted smaller/more efficient threads for batches less than 10k. EX: 20 threads with 2000 batch sizes each.)
+batch_size_datapoints: 10000                        # Number of datapoints in each batch (The SDK will automatically paginate so it's generally not needed with a value here)
 number_of_threads: 2                               # Number of threads to use
 client_timeout: 120                                 # Seconds for clients to timeout
-client_name:                      # Name of client
+client_name: cognite-replicator                     # Name of client
 log_path: log                                       # Folder to save logs to
-log_level: INFO                                     # Logging level
+log_level: WARNING                                    # Logging level
 events_exclude_pattern:                             # Optional - Regex pattern to prevent replication of matching events. Example: ^SYN_
 timeseries_exclude_pattern:                         # Optional - Regex pattern to prevent replication of matching timeseries. Example: ^SYN_
+timeseries_exclude_fields:                          # Optional - List of metadata fields to exclude from the extraction
 files_exclude_pattern:                              # Optional - Regex pattern to prevent replication of matching files. Example: ^SYN_
-sequences_exclude_pattern:                          # Optional - Regex pattern to prevent replication of matching sequences. Example: ^SYN_
-#datapoints_start: 1546297200                        # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
-#datapoints_end: 1w-ago                              # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
-#value_manipulation_lambda_fnc: "lambda x: x*0.2"    # Lambda function as a string if value manipulation for datapoints is needed.
-timeseries_external_ids:                            # Optional - List of timeseries external_ids to replicate
-  - replicator-test:my_ts_1
-  - replicator-test:my_ts_2
-  - replicator-test:my_ts_3
-  - replicator-test:my_ts_4
-  - replicator-test:my_ts_5
-timeseries_exclude_fields:                          # Only support name, description, metadata and metadata.customfield
-  - metadata.field_2
-  - description
+datapoints_start: 1546297200                        # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
+datapoints_end: 1d-ago                              # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
+value_manipulation_lambda_fnc: # "lambda x: x*0.2"    # Lambda function as a string if value manipulation for datapoints is needed.
 
+events_external_ids:                                # Optional - List of events external_ids to replicate
+  #- external-id-1
+  #- external-id-2
+  #- external-id-3
+timeseries_external_ids:                            # Optional - List of timeseries external_ids to replicate
+  - 695.SN11450.ts
+  - HCN6800_Axes_a_Rotary_c_rf
+  #- external-id-2
+  #- external-id-3
+files_external_ids:                                 # Optional - List of files external_ids to replicate
+  #- external-id-1
+  #- external-id-2
+  #- external-id-3

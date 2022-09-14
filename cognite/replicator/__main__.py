@@ -283,9 +283,9 @@ def main():
             src_client = CogniteClient(
                 ClientConfig(
                     credentials=oauth_provider,
-                    CLIENT_ID=config.get("src_CLIENT_ID"),
-                    COGNITE_PROJECT=config.get("src_COGNITE_PROJECT"),
-                    CDF_CLUSTER=src_cluster,
+                    project=config.get("src_COGNITE_PROJECT"),
+                    base_url=f"https://{src_cluster}.cognitedata.com",
+                    client_name="cognite-replicator",
                 )
             )
 
@@ -337,10 +337,9 @@ def main():
             dst_client = CogniteClient(
                 ClientConfig(
                     credentials=oauth_provider,
-                    AUTHORITY_URI=dst_uri,
-                    CLIENT_ID=config.get("dst_CLIENT_ID"),
-                    COGNITE_PROJECT=config.get("dst_COGNITE_PROJECT"),
-                    CDF_CLUSTER=dst_cluster,
+                    project=config.get("dst_COGNITE_PROJECT"),
+                    base_url=f"https://{dst_cluster}.cognitedata.com",
+                    client_name="cognite-replicator",
                 )
             )
 
@@ -452,7 +451,6 @@ def main():
         cognite.replicator.datapoints.replicate(
             client_src=src_client,
             client_dst=dst_client,
-            replication_start=config.get("dp_start_replication_time"),
             batch_size=config.get("batch_size_datapoints"),
             num_threads=config.get("number_of_threads"),
             limit=config.get("datapoint_limit"),

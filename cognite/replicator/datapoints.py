@@ -95,8 +95,8 @@ def replicate_datapoints_several_ts(
         src_datapoint_queries = [
             DatapointsQuery(
                 external_id=dst_latest_dp.external_id,
-                start=dst_latest_dp[0].timestamp if len(dst_latest_dp) > 0 else replication_start,  # 4 years
-                end=replication_end,
+                start=dst_latest_dp[0].timestamp if len(dst_latest_dp) > 0 else start,  # 4 years
+                end=end,
             )
             for dst_latest_dp in dst_latest_datapoints
         ]  # creating queries for the datapoints starting with the latest datapoint
@@ -124,7 +124,7 @@ def replicate_datapoints_several_ts(
                         transformed_datapoint = src_datapoint_transform(src_datapoint)
                         transformed_timestamps.append(transformed_datapoint.timestamp)
                         transformed_values.append(transformed_datapoint.value)
-                    transformed_dps = Datapoints(timestamp=datapoints_timestamps, value=datapoints_values)
+                    transformed_dps = Datapoints(timestamp=transformed_timestamps, value=transformed_values)
 
                 # If datapoints should get applied a lambda function
                 if value_manipulation_lambda_fnc:
@@ -181,7 +181,6 @@ def replicate_datapoints_several_ts(
 def replicate(
     client_src: CogniteClient,
     client_dst: CogniteClient,
-    replication_start: str,
     batch_size: Optional[int] = None,
     num_threads: int = 10,
     limit: Optional[int] = None,
@@ -202,7 +201,6 @@ def replicate(
     Args:
         client_src: The client corresponding to the source project.
         client_dst: The client corresponding to the destination project.
-        replication_start: Start time of the replication
         batch_size: The size of batches to split the external id list into. Defaults to num_threads.
         num_threads: The number of threads to be used.
         limit: The maximum number of data points to copy per time series
@@ -275,8 +273,8 @@ def replicate(
             partition_size,
             src_datapoint_transform,
             timerange_transform,
-            replication_start,
-            replication_end,
+            start,
+            end,
             value_manipulation_lambda_fnc,
         )
         for job_id in range(num_batches)
@@ -285,5 +283,7 @@ def replicate(
     if num_threads > 1:
         with mp.Pool(num_threads) as pool:
             pool.starmap(replicate_datapoints_several_ts, arg_list)  # batch_replicate
+            pool.close()
+            pool.join()
     else:
         replicate_datapoints_several_ts(*arg_list[0])
