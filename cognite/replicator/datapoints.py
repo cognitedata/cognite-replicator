@@ -2,6 +2,7 @@ import logging
 import multiprocessing as mp
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from math import ceil, floor
 from typing import Any, Callable, List, Optional, Tuple, Union
@@ -181,8 +182,6 @@ def replicate_datapoints_several_ts(
 def replicate(
     client_src: CogniteClient,
     client_dst: CogniteClient,
-    batch_size: Optional[int] = None,
-    num_threads: int = 10,
     limit: Optional[int] = None,
     external_ids: Optional[List[str]] = None,
     mock_run: bool = False,
@@ -258,16 +257,12 @@ def replicate(
         f"Number of common time series external ids between destination and source: {len(shared_external_ids)}"
     )
 
-    if batch_size is None:
-        batch_size = ceil(len(shared_external_ids) / num_threads)
-    num_batches = ceil(len(shared_external_ids) / batch_size)
-
     arg_list = [
         (
             client_src,
             client_dst,
-            job_id,
-            _get_chunk(shared_external_ids, num_batches, job_id),
+            1,
+            shared_external_ids,
             limit,
             mock_run,
             partition_size,
@@ -277,13 +272,6 @@ def replicate(
             end,
             value_manipulation_lambda_fnc,
         )
-        for job_id in range(num_batches)
     ]
 
-    if num_threads > 1:
-        with mp.Pool(num_threads) as pool:
-            pool.starmap(replicate_datapoints_several_ts, arg_list)  # batch_replicate
-            pool.close()
-            pool.join()
-    else:
-        replicate_datapoints_several_ts(*arg_list[0])
+    replicate_datapoints_several_ts(*arg_list[0])

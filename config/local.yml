@@ -1,4 +1,5 @@
 resources:                                          # Which resource types to replicate
+  - events
   - timeseries
   - datapoints
 
@@ -39,7 +40,7 @@ delete_if_removed_in_source: false                  # Remove objects that were r
 delete_if_not_replicated: false                     # Remove all objects in destination that aren't from source
 batch_size: 10000                                   # Number of items in each batch 1-10000. Only applies to Raw, Events, Timeseries, and Files. (The SDK automatically chunks to 10000. This is used in conjuction with threads if you wanted smaller/more efficient threads for batches less than 10k. EX: 20 threads with 2000 batch sizes each.)
 batch_size_datapoints: 10000                        # Number of datapoints in each batch (The SDK will automatically paginate so it's generally not needed with a value here)
-number_of_threads: 2                               # Number of threads to use
+number_of_threads: 1                               # Number of threads to use
 client_timeout: 120                                 # Seconds for clients to timeout
 client_name: cognite-replicator                     # Name of client
 log_path: log                                       # Folder to save logs to
@@ -53,7 +54,8 @@ datapoints_end: 1d-ago                              # Must be an integer timesta
 value_manipulation_lambda_fnc: # "lambda x: x*0.2"    # Lambda function as a string if value manipulation for datapoints is needed.
 
 events_external_ids:                                # Optional - List of events external_ids to replicate
-  #- external-id-1
+  - HCN6800_system_2022-05-09T19:24:53.676373Z_3325550
+  - HCN6800_system_2022-06-15T20:44:24.747925Z_2498914
   #- external-id-2
   #- external-id-3
 timeseries_external_ids:                            # Optional - List of timeseries external_ids to replicate
