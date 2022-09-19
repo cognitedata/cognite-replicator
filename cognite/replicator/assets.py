@@ -149,7 +149,7 @@ def create_hierarchy(
     runtime: int,
     src_client: CogniteClient,
     dst_client: CogniteClient,
-    src_dst_datasets_mapping: Dict[int, int],
+    src_dst_dataset_mapping: Dict[int, int],
     subtree_ids: Optional[List[int]] = None,
     subtree_external_ids: Optional[List[str]] = None,
     subtree_max_depth: Optional[int] = None,
@@ -165,7 +165,7 @@ def create_hierarchy(
         runtime: The timestamp to be used in the new replicated metadata.
         src_client: The client corresponding to the source project.
         dst_client: The client corresponding to the destination project.
-        src_dst_datasets_mapping: dictionary mapping the source dataset ids to the destination ones
+        src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination ones
         subtree_ids: The id of the subtree root to replicate,
         subtree_external_ids: The external id of the subtree root to replicate,
         subtree_max_depth: The maximum tree depth to replicate,
@@ -191,7 +191,7 @@ def create_hierarchy(
             runtime,
             src_client,
             dst_client,
-            src_dst_datasets_mapping,
+            src_dst_dataset_mapping,
             depth=depth,
         )
 

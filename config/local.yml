@@ -1,6 +1,6 @@
 resources:                                          # Which resource types to replicate
   #- assets
-#  - events
+  - events
   - timeseries
 #  - datapoints
 

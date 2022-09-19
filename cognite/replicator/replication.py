@@ -325,7 +325,7 @@ def thread(
     replicated_runtime: int,
     src_client: CogniteClient,
     dst_client: CogniteClient,
-    src_dst_datasets_mapping: Dict[int, int],
+    src_dst_dataset_mapping: Dict[int, int],
     src_filter: Optional[List[Union[Event, FileMetadata, TimeSeries]]] = None,
     exclude_fields: Optional[List[str]] = None,
 ):
@@ -342,7 +342,7 @@ def thread(
         replicated_runtime: The timestamp to be used in the new replicated metadata.
         src_client: The client corresponding to the source project.
         dst_client: The Cognite Client for the destination project.
-        src_dst_datasets_mapping: dictionary mapping the source dataset ids to the destination ones
+        src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination ones
         src_filter: List of event/timeseries/files in the destination.
                     Will be used for comparison if current event/timeseries/files where not copied by the replicator.
         exclude_fields: List of fields:  Only support name, description, metadata and metadata.customfield.
@@ -376,7 +376,7 @@ def thread(
                     replicated_runtime,
                     src_client,
                     dst_client,
-                    src_dst_datasets_mapping,
+                    src_dst_dataset_mapping,
                     src_filter,
                     jobs,
                     exclude_fields,

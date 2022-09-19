@@ -41,7 +41,7 @@ import cognite.replicator.time_series
 
 ENV_VAR_FOR_CONFIG_FILE_PATH = "COGNITE_CONFIG_FILE"
 
-src_dst_datasets_mapping = {}
+src_dst_dataset_mapping = {}
 
 
 @unique
@@ -400,7 +400,7 @@ def main():
         cognite.replicator.assets.replicate(
             src_client,
             dst_client,
-            src_dst_datasets_mapping,
+            src_dst_dataset_mapping,
             delete_replicated_if_not_in_src=delete_replicated_if_not_in_src,
             delete_not_replicated_in_dst=delete_not_replicated_in_dst,
         )
@@ -410,6 +410,7 @@ def main():
         cognite.replicator.events.replicate(
             src_client,
             dst_client,
+            src_dst_dataset_mapping,
             config.get("batch_size"),
             config.get("number_of_threads"),
             delete_replicated_if_not_in_src=delete_replicated_if_not_in_src,
@@ -423,7 +424,7 @@ def main():
         cognite.replicator.time_series.replicate(
             src_client,
             dst_client,
-            src_dst_datasets_mapping,
+            src_dst_dataset_mapping,
             config.get("batch_size"),
             config.get("number_of_threads"),
             delete_replicated_if_not_in_src=delete_replicated_if_not_in_src,
