@@ -1,7 +1,7 @@
 resources:                                          # Which resource types to replicate
-  - assets
+  #- assets
 #  - events
-#  - timeseries
+  - timeseries
 #  - datapoints
 
 #src_api_key_env_var: COGNITE_SOURCE_API_KEY         # Name of env variable for CDF API KEY of the source project

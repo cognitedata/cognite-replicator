@@ -8,11 +8,11 @@ from cognite.client import CogniteClient
 from cognite.client.data_classes import TimeSeries, TimeSeriesList
 from cognite.client.exceptions import CogniteNotFoundError
 
-from . import replication
+from . import replication, datasets
 
 
 def create_time_series(
-    src_ts: TimeSeries, src_dst_ids_assets: Dict[int, int], project_src: str, runtime: int
+    src_ts: TimeSeries, src_dst_ids_assets: Dict[int, int], project_src: str, runtime: int, src_client: CogniteClient, dst_client: CogniteClient, src_dst_dataset_mapping: dict[int, int],
 ) -> TimeSeries:
     """
     Make a new copy of the time series to be replicated based on a source time series.
@@ -22,6 +22,9 @@ def create_time_series(
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
+        src_client: The client corresponding to the source project.
+        dst_client: The client corresponding to the destination project.
+        src_dst_dataset_mapping: Dictionary that maps source dataset ids to destination dataset ids
 
     Returns:
         The replicated time series to be created in the destination.
@@ -39,11 +42,12 @@ def create_time_series(
         description=src_ts.description,
         security_categories=src_ts.security_categories,
         legacy_name=src_ts.external_id,
+        data_set_id=datasets.replicate(src_client, dst_client, src_ts.data_set_id, src_dst_dataset_mapping)
     )
 
 
 def update_time_series(
-    src_ts: TimeSeries, dst_ts: TimeSeries, src_dst_ids_assets: Dict[int, int], project_src: str, runtime: int
+    src_ts: TimeSeries, dst_ts: TimeSeries, src_dst_ids_assets: Dict[int, int], project_src: str, runtime: int, src_client: CogniteClient, dst_client: CogniteClient, src_dst_dataset_mapping: dict[int, int]
 ) -> TimeSeries:
     """
     Makes an updated version of the destination time series based on the corresponding source time series.
@@ -55,6 +59,9 @@ def update_time_series(
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
+        src_client: The client corresponding to the source project.
+        dst_client: The client corresponding to the destination project.
+        src_dst_dataset_mapping: Dictionary that maps source dataset ids to destination dataset ids
 
     Returns:
         The updated time series object for the replication destination.
@@ -70,6 +77,7 @@ def update_time_series(
     dst_ts.is_step = src_ts.is_step
     dst_ts.description = src_ts.description
     dst_ts.security_categories = src_ts.security_categories
+    dst_ts.data_set_id = datasets.replicate(src_client, dst_client, src_ts.data_set_id, src_dst_dataset_mapping)
     return dst_ts
 
 
@@ -91,7 +99,9 @@ def copy_ts(
     src_dst_ids_assets: Dict[int, int],
     project_src: str,
     runtime: int,
-    client: CogniteClient,
+    src_client: CogniteClient,
+    dst_client: CogniteClient,
+    src_dst_datasets_mapping: Dict[int, int],
     src_filter: List[TimeSeries],
     jobs: queue.Queue = None,
     exclude_fields: Optional[List[str]] = None,
@@ -105,7 +115,9 @@ def copy_ts(
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
-        client: The client corresponding to the destination project.
+        src_client: The client corresponding to the source project.
+        dst_client: The client corresponding to the destination project.
+        src_dst_datasets_mapping: dictionary mapping the source dataset ids to the destination ones
         src_filter: List of timeseries in the destination - Will be used for comparison if current timeseries were not copied by the replicator.
         jobs: Shared job queue, this is initialized and managed by replication.py.
         exclude_fields: List of fields:  Only support name, description, metadata and metadata.customfield.
@@ -138,6 +150,9 @@ def copy_ts(
             update_time_series,
             project_src,
             runtime,
+            src_client,
+            dst_client,
+            src_dst_datasets_mapping,
             src_filter=src_filter,
             exclude_fields=exclude_fields,
         )
@@ -146,12 +161,12 @@ def copy_ts(
 
         if create_ts:
             logging.debug(f"Creating {len(create_ts)} time series.")
-            created_ts = replication.retry(client.time_series.create, create_ts)
+            created_ts = replication.retry(dst_client.time_series.create, create_ts)
             logging.debug(f"Successfully created {len(created_ts)} time series.")
 
         if update_ts:
             logging.debug(f"Updating {len(update_ts)} time series.")
-            updated_ts = replication.retry(client.time_series.update, update_ts)
+            updated_ts = replication.retry(dst_client.time_series.update, update_ts)
             logging.debug(f"Successfully updated {len(updated_ts)} time series.")
 
         if unchanged_ts:
@@ -169,6 +184,7 @@ def copy_ts(
 def replicate(
     client_src: CogniteClient,
     client_dst: CogniteClient,
+    src_dst_datasets_mapping: Dict[int, int],
     batch_size: int = 10000,
     num_threads: int = 1,
     delete_replicated_if_not_in_src: bool = False,
@@ -185,6 +201,7 @@ def replicate(
     Args:
         client_src: The client corresponding to the source project.
         client_dst: The client corresponding to the destination project.
+        src_dst_datasets_mapping: dictionary mapping the source dataset ids to the destination ones
         batch_size: The biggest batch size to post chunks in.
         num_threads: The number of threads to be used.
         delete_replicated_if_not_in_src: If True, will delete replicated assets that are in the destination,
@@ -259,7 +276,9 @@ def replicate(
             src_dst_ids_assets=src_dst_ids_assets,
             project_src=project_src,
             replicated_runtime=replicated_runtime,
-            client=client_dst,
+            src_client=client_src,
+            dst_client=client_dst,
+            src_dst_datasets_mapping=src_dst_datasets_mapping,
             src_filter=ts_dst,
             exclude_fields=exclude_fields,
         )
@@ -270,7 +289,9 @@ def replicate(
             src_dst_ids_assets=src_dst_ids_assets,
             project_src=project_src,
             runtime=replicated_runtime,
-            client=client_dst,
+            src_client=client_src,
+            dst_client=client_dst,
+            src_dst_datasets_mapping=src_dst_datasets_mapping,
             src_filter=ts_dst,
             exclude_fields=exclude_fields,
         )

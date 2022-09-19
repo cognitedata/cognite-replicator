@@ -423,6 +423,7 @@ def main():
         cognite.replicator.time_series.replicate(
             src_client,
             dst_client,
+            src_dst_datasets_mapping,
             config.get("batch_size"),
             config.get("number_of_threads"),
             delete_replicated_if_not_in_src=delete_replicated_if_not_in_src,
