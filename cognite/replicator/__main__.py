@@ -41,6 +41,8 @@ import cognite.replicator.time_series
 
 ENV_VAR_FOR_CONFIG_FILE_PATH = "COGNITE_CONFIG_FILE"
 
+src_dst_datasets_mapping = {}
+
 
 @unique
 class Resource(Enum):
@@ -398,6 +400,7 @@ def main():
         cognite.replicator.assets.replicate(
             src_client,
             dst_client,
+            src_dst_datasets_mapping,
             delete_replicated_if_not_in_src=delete_replicated_if_not_in_src,
             delete_not_replicated_in_dst=delete_not_replicated_in_dst,
         )

@@ -205,6 +205,9 @@ def make_objects_batch(
     update,
     project_src: str,
     replicated_runtime: int,
+    src_client: CogniteClient,
+    dst_client: CogniteClient,
+    src_dst_dataset_mapping: Dict[int, int],
     depth: Optional[int] = None,
     src_filter: Optional[List[Union[Event, FileMetadata, Sequence, TimeSeries]]] = None,
     exclude_fields: Optional[List[str]] = None,
@@ -239,7 +242,16 @@ def make_objects_batch(
     update_objects = []
     unchanged_objects = []
 
-    kwargs = {"depth": depth} if depth is not None else {}  # Only used on assets
+    kwargs = (
+        {
+            "depth": depth,
+            "src_client": src_client,
+            "dst_client": dst_client,
+            "src_dst_dataset_mapping": src_dst_dataset_mapping,
+        }
+        if depth is not None
+        else {"src_client": src_client, "dst_client": dst_client, "src_dst_dataset_mapping": src_dst_dataset_mapping}
+    )  # Only used on assets
 
     # make a set of external ids to loop through
     if src_filter:
