@@ -11,9 +11,15 @@ from cognite.client.exceptions import CogniteNotFoundError
 from . import replication, datasets
 
 
-def create_event(src_event: Event, src_dst_ids_assets: Dict[int, int], project_src: str, runtime: int, src_client: CogniteClient,
+def create_event(
+    src_event: Event,
+    src_dst_ids_assets: Dict[int, int],
+    project_src: str,
+    runtime: int,
+    src_client: CogniteClient,
     dst_client: CogniteClient,
-    src_dst_dataset_mapping: dict[int, int],) -> Event:
+    src_dst_dataset_mapping: dict[int, int],
+) -> Event:
     """
     Makes a new copy of the event to be replicated based on a source event.
 
@@ -48,7 +54,12 @@ def create_event(src_event: Event, src_dst_ids_assets: Dict[int, int], project_s
 
 
 def update_event(
-    src_event: Event, dst_event: Event, src_dst_ids_assets: Dict[int, int], project_src: str, runtime: int, src_client: CogniteClient,
+    src_event: Event,
+    dst_event: Event,
+    src_dst_ids_assets: Dict[int, int],
+    project_src: str,
+    runtime: int,
+    src_client: CogniteClient,
     dst_client: CogniteClient,
     src_dst_dataset_mapping: dict[int, int],
 ) -> Event:

@@ -1,8 +1,9 @@
 resources:                                          # Which resource types to replicate
   #- assets
-  - events
-  - timeseries
-#  - datapoints
+ # - events
+  #- timeseries
+  - datapoints
+  #- files
 
 #src_api_key_env_var: COGNITE_SOURCE_API_KEY         # Name of env variable for CDF API KEY of the source project
 #dst_api_key_env_var: COGNITE_DESTINATION_API_KEY    # Name of env variable for CDF API KEY of the destination project
@@ -62,9 +63,13 @@ events_external_ids:                                # Optional - List of events 
 timeseries_external_ids:                            # Optional - List of timeseries external_ids to replicate
   - 695.SN11450.ts
   - HCN6800_Axes_a_Rotary_c_rf
+  - pi:169538
   #- external-id-2
   #- external-id-3
 files_external_ids:                                 # Optional - List of files external_ids to replicate
+  - "cognitedata_air-ds-model-library_synthtsmodel_0_5_4.zip"
+  - "_multivariate_normdist_chi2_0_12_0.zip"
+  #- 3927060190406225/5798158500609084/4027002788660451/6418586252663580/file_d5e7e498-2da4-4536-9423-636f39a69ce2/reveal-v8/sector_385.i3d
   #- external-id-1
   #- external-id-2
   #- external-id-3

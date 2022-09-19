@@ -439,6 +439,7 @@ def main():
         cognite.replicator.files.replicate(
             src_client,
             dst_client,
+            src_dst_dataset_mapping,
             config.get("batch_size"),
             config.get("number_of_threads"),
             delete_replicated_if_not_in_src=delete_replicated_if_not_in_src,

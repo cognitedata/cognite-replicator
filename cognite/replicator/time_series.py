@@ -12,7 +12,13 @@ from . import replication, datasets
 
 
 def create_time_series(
-    src_ts: TimeSeries, src_dst_ids_assets: Dict[int, int], project_src: str, runtime: int, src_client: CogniteClient, dst_client: CogniteClient, src_dst_dataset_mapping: dict[int, int],
+    src_ts: TimeSeries,
+    src_dst_ids_assets: Dict[int, int],
+    project_src: str,
+    runtime: int,
+    src_client: CogniteClient,
+    dst_client: CogniteClient,
+    src_dst_dataset_mapping: dict[int, int],
 ) -> TimeSeries:
     """
     Make a new copy of the time series to be replicated based on a source time series.
@@ -42,12 +48,19 @@ def create_time_series(
         description=src_ts.description,
         security_categories=src_ts.security_categories,
         legacy_name=src_ts.external_id,
-        data_set_id=datasets.replicate(src_client, dst_client, src_ts.data_set_id, src_dst_dataset_mapping)
+        data_set_id=datasets.replicate(src_client, dst_client, src_ts.data_set_id, src_dst_dataset_mapping),
     )
 
 
 def update_time_series(
-    src_ts: TimeSeries, dst_ts: TimeSeries, src_dst_ids_assets: Dict[int, int], project_src: str, runtime: int, src_client: CogniteClient, dst_client: CogniteClient, src_dst_dataset_mapping: dict[int, int]
+    src_ts: TimeSeries,
+    dst_ts: TimeSeries,
+    src_dst_ids_assets: Dict[int, int],
+    project_src: str,
+    runtime: int,
+    src_client: CogniteClient,
+    dst_client: CogniteClient,
+    src_dst_dataset_mapping: dict[int, int],
 ) -> TimeSeries:
     """
     Makes an updated version of the destination time series based on the corresponding source time series.
@@ -101,7 +114,7 @@ def copy_ts(
     runtime: int,
     src_client: CogniteClient,
     dst_client: CogniteClient,
-    src_dst_datasets_mapping: Dict[int, int],
+    src_dst_dataset_mapping: Dict[int, int],
     src_filter: List[TimeSeries],
     jobs: queue.Queue = None,
     exclude_fields: Optional[List[str]] = None,
@@ -152,7 +165,7 @@ def copy_ts(
             runtime,
             src_client,
             dst_client,
-            src_dst_datasets_mapping,
+            src_dst_dataset_mapping,
             src_filter=src_filter,
             exclude_fields=exclude_fields,
         )
@@ -184,7 +197,7 @@ def copy_ts(
 def replicate(
     client_src: CogniteClient,
     client_dst: CogniteClient,
-    src_dst_datasets_mapping: Dict[int, int],
+    src_dst_dataset_mapping: Dict[int, int],
     batch_size: int = 10000,
     num_threads: int = 1,
     delete_replicated_if_not_in_src: bool = False,
@@ -201,7 +214,7 @@ def replicate(
     Args:
         client_src: The client corresponding to the source project.
         client_dst: The client corresponding to the destination project.
-        src_dst_datasets_mapping: dictionary mapping the source dataset ids to the destination ones
+        src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination ones
         batch_size: The biggest batch size to post chunks in.
         num_threads: The number of threads to be used.
         delete_replicated_if_not_in_src: If True, will delete replicated assets that are in the destination,
@@ -278,7 +291,7 @@ def replicate(
             replicated_runtime=replicated_runtime,
             src_client=client_src,
             dst_client=client_dst,
-            src_dst_datasets_mapping=src_dst_datasets_mapping,
+            src_dst_dataset_mapping=src_dst_dataset_mapping,
             src_filter=ts_dst,
             exclude_fields=exclude_fields,
         )
@@ -291,7 +304,7 @@ def replicate(
             runtime=replicated_runtime,
             src_client=client_src,
             dst_client=client_dst,
-            src_dst_datasets_mapping=src_dst_datasets_mapping,
+            src_dst_dataset_mapping=src_dst_dataset_mapping,
             src_filter=ts_dst,
             exclude_fields=exclude_fields,
         )
