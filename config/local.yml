@@ -1,7 +1,7 @@
 resources:                                          # Which resource types to replicate
   #- assets
  # - events
-  #- timeseries
+  - timeseries
   - datapoints
   #- files
 
@@ -64,6 +64,7 @@ timeseries_external_ids:                            # Optional - List of timeser
   - 695.SN11450.ts
   - HCN6800_Axes_a_Rotary_c_rf
   - pi:169538
+  - 173.SN49220.ts
   #- external-id-2
   #- external-id-3
 files_external_ids:                                 # Optional - List of files external_ids to replicate
