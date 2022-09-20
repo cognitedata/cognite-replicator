@@ -82,7 +82,7 @@ def replicate_datapoints_several_ts(
     Fetches the last datapoints from a list of time series and starts replication at that timestamp for each respective time series. June 2022 update according to updates in sdk.
     """
 
-    logging.info("Number of time series into replicate function: ", len(ext_ids))
+    logging.info(f"Number of time series into replicate function: {len(ext_ids)}")
 
     # Logging the beginning of the process
     logging.info(f"Job {job_id}: Starting datapoint replication for {len(ext_ids)} time series...")
@@ -149,7 +149,7 @@ def replicate_datapoints_several_ts(
                         {"timestamp": datapoints.timestamp[i], "value": datapoints.value[i]}
                         for i in range(len(datapoints.timestamp))
                     ]
-                logging.info("Ext id: ", datapoints.external_id, " Number of datapoints: ", len(list_of_datapoints))
+                logging.info(f"Ext id:  {datapoints.external_id} Number of datapoints: {len(list_of_datapoints)}")
 
             # This assertion needs to be in place, because the API call crashes if one ts has no datapoints to insert
             if len(list_of_datapoints) > 0:
