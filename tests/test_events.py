@@ -5,6 +5,7 @@ from cognite.replicator.events import copy_events, create_event, update_event
 
 
 def test_create_event():
+    client = monkeypatch_cognite_client()
     events_src = [
         Event(metadata={}, id=1007, asset_ids=[3, 9], start_time=0, end_time=1),
         Event(metadata={}, id=2007, asset_ids=[7], start_time=1, end_time=2),
@@ -13,7 +14,7 @@ def test_create_event():
     ]
     id_mapping = {3: 333, 7: 777, 5: 555, 9: 999}
     for i, event in enumerate(events_src):
-        created_event = create_event(event, id_mapping, "src-project-name {}".format(i), 10000000)
+        created_event = create_event(event, id_mapping, "src-project-name {}".format(i), 10000000, client, client, {}, {})
         assert created_event.metadata["_replicatedInternalId"] == events_src[i].id
         assert created_event.metadata["_replicatedSource"] == "src-project-name {}".format(i)
         assert (created_event.asset_ids is None) == (events_src[i].asset_ids is None)
@@ -24,6 +25,7 @@ def test_create_event():
 
 
 def test_update_event():
+    client = monkeypatch_cognite_client()
     events_src = [
         Event(metadata={}, id=1007, asset_ids=[3, 9], start_time=0, end_time=1),
         Event(metadata={}, id=2007, asset_ids=[7], start_time=1, end_time=2),
@@ -37,7 +39,7 @@ def test_update_event():
     id_mapping = {3: 333, 7: 777, 5: 555, 9: 999}
 
     for i in range(len(events_src)):
-        updated_event = update_event(events_src[i], events_dst[i], id_mapping, "src-project-name", 1000000)
+        updated_event = update_event(events_src[i], events_dst[i], id_mapping, "src-project-name", 1000000, client, client, {}, {})
         assert updated_event.metadata["_replicatedInternalId"] == events_src[i].id
         assert updated_event.metadata["_replicatedSource"] == "src-project-name"
         assert len(updated_event.asset_ids) == len(events_src[i].asset_ids)
@@ -53,4 +55,4 @@ def test_copy_events():
     ]
     id_mapping = {i: i * 111 for i in range(1, 10)}
     with monkeypatch_cognite_client() as client_dst:
-        copy_events(events_src, {}, id_mapping, "src-project-name", 1000000, client_dst, None)
+        copy_events(events_src, {}, id_mapping, "src-project-name", 1000000, client_dst, client_dst, {}, {}, None)

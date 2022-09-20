@@ -14,9 +14,10 @@ from cognite.replicator.assets import (
 
 
 def test_build_asset_create():
+    client = monkeypatch_cognite_client()
     asset = Asset(id=3, name="holy grenade", metadata={})
     runtime = time.time() * 1000
-    created = build_asset_create(asset, {}, "source_tenant", runtime, 0)
+    created = build_asset_create(asset, {}, "source_tenant", runtime, 0, client, client, {}, {})
     assert "holy grenade" == created.name
     assert created.parent_id is None
     assert created.metadata
@@ -25,7 +26,7 @@ def test_build_asset_create():
 
     asset = Asset(id=4, parent_id=2, name="holy grail", metadata={"_replicatedInternalId": 55})
     src_id_dst_map = {2: 5}
-    second = build_asset_create(asset, src_id_dst_map, "source_tenant", runtime, 2)
+    second = build_asset_create(asset, src_id_dst_map, "source_tenant", runtime, 2, client, client, {}, {})
     assert 5 == second.parent_id
 
 
@@ -46,6 +47,7 @@ def test_find_children():
 
 
 def test_build_asset_update():
+    client = monkeypatch_cognite_client()
     assets_src = [
         Asset(id=3, name="Dog", external_id="Woff Woff", metadata={}, description="Humans best friend"),
         Asset(id=7, name="Cat", parent_id=3, external_id="Miau Miau", metadata={}),
@@ -58,9 +60,9 @@ def test_build_asset_update():
     ]
     runtime = time.time() * 1000
     id_mapping = {3: 333, 7: 777, 5: 555}
-    dst_asset_0 = build_asset_update(assets_src[0], assets_dst[0], id_mapping, "Flying Circus", runtime, depth=0)
-    dst_asset_1 = build_asset_update(assets_src[1], assets_dst[1], id_mapping, "Flying Circus", runtime, depth=1)
-    dst_asset_2 = build_asset_update(assets_src[2], assets_dst[2], id_mapping, "Flying Circus", runtime, depth=1)
+    dst_asset_0 = build_asset_update(assets_src[0], assets_dst[0], id_mapping, "Flying Circus", runtime, 0, client, client, {}, {})
+    dst_asset_1 = build_asset_update(assets_src[1], assets_dst[1], id_mapping, "Flying Circus", runtime, 1, client, client, {}, {})
+    dst_asset_2 = build_asset_update(assets_src[2], assets_dst[2], id_mapping, "Flying Circus", runtime, 1 , client, client, {}, {})
     assert dst_asset_0.metadata["_replicatedSource"] == "Flying Circus"
     assert dst_asset_1.metadata["_replicatedSource"] == "Flying Circus"
     assert dst_asset_2.metadata["_replicatedSource"] == "Flying Circus"
@@ -73,7 +75,7 @@ def test_build_asset_update():
 
     assets_src[2].parent_id = 3
     dst_asset_changed_2 = build_asset_update(
-        assets_src[2], assets_dst[2], id_mapping, "Flying Circus", runtime, depth=1
+        assets_src[2], assets_dst[2], id_mapping, "Flying Circus", runtime, 1 , client, client, {}, {}
     )
     assert dst_asset_changed_2.parent_id == 333
 

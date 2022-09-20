@@ -17,6 +17,7 @@ def build_asset_create(
     src_client: CogniteClient,
     dst_client: CogniteClient,
     src_dst_dataset_mapping: dict[int, int],
+    config: Dict,
 ) -> Asset:
     """
     Makes a new copy of the asset to be replicated based on the source asset.
@@ -30,6 +31,7 @@ def build_asset_create(
         src_client: The client corresponding to the source project.
         dst_client: The client corresponding to the destination project.
         src_dst_dataset_mapping: Dictionary that maps source dataset ids to destination dataset ids
+        config: dict corresponding to the selected yaml config file
 
     Returns:
         The replicated asset to be created in the destination.
@@ -44,7 +46,9 @@ def build_asset_create(
         metadata=replication.new_metadata(src_asset, project_src, runtime),
         source=src_asset.source,
         parent_id=src_id_dst_map[src_asset.parent_id] if depth > 0 else None,
-        data_set_id=datasets.replicate(src_client, dst_client, src_asset.data_set_id, src_dst_dataset_mapping),
+        data_set_id=datasets.replicate(src_client, dst_client, src_asset.data_set_id, src_dst_dataset_mapping)
+        if config.get("dataset_support", False)
+        else None,
     )
 
 
@@ -58,6 +62,7 @@ def build_asset_update(
     src_client: CogniteClient,
     dst_client: CogniteClient,
     src_dst_dataset_mapping: dict[int, int],
+    config: Dict,
 ) -> Asset:
     """
     Makes an updated version of the destination asset based on the corresponding source asset.
@@ -73,6 +78,7 @@ def build_asset_update(
         src_client: The client corresponding to the source project.
         dst_client: The client corresponding to the destination project.
         src_dst_dataset_mapping: Dictionary that maps source dataset ids to destination dataset ids
+        config: dict corresponding to the selected yaml config file
 
     Returns:
         The updated asset object for the replication destination.
@@ -86,7 +92,11 @@ def build_asset_update(
     dst_asset.metadata = replication.new_metadata(src_asset, project_src, runtime)
     dst_asset.source = src_asset.source
     dst_asset.parent_id = src_id_dst_map[src_asset.parent_id] if depth > 0 else None  # when asset hierarchy is mutable
-    dst_asset.data_set_id = datasets.replicate(src_client, dst_client, src_asset.data_set_id, src_dst_dataset_mapping)
+    dst_asset.data_set_id = (
+        datasets.replicate(src_client, dst_client, src_asset.data_set_id, src_dst_dataset_mapping)
+        if config.get("dataset_support", False)
+        else None,
+    )
     return dst_asset
 
 
@@ -150,6 +160,7 @@ def create_hierarchy(
     src_client: CogniteClient,
     dst_client: CogniteClient,
     src_dst_dataset_mapping: Dict[int, int],
+    config: Dict,
     subtree_ids: Optional[List[int]] = None,
     subtree_external_ids: Optional[List[str]] = None,
     subtree_max_depth: Optional[int] = None,
@@ -166,6 +177,7 @@ def create_hierarchy(
         src_client: The client corresponding to the source project.
         dst_client: The client corresponding to the destination project.
         src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination ones
+        config: dict corresponding to the selected yaml config file
         subtree_ids: The id of the subtree root to replicate,
         subtree_external_ids: The external id of the subtree root to replicate,
         subtree_max_depth: The maximum tree depth to replicate,
@@ -192,6 +204,7 @@ def create_hierarchy(
             src_client,
             dst_client,
             src_dst_dataset_mapping,
+            config,
             depth=depth,
         )
 
@@ -255,6 +268,7 @@ def replicate(
     client_src: CogniteClient,
     client_dst: CogniteClient,
     src_dst_datasets_mapping: Dict[int, int],
+    config: Dict,
     delete_replicated_if_not_in_src: bool = False,
     delete_not_replicated_in_dst: bool = False,
     subtree_ids: Optional[Union[int, List[int]]] = None,
@@ -268,6 +282,7 @@ def replicate(
         client_src: The client corresponding to the source project.
         client_dst: The client corresponding to the destination project.
         src_dst_datasets_mapping: dictionary mapping the source dataset ids to the destination ids.
+                config: dict corresponding to the selected yaml config file
         delete_replicated_if_not_in_src: If True, will delete replicated assets that are in the destination,
         but no longer in the source project (Default=False).
         delete_not_replicated_in_dst: If True, will delete assets from the destination if they were not replicated
@@ -314,6 +329,7 @@ def replicate(
         client_src,
         client_dst,
         src_dst_datasets_mapping,
+        config,
         subtree_ids,
         subtree_external_ids,
         subtree_max_depth,

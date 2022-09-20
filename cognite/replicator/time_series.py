@@ -19,6 +19,7 @@ def create_time_series(
     src_client: CogniteClient,
     dst_client: CogniteClient,
     src_dst_dataset_mapping: dict[int, int],
+    config: Dict,
 ) -> TimeSeries:
     """
     Make a new copy of the time series to be replicated based on a source time series.
@@ -31,6 +32,7 @@ def create_time_series(
         src_client: The client corresponding to the source project.
         dst_client: The client corresponding to the destination project.
         src_dst_dataset_mapping: Dictionary that maps source dataset ids to destination dataset ids
+        config: dict corresponding to the selected yaml config file
 
     Returns:
         The replicated time series to be created in the destination.
@@ -48,7 +50,9 @@ def create_time_series(
         description=src_ts.description,
         security_categories=src_ts.security_categories,
         legacy_name=src_ts.external_id,
-        data_set_id=datasets.replicate(src_client, dst_client, src_ts.data_set_id, src_dst_dataset_mapping),
+        data_set_id=datasets.replicate(src_client, dst_client, src_ts.data_set_id, src_dst_dataset_mapping)
+        if config.get("dataset_support", False)
+        else None,
     )
 
 
@@ -61,6 +65,7 @@ def update_time_series(
     src_client: CogniteClient,
     dst_client: CogniteClient,
     src_dst_dataset_mapping: dict[int, int],
+    config: Dict,
 ) -> TimeSeries:
     """
     Makes an updated version of the destination time series based on the corresponding source time series.
@@ -75,6 +80,7 @@ def update_time_series(
         src_client: The client corresponding to the source project.
         dst_client: The client corresponding to the destination project.
         src_dst_dataset_mapping: Dictionary that maps source dataset ids to destination dataset ids
+        config: dict corresponding to the selected yaml config file
 
     Returns:
         The updated time series object for the replication destination.
@@ -90,7 +96,11 @@ def update_time_series(
     dst_ts.is_step = src_ts.is_step
     dst_ts.description = src_ts.description
     dst_ts.security_categories = src_ts.security_categories
-    dst_ts.data_set_id = datasets.replicate(src_client, dst_client, src_ts.data_set_id, src_dst_dataset_mapping)
+    dst_ts.data_set_id = (
+        datasets.replicate(src_client, dst_client, src_ts.data_set_id, src_dst_dataset_mapping)
+        if config.get("dataset_support", False)
+        else None
+    )
     return dst_ts
 
 
@@ -115,6 +125,7 @@ def copy_ts(
     src_client: CogniteClient,
     dst_client: CogniteClient,
     src_dst_dataset_mapping: Dict[int, int],
+    config: Dict,
     src_filter: List[TimeSeries],
     jobs: queue.Queue = None,
     exclude_fields: Optional[List[str]] = None,
@@ -130,7 +141,8 @@ def copy_ts(
         runtime: The timestamp to be used in the new replicated metadata.
         src_client: The client corresponding to the source project.
         dst_client: The client corresponding to the destination project.
-        src_dst_datasets_mapping: dictionary mapping the source dataset ids to the destination ones
+        src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination ones
+                config: dict corresponding to the selected yaml config file
         src_filter: List of timeseries in the destination - Will be used for comparison if current timeseries were not copied by the replicator.
         jobs: Shared job queue, this is initialized and managed by replication.py.
         exclude_fields: List of fields:  Only support name, description, metadata and metadata.customfield.
@@ -166,6 +178,7 @@ def copy_ts(
             src_client,
             dst_client,
             src_dst_dataset_mapping,
+            config,
             src_filter=src_filter,
             exclude_fields=exclude_fields,
         )
@@ -198,6 +211,7 @@ def replicate(
     client_src: CogniteClient,
     client_dst: CogniteClient,
     src_dst_dataset_mapping: Dict[int, int],
+    config: Dict,
     batch_size: int = 10000,
     num_threads: int = 1,
     delete_replicated_if_not_in_src: bool = False,
@@ -215,6 +229,8 @@ def replicate(
         client_src: The client corresponding to the source project.
         client_dst: The client corresponding to the destination project.
         src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination ones
+                config: dict corresponding to the selected yaml config file
+
         batch_size: The biggest batch size to post chunks in.
         num_threads: The number of threads to be used.
         delete_replicated_if_not_in_src: If True, will delete replicated assets that are in the destination,
@@ -293,6 +309,7 @@ def replicate(
             src_client=client_src,
             dst_client=client_dst,
             src_dst_dataset_mapping=src_dst_dataset_mapping,
+            config=config,
             src_filter=ts_dst,
             exclude_fields=exclude_fields,
         )
@@ -306,6 +323,7 @@ def replicate(
             src_client=client_src,
             dst_client=client_dst,
             src_dst_dataset_mapping=src_dst_dataset_mapping,
+            config=config,
             src_filter=ts_dst,
             exclude_fields=exclude_fields,
         )

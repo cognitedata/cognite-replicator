@@ -1,11 +1,13 @@
 import time
 
 from cognite.client.data_classes import FileMetadata
+from cognite.client.testing import monkeypatch_cognite_client
 
 from cognite.replicator.files import create_file, update_file
 
 
 def test_create_file():
+    client = monkeypatch_cognite_client()
     files_src = [
         FileMetadata(metadata={}, id=1007, asset_ids=[3], mime_type="pdf"),
         FileMetadata(metadata={}, id=2007, asset_ids=[7], mime_type="application/pdf"),
@@ -17,7 +19,7 @@ def test_create_file():
     created_files = []
 
     for i, event in enumerate(files_src):
-        created_files.append(create_file(event, id_mapping, "source project name", runtime))
+        created_files.append(create_file(event, id_mapping, "source project name", runtime, client, client, {}, {}))
 
     assert len(created_files) == len(files_src)
     for i, file_obj in enumerate(created_files):
@@ -35,6 +37,7 @@ def test_create_file():
 
 
 def test_update_file():
+    client = monkeypatch_cognite_client()
     files_src = [
         FileMetadata(metadata={}, id=1007, asset_ids=[3], mime_type="pdf"),
         FileMetadata(metadata={}, id=2007, asset_ids=[7], mime_type="application/pdf"),
@@ -49,7 +52,7 @@ def test_update_file():
     id_mapping = {3: 333, 7: 777, 5: 555}
 
     updated_files = [
-        update_file(files_src[i], files_dst[i], id_mapping, "source project name", int(runtime))
+        update_file(files_src[i], files_dst[i], id_mapping, "source project name", int(runtime), client, client, {}, {})
         for i in range(len(files_src))
     ]
 

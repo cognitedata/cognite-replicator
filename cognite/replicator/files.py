@@ -20,6 +20,7 @@ def create_file(
     src_client: CogniteClient,
     dst_client: CogniteClient,
     src_dst_dataset_mapping: dict[int, int],
+    config: Dict,
 ) -> FileMetadata:
     """
     Makes a new copy of the file to be replicated based on a source file.
@@ -32,6 +33,7 @@ def create_file(
         src_client: The client corresponding to the source project.
         dst_client: The client corresponding to the destination project.
         src_dst_dataset_mapping: Dictionary that maps source dataset ids to destination dataset ids
+        config: dict corresponding to the selected yaml config file
 
     Returns:
         The replicated file to be created in the destination.
@@ -46,7 +48,9 @@ def create_file(
         mime_type=mime_type,
         metadata=replication.new_metadata(src_file, project_src, runtime),
         asset_ids=replication.get_asset_ids(src_file.asset_ids, src_dst_ids_assets),
-        data_set_id=datasets.replicate(src_client, dst_client, src_file.data_set_id, src_dst_dataset_mapping),
+        data_set_id=datasets.replicate(src_client, dst_client, src_file.data_set_id, src_dst_dataset_mapping)
+        if config.get("dataset_support", False)
+        else None,
     )
 
 
@@ -59,6 +63,7 @@ def update_file(
     src_client: CogniteClient,
     dst_client: CogniteClient,
     src_dst_dataset_mapping: dict[int, int],
+    config: Dict,
 ) -> FileMetadata:
     """
     Makes an updated version of the destination file based on the corresponding source file.
@@ -72,6 +77,7 @@ def update_file(
         src_client: The client corresponding to the source project.
         dst_client: The client corresponding to the destination project.
         src_dst_dataset_mapping: Dictionary that maps source dataset ids to destination dataset ids
+        config: dict corresponding to the selected yaml config file
 
     Returns:
         The updated file object for the replication destination.
@@ -84,7 +90,11 @@ def update_file(
     dst_file.asset_ids = replication.get_asset_ids(src_file.asset_ids, src_dst_ids_assets)
     dst_file.source_created_time = src_file.source_created_time
     dst_file.source_modified_time = src_file.source_modified_time
-    dst_file.data_set_id = (datasets.replicate(src_client, dst_client, src_file.data_set_id, src_dst_dataset_mapping),)
+    dst_file.data_set_id = (
+        datasets.replicate(src_client, dst_client, src_file.data_set_id, src_dst_dataset_mapping)
+        if config.get("dataset_support", False)
+        else None,
+    )
     return dst_file
 
 
@@ -97,25 +107,27 @@ def copy_files(
     src_client: CogniteClient,
     dst_client: CogniteClient,
     src_dst_dataset_mapping: Dict[int, int],
+    config: Dict,
     src_filter: List[FileMetadata],
     jobs: queue.Queue = None,
     exclude_fields: Optional[List[str]] = None,
 ):
     """
-    Creates/updates file objects and then attempts to create and update these objects in the destination.
+        Creates/updates file objects and then attempts to create and update these objects in the destination.
 
-    Args:
-        src_files: A list of the files that are in the source.
-        src_id_dst_file:  A dictionary of a files source id to it's matching destination object.
-        src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
-        project_src: The name of the project the object is being replicated from.
-        runtime: The timestamp to be used in the new replicated metadata.
-        src_client: The client corresponding to the source project.
-        dst_client: The client corresponding to the destination project.
-        src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination on
-        src_filter: List of files in the destination - Will be used for comparison if current files were not copied by the replicator.
-        jobs: Shared job queue, this is initialized and managed by replication.py.
-        exclude_fields: List of fields:  Only support name, description, metadata and metadata.customfield.
+        Args:
+            src_files: A list of the files that are in the source.
+            src_id_dst_file:  A dictionary of a files source id to it's matching destination object.
+            src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
+            project_src: The name of the project the object is being replicated from.
+            runtime: The timestamp to be used in the new replicated metadata.
+            src_client: The client corresponding to the source project.
+            dst_client: The client corresponding to the destination project.
+            src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination on
+            config: dict corresponding to the selected yaml config file
+            src_filter: List of files in the destination - Will be used for comparison if current files were not copied by the replicator.
+            jobs: Shared job queue, this is initialized and managed by replication.py.
+            exclude_fields: List of fields:  Only support name, description, metadata and metadata.customfield.
     """
 
     if jobs:
@@ -145,6 +157,7 @@ def copy_files(
             src_client,
             dst_client,
             src_dst_dataset_mapping,
+            config,
             src_filter=src_filter,
         )
 
@@ -185,6 +198,7 @@ def replicate(
     client_src: CogniteClient,
     client_dst: CogniteClient,
     src_dst_dataset_mapping: Dict[int, int],
+    config: Dict,
     batch_size: int = 10000,
     num_threads: int = 1,
     delete_replicated_if_not_in_src: bool = False,
@@ -201,6 +215,7 @@ def replicate(
         client_src: The client corresponding to the source project.
         client_dst: The client corresponding to the destination project.
         src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination ones
+        config: dict corresponding to the selected yaml config file
         batch_size: The biggest batch size to post chunks in.
         num_threads: The number of threads to be used.
         delete_replicated_if_not_in_src: If True, will delete replicated files that are in the destination,
@@ -277,6 +292,7 @@ def replicate(
             src_client=client_src,
             dst_client=client_dst,
             src_dst_dataset_mapping=src_dst_dataset_mapping,
+            config=config,
             src_filter=files_dst,
         )
     else:
@@ -289,6 +305,7 @@ def replicate(
             src_client=client_src,
             dst_client=client_dst,
             src_dst_dataset_mapping=src_dst_dataset_mapping,
+            config=config,
             src_filter=files_dst,
         )
 

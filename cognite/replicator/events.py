@@ -19,6 +19,7 @@ def create_event(
     src_client: CogniteClient,
     dst_client: CogniteClient,
     src_dst_dataset_mapping: dict[int, int],
+    config: Dict,
 ) -> Event:
     """
     Makes a new copy of the event to be replicated based on a source event.
@@ -31,6 +32,7 @@ def create_event(
         src_client: The client corresponding to the source project.
         dst_client: The client corresponding to the destination project.
         src_dst_dataset_mapping: Dictionary that maps source dataset ids to destination dataset ids
+        config: dict corresponding to the selected yaml config file
 
     Returns:
         The replicated event to be created in the destination.
@@ -49,7 +51,9 @@ def create_event(
         metadata=replication.new_metadata(src_event, project_src, runtime),
         asset_ids=replication.get_asset_ids(src_event.asset_ids, src_dst_ids_assets),
         source=src_event.source,
-        data_set_id=datasets.replicate(src_client, dst_client, src_event.data_set_id, src_dst_dataset_mapping),
+        data_set_id=datasets.replicate(src_client, dst_client, src_event.data_set_id, src_dst_dataset_mapping)
+        if config.get("dataset_support", False)
+        else None,
     )
 
 
@@ -62,6 +66,7 @@ def update_event(
     src_client: CogniteClient,
     dst_client: CogniteClient,
     src_dst_dataset_mapping: dict[int, int],
+    config: Dict,
 ) -> Event:
     """
     Makes an updated version of the destination event based on the corresponding source event.
@@ -75,6 +80,7 @@ def update_event(
         src_client: The client corresponding to the source project.
         dst_client: The client corresponding to the destination project.
         src_dst_dataset_mapping: Dictionary that maps source dataset ids to destination dataset ids
+        config: dict corresponding to the selected yaml config file
 
     Returns:
         The updated event object for the replication destination.
@@ -94,7 +100,11 @@ def update_event(
     dst_event.metadata = replication.new_metadata(src_event, project_src, runtime)
     dst_event.asset_ids = replication.get_asset_ids(src_event.asset_ids, src_dst_ids_assets)
     dst_event.source = src_event.source
-    dst_event.data_set_id = datasets.replicate(src_client, dst_client, src_event.data_set_id, src_dst_dataset_mapping)
+    dst_event.data_set_id = (
+        datasets.replicate(src_client, dst_client, src_event.data_set_id, src_dst_dataset_mapping)
+        if config.get("dataset_support", False)
+        else None,
+    )
     return dst_event
 
 
@@ -107,6 +117,7 @@ def copy_events(
     src_client: CogniteClient,
     dst_client: CogniteClient,
     src_dst_dataset_mapping: Dict[int, int],
+    config: Dict,
     src_filter: List[Event],
     jobs: queue.Queue = None,
     exclude_fields: Optional[List[str]] = None,
@@ -123,6 +134,7 @@ def copy_events(
         src_client: The client corresponding to the source project.
         dst_client: The client corresponding to the destination project.
         src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination ones
+                config: dict corresponding to the selected yaml config file
         src_filter: List of events in the destination - Will be used for comparison if current events were not copied by the replicator.
         jobs: Shared job queue, this is initialized and managed by replication.py.
         exclude_fields: List of fields:  Only support name, description, metadata and metadata.customfield.
@@ -155,6 +167,7 @@ def copy_events(
             src_client,
             dst_client,
             src_dst_dataset_mapping,
+            config,
             src_filter=src_filter,
         )
 
@@ -183,6 +196,7 @@ def replicate(
     client_src: CogniteClient,
     client_dst: CogniteClient,
     src_dst_dataset_mapping: Dict[int, int],
+    config: Dict,
     batch_size: int = 10000,
     num_threads: int = 1,
     delete_replicated_if_not_in_src: bool = False,
@@ -199,6 +213,7 @@ def replicate(
         client_src: The client corresponding to the source project.
         client_dst: The client corresponding to the destination project.
         src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination ones
+                config: dict corresponding to the selected yaml config file
         batch_size: The biggest batch size to post chunks in.
         num_threads: The number of threads to be used.
         delete_replicated_if_not_in_src: If True, will delete replicated events that are in the destination,
@@ -277,6 +292,7 @@ def replicate(
             src_client=client_src,
             dst_client=client_dst,
             src_dst_dataset_mapping=src_dst_dataset_mapping,
+            config=config,
             src_filter=events_dst,
         )
     else:
@@ -289,6 +305,7 @@ def replicate(
             src_client=client_src,
             dst_client=client_dst,
             src_dst_dataset_mapping=src_dst_dataset_mapping,
+            config=config,
             src_filter=events_dst,
         )
 
