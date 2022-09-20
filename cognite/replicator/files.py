@@ -9,11 +9,18 @@ from cognite.client import CogniteClient
 from cognite.client.data_classes import FileMetadata, FileMetadataList
 from cognite.client.exceptions import CogniteAPIError, CogniteNotFoundError
 
-from . import replication
+from . import replication, datasets
 
 
 def create_file(
-    src_file: FileMetadata, src_dst_ids_assets: Dict[int, int], project_src: str, runtime: int
+    src_file: FileMetadata,
+    src_dst_ids_assets: Dict[int, int],
+    project_src: str,
+    runtime: int,
+    src_client: CogniteClient,
+    dst_client: CogniteClient,
+    src_dst_dataset_mapping: dict[int, int],
+    config: Dict,
 ) -> FileMetadata:
     """
     Makes a new copy of the file to be replicated based on a source file.
@@ -23,6 +30,10 @@ def create_file(
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
+        src_client: The client corresponding to the source project.
+        dst_client: The client corresponding to the destination project.
+        src_dst_dataset_mapping: Dictionary that maps source dataset ids to destination dataset ids
+        config: dict corresponding to the selected yaml config file
 
     Returns:
         The replicated file to be created in the destination.
@@ -37,11 +48,22 @@ def create_file(
         mime_type=mime_type,
         metadata=replication.new_metadata(src_file, project_src, runtime),
         asset_ids=replication.get_asset_ids(src_file.asset_ids, src_dst_ids_assets),
+        data_set_id=datasets.replicate(src_client, dst_client, src_file.data_set_id, src_dst_dataset_mapping)
+        if config.get("dataset_support", False)
+        else None,
     )
 
 
 def update_file(
-    src_file: FileMetadata, dst_file: FileMetadata, src_dst_ids_assets: Dict[int, int], project_src: str, runtime: int
+    src_file: FileMetadata,
+    dst_file: FileMetadata,
+    src_dst_ids_assets: Dict[int, int],
+    project_src: str,
+    runtime: int,
+    src_client: CogniteClient,
+    dst_client: CogniteClient,
+    src_dst_dataset_mapping: dict[int, int],
+    config: Dict,
 ) -> FileMetadata:
     """
     Makes an updated version of the destination file based on the corresponding source file.
@@ -52,6 +74,10 @@ def update_file(
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
+        src_client: The client corresponding to the source project.
+        dst_client: The client corresponding to the destination project.
+        src_dst_dataset_mapping: Dictionary that maps source dataset ids to destination dataset ids
+        config: dict corresponding to the selected yaml config file
 
     Returns:
         The updated file object for the replication destination.
@@ -64,6 +90,11 @@ def update_file(
     dst_file.asset_ids = replication.get_asset_ids(src_file.asset_ids, src_dst_ids_assets)
     dst_file.source_created_time = src_file.source_created_time
     dst_file.source_modified_time = src_file.source_modified_time
+    dst_file.data_set_id = (
+        datasets.replicate(src_client, dst_client, src_file.data_set_id, src_dst_dataset_mapping)
+        if config.get("dataset_support", False)
+        else None,
+    )
     return dst_file
 
 
@@ -73,7 +104,10 @@ def copy_files(
     src_dst_ids_assets: Dict[int, int],
     project_src: str,
     runtime: int,
-    client: CogniteClient,
+    src_client: CogniteClient,
+    dst_client: CogniteClient,
+    src_dst_dataset_mapping: Dict[int, int],
+    config: Dict,
     src_filter: List[FileMetadata],
     jobs: queue.Queue = None,
     exclude_fields: Optional[List[str]] = None,
@@ -87,7 +121,10 @@ def copy_files(
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
-        client: The client corresponding to the destination project.
+        src_client: The client corresponding to the source project.
+        dst_client: The client corresponding to the destination project.
+        src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination on
+        config: dict corresponding to the selected yaml config file
         src_filter: List of files in the destination - Will be used for comparison if current files were not copied by the replicator.
         jobs: Shared job queue, this is initialized and managed by replication.py.
         exclude_fields: List of fields:  Only support name, description, metadata and metadata.customfield.
@@ -117,6 +154,10 @@ def copy_files(
             update_file,
             project_src,
             runtime,
+            src_client,
+            dst_client,
+            src_dst_dataset_mapping,
+            config,
             src_filter=src_filter,
         )
 
@@ -128,12 +169,12 @@ def copy_files(
             for file in create_files:
                 response = None
                 try:
-                    response = replication.retry(client.files.create, file)
+                    response = replication.retry(dst_client.files.create, file)
                 except CogniteAPIError as exc:
                     logging.error(f"Failed to create file {file.name}. {exc}")
                     if "Invalid MIME type" in exc.message:
                         file.mime_type = None
-                        response = replication.retry(client.files.create, file)
+                        response = replication.retry(dst_client.files.create, file)
 
                 if response:
                     create_urls.append(response)
@@ -141,7 +182,7 @@ def copy_files(
 
         if update_files:
             logging.debug(f"Attempting to update {len(update_files)} files.")
-            update_files = replication.retry(client.files.update, update_files)
+            update_files = replication.retry(dst_client.files.update, update_files)
             logging.debug(f"Successfully updated {len(update_files)} files.")
 
         logging.info(f"Created {len(create_urls)} new files and updated {len(update_files)} existing files.")
@@ -156,6 +197,8 @@ def copy_files(
 def replicate(
     client_src: CogniteClient,
     client_dst: CogniteClient,
+    src_dst_dataset_mapping: Dict[int, int],
+    config: Dict,
     batch_size: int = 10000,
     num_threads: int = 1,
     delete_replicated_if_not_in_src: bool = False,
@@ -171,6 +214,8 @@ def replicate(
     Args:
         client_src: The client corresponding to the source project.
         client_dst: The client corresponding to the destination project.
+        src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination ones
+        config: dict corresponding to the selected yaml config file
         batch_size: The biggest batch size to post chunks in.
         num_threads: The number of threads to be used.
         delete_replicated_if_not_in_src: If True, will delete replicated files that are in the destination,
@@ -244,7 +289,10 @@ def replicate(
             src_dst_ids_assets=src_dst_ids_assets,
             project_src=project_src,
             replicated_runtime=replicated_runtime,
-            client=client_dst,
+            src_client=client_src,
+            dst_client=client_dst,
+            src_dst_dataset_mapping=src_dst_dataset_mapping,
+            config=config,
             src_filter=files_dst,
         )
     else:
@@ -254,7 +302,10 @@ def replicate(
             src_dst_ids_assets=src_dst_ids_assets,
             project_src=project_src,
             runtime=replicated_runtime,
-            client=client_dst,
+            src_client=client_src,
+            dst_client=client_dst,
+            src_dst_dataset_mapping=src_dst_dataset_mapping,
+            config=config,
             src_filter=files_dst,
         )
 

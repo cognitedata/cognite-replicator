@@ -205,6 +205,10 @@ def make_objects_batch(
     update,
     project_src: str,
     replicated_runtime: int,
+    src_client: CogniteClient,
+    dst_client: CogniteClient,
+    src_dst_dataset_mapping: Dict[int, int],
+    config: Dict,
     depth: Optional[int] = None,
     src_filter: Optional[List[Union[Event, FileMetadata, Sequence, TimeSeries]]] = None,
     exclude_fields: Optional[List[str]] = None,
@@ -225,6 +229,10 @@ def make_objects_batch(
         update: The function to be used in order to update the existing objects in CDF.
         project_src: The name of the project the object is being replicated from.
         replicated_runtime: The timestamp to be used in the new replicated metadata.
+        src_client: The client corresponding to the source project.
+        dst_client: The client corresponding to the destination project.
+        src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination ones
+        config: dict corresponding to the selected yaml config file
         depth: The depth of the asset within the asset hierarchy, only used for making assets.
         src_filter: List of event/timeseries/files in the destination.
                     Will be used for comparison if current event/timeseries/files where not copied by the replicator.
@@ -239,7 +247,22 @@ def make_objects_batch(
     update_objects = []
     unchanged_objects = []
 
-    kwargs = {"depth": depth} if depth is not None else {}  # Only used on assets
+    kwargs = (
+        {
+            "depth": depth,
+            "src_client": src_client,
+            "dst_client": dst_client,
+            "src_dst_dataset_mapping": src_dst_dataset_mapping,
+            "config": config,
+        }
+        if depth is not None
+        else {
+            "src_client": src_client,
+            "dst_client": dst_client,
+            "src_dst_dataset_mapping": src_dst_dataset_mapping,
+            "config": config,
+        }
+    )  # Only used on assets
 
     # make a set of external ids to loop through
     if src_filter:
@@ -311,7 +334,10 @@ def thread(
     src_dst_ids_assets: Dict[int, int],
     project_src: str,
     replicated_runtime: int,
-    client: CogniteClient,
+    src_client: CogniteClient,
+    dst_client: CogniteClient,
+    src_dst_dataset_mapping: Dict[int, int],
+    config: Dict,
     src_filter: Optional[List[Union[Event, FileMetadata, TimeSeries]]] = None,
     exclude_fields: Optional[List[str]] = None,
 ):
@@ -326,7 +352,10 @@ def thread(
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         replicated_runtime: The timestamp to be used in the new replicated metadata.
-        client: The Cognite Client for the destination project.
+        src_client: The client corresponding to the source project.
+        dst_client: The Cognite Client for the destination project.
+        src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination ones
+                config: dict corresponding to the selected yaml config file
         src_filter: List of event/timeseries/files in the destination.
                     Will be used for comparison if current event/timeseries/files where not copied by the replicator.
         exclude_fields: List of fields:  Only support name, description, metadata and metadata.customfield.
@@ -358,7 +387,10 @@ def thread(
                     src_dst_ids_assets,
                     project_src,
                     replicated_runtime,
-                    client,
+                    src_client,
+                    dst_client,
+                    src_dst_dataset_mapping,
+                    config,
                     src_filter,
                     jobs,
                     exclude_fields,
