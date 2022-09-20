@@ -1,4 +1,5 @@
 from cognite.client.data_classes import Asset, Event, TimeSeries
+from cognite.client.testing import monkeypatch_cognite_client
 
 from cognite.replicator.replication import (
     existing_mapping,
@@ -88,6 +89,7 @@ def test_filter_objects():
 
 
 def test_make_objects_batch():
+    client = monkeypatch_cognite_client()
     src_objects = [
         Event(id=1, last_updated_time=1000),
         Event(id=2, last_updated_time=1000),
@@ -98,20 +100,33 @@ def test_make_objects_batch():
         2: Event(id=12, metadata={"_replicatedTime": 10000}),
     }
 
-    def dummy_update(src_obj, dst_obj, src_dst_ids_assets, project_src, replicated_runtime):
+    def dummy_update(
+        src_obj,
+        dst_obj,
+        src_dst_ids_assets,
+        project_src,
+        replicated_runtime,
+        src_client,
+        dst_client,
+        src_dst_dataset_mapping,
+        config,
+    ):
         return dst_obj
 
-    def dummy_create(src_obj, src_dst_ids_assets, project_src, replicated_runtime):
+    def dummy_create(
+        src_obj,
+        src_dst_ids_assets,
+        project_src,
+        replicated_runtime,
+        src_client,
+        dst_client,
+        src_dst_dataset_mapping,
+        config,
+    ):
         return src_obj
 
     created, updated, unchanged = make_objects_batch(
-        src_objects,
-        src_id_to_dst,
-        {},
-        create=dummy_create,
-        update=dummy_update,
-        project_src="test project",
-        replicated_runtime=10000,
+        src_objects, src_id_to_dst, {}, dummy_create, dummy_update, "test project", 10000, client, client, {}, {}
     )
     assert len(created) == len(updated) == len(unchanged) == 1
     assert updated[0].id == 11

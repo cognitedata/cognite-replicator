@@ -14,7 +14,9 @@ def test_create_event():
     ]
     id_mapping = {3: 333, 7: 777, 5: 555, 9: 999}
     for i, event in enumerate(events_src):
-        created_event = create_event(event, id_mapping, "src-project-name {}".format(i), 10000000, client, client, {}, {})
+        created_event = create_event(
+            event, id_mapping, "src-project-name {}".format(i), 10000000, client, client, {}, {}
+        )
         assert created_event.metadata["_replicatedInternalId"] == events_src[i].id
         assert created_event.metadata["_replicatedSource"] == "src-project-name {}".format(i)
         assert (created_event.asset_ids is None) == (events_src[i].asset_ids is None)
@@ -39,7 +41,9 @@ def test_update_event():
     id_mapping = {3: 333, 7: 777, 5: 555, 9: 999}
 
     for i in range(len(events_src)):
-        updated_event = update_event(events_src[i], events_dst[i], id_mapping, "src-project-name", 1000000, client, client, {}, {})
+        updated_event = update_event(
+            events_src[i], events_dst[i], id_mapping, "src-project-name", 1000000, client, client, {}, {}
+        )
         assert updated_event.metadata["_replicatedInternalId"] == events_src[i].id
         assert updated_event.metadata["_replicatedSource"] == "src-project-name"
         assert len(updated_event.asset_ids) == len(events_src[i].asset_ids)

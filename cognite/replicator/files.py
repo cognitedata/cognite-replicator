@@ -113,21 +113,21 @@ def copy_files(
     exclude_fields: Optional[List[str]] = None,
 ):
     """
-        Creates/updates file objects and then attempts to create and update these objects in the destination.
+    Creates/updates file objects and then attempts to create and update these objects in the destination.
 
-        Args:
-            src_files: A list of the files that are in the source.
-            src_id_dst_file:  A dictionary of a files source id to it's matching destination object.
-            src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
-            project_src: The name of the project the object is being replicated from.
-            runtime: The timestamp to be used in the new replicated metadata.
-            src_client: The client corresponding to the source project.
-            dst_client: The client corresponding to the destination project.
-            src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination on
-            config: dict corresponding to the selected yaml config file
-            src_filter: List of files in the destination - Will be used for comparison if current files were not copied by the replicator.
-            jobs: Shared job queue, this is initialized and managed by replication.py.
-            exclude_fields: List of fields:  Only support name, description, metadata and metadata.customfield.
+    Args:
+        src_files: A list of the files that are in the source.
+        src_id_dst_file:  A dictionary of a files source id to it's matching destination object.
+        src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
+        project_src: The name of the project the object is being replicated from.
+        runtime: The timestamp to be used in the new replicated metadata.
+        src_client: The client corresponding to the source project.
+        dst_client: The client corresponding to the destination project.
+        src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination on
+        config: dict corresponding to the selected yaml config file
+        src_filter: List of files in the destination - Will be used for comparison if current files were not copied by the replicator.
+        jobs: Shared job queue, this is initialized and managed by replication.py.
+        exclude_fields: List of fields:  Only support name, description, metadata and metadata.customfield.
     """
 
     if jobs:

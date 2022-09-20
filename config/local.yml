@@ -54,7 +54,7 @@ files_exclude_pattern:                              # Optional - Regex pattern t
 datapoints_start: 1546297200                        # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
 datapoints_end: 1d-ago                              # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
 value_manipulation_lambda_fnc: # "lambda x: x*0.2"    # Lambda function as a string if value manipulation for datapoints is needed.
-dataset_support: false                               #
+dataset_support: true                               #
 
 events_external_ids:                                # Optional - List of events external_ids to replicate
   - HCN6800_system_2022-05-09T19:24:53.676373Z_3325550

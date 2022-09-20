@@ -60,9 +60,15 @@ def test_build_asset_update():
     ]
     runtime = time.time() * 1000
     id_mapping = {3: 333, 7: 777, 5: 555}
-    dst_asset_0 = build_asset_update(assets_src[0], assets_dst[0], id_mapping, "Flying Circus", runtime, 0, client, client, {}, {})
-    dst_asset_1 = build_asset_update(assets_src[1], assets_dst[1], id_mapping, "Flying Circus", runtime, 1, client, client, {}, {})
-    dst_asset_2 = build_asset_update(assets_src[2], assets_dst[2], id_mapping, "Flying Circus", runtime, 1 , client, client, {}, {})
+    dst_asset_0 = build_asset_update(
+        assets_src[0], assets_dst[0], id_mapping, "Flying Circus", runtime, 0, client, client, {}, {}
+    )
+    dst_asset_1 = build_asset_update(
+        assets_src[1], assets_dst[1], id_mapping, "Flying Circus", runtime, 1, client, client, {}, {}
+    )
+    dst_asset_2 = build_asset_update(
+        assets_src[2], assets_dst[2], id_mapping, "Flying Circus", runtime, 1, client, client, {}, {}
+    )
     assert dst_asset_0.metadata["_replicatedSource"] == "Flying Circus"
     assert dst_asset_1.metadata["_replicatedSource"] == "Flying Circus"
     assert dst_asset_2.metadata["_replicatedSource"] == "Flying Circus"
@@ -75,7 +81,7 @@ def test_build_asset_update():
 
     assets_src[2].parent_id = 3
     dst_asset_changed_2 = build_asset_update(
-        assets_src[2], assets_dst[2], id_mapping, "Flying Circus", runtime, 1 , client, client, {}, {}
+        assets_src[2], assets_dst[2], id_mapping, "Flying Circus", runtime, 1, client, client, {}, {}
     )
     assert dst_asset_changed_2.parent_id == 333
 
