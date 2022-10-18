@@ -149,7 +149,7 @@ assets.replicate(CLIENT_SRC, CLIENT_DST)
 ### Development
 
 Change the version in the files
-- replicator/_version.py
+- cognite/replicator/_version.py
 - pyproject.toml
 - .github/workflows/cd.yml
 
