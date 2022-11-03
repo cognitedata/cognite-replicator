@@ -96,7 +96,7 @@ def replicate_datapoints_several_ts(
         src_datapoint_queries = [
             DatapointsQuery(
                 external_id=dst_latest_dp.external_id,
-                start=dst_latest_dp[0].timestamp if len(dst_latest_dp) > 0 else start,  # 4 years
+                start=start or dst_latest_dp[0].timestamp if len(dst_latest_dp) > 0 else "5w-ago",  # 4 years
                 end=end,
             )
             for dst_latest_dp in dst_latest_datapoints
