@@ -14,59 +14,81 @@
 Cognite Replicator is a Python package for replicating data across Cognite Data Fusion (CDF) projects. This package is
 built on top of the Cognite Python SDK.
 
-Copyright 2019 Cognite AS
+Copyright 2023 Cognite AS
 
 ## Prerequisites
 In order to start using the Replicator, you need:
 * Python3 (>= 3.6)
-* Two API keys, one for your source tenant and one for your destination tenant. Never include the API key directly in the code or upload the key to github. Instead, set the API key as an environment variable.
+* Credentials for both the source and destination projects: 
+** CLIENT_ID ("Client ID from Azure")
+** CLIENT_SECRET ("Client secret", if necessary)
+** CLUSTER ("Name of CDF cluster")
+** TENANT_ID ("Tenant ID from Azure"
+** PROJECT ("Name of source project")
 
-This is how you set the API key as an environment variable on Mac OS and Linux:
+This is how you set the client secret as an environment variable on Mac OS and Linux:
 ```bash
-$ export COGNITE_SOURCE_API_KEY=<your source API key>
-$ export COGNITE_DESTINATION_API_KEY=<your destination API key>
+$ export SOURCE_CLIENT_SECRET=<your source client secret>
+$ export DEST_CLIENT_SECRET=<your destination client secret>
 ```
 
 ## Installation
-The replicator is available on [PyPI](https://pypi.org/project/cognite-replicator/), and can also be executed as a standalone script.
+The replicator is available on [PyPI](https://pypi.org/project/cognite-replicator/), and can also be executed .
 
 To run it from command line, run:
 ```bash
 pip install cognite-replicator
-python -m cognite.replicator config/filepath.yml
 ```
-If no file is specified then replicator will use config/default.yml.
 
 Alternatively, build and run it as a docker container. The image is avaible on [docker hub](https://hub.docker.com/r/cognite/cognite-replicator):
 ```bash
 docker build -t cognite-replicator .
-docker run -it cognite-replicator
 ```
-
-For *Databricks* you can install it on a cluster. First, click on **Libraries** and **Install New**.  Choose your library type to be **PyPI**, and enter **cognite-replicator** as Package. Let the new library install and you are ready to replicate!
-
 
 ## Usage
 
-### Setup as Python library with src using API keys and destination using OIDC creds
+### Run with a configuration file as a standalone script
+
+Create a configuration file based on the config/default.yml and update the values corresponding to your environment
+If no file is specified then replicator will use config/default.yml.
+
+via Python 
+
+```bash
+python -m cognite.replicator config/filepath.yml
+```
+
+or alternatively via docker
+
+```bash
+docker run -it cognite-replicator -e SOURCE_CLIENT_SECRET -e DEST_CLIENT_SECRET -v config/filepath.yml:/config.yml cognite-replicator /config.yml
+```
+
+### Setup as Python library
  ```python
 import os
 
 from cognite.client import CogniteClient
 
 # Source
-SRC_API_KEY = os.environ.get("COGNITE_SOURCE_API_KEY")
-SRC_PROJECT = "Name of source tenant"
+SOURCE_CLIENT_ID = "Client ID from Azure"
+SOURCE_CLIENT_SECRET = os.environ.get("SOURCE_CLIENT_SECRET")
+SOURCE_CLUSTER = "Name of CDF cluster for the source"
+SOURCE_SCOPES = [f"https://{SOURCE_CLUSTER}.cognitedata.com/.default"]
+SOURCE_TENANT_ID = "Tenant ID from Azure"
+SOURCE_TOKEN_URL = f"https://login.microsoftonline.com/{SOURCE_TENANT_ID}/oauth2/v2.0/token"
+SOURCE_PROJECT = "Name of source project"
+SOURCE_CLIENT_NAME = "Replicator Source project"
 
 # Destination
-CLIENT_ID = "Client ID from Azure"
-CLIENT_SECRET = os.environ.get("CDF_CLIENT_SECRET")
-CLUSTER = "Name of CDF cluster"
-SCOPES = [f"https://{CLUSTER}.cognitedata.com/.default"]
-TENANT_ID = "Tenant ID from Azure"
-TOKEN_URL = f"https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/token"
-DST_PROJECT = "Name of destination tenant"
-CLIENT_NAME = "Name of the client application"
+DEST_CLIENT_ID = "Client ID from Azure"
+DEST_CLIENT_SECRET = os.environ.get("DEST_CLIENT_SECRET")
+DEST_CLUSTER = "Name of CDF cluster for the destination"
+DEST_SCOPES = [f"https://{DEST_CLUSTER}.cognitedata.com/.default"]
+DEST_TENANT_ID = "Tenant ID from Azure"
+DEST_TOKEN_URL = f"https://login.microsoftonline.com/{DEST_TENANT_ID}/oauth2/v2.0/token"
+DEST_PROJECT = "Name of destination project"
+DEST_CLIENT_NAME = "Replicator Destination project"
 
 # Config
 BATCH_SIZE = 10000 # this is the max size of a batch to be posted
@@ -76,74 +98,33 @@ TIMEOUT = 90
 if __name__ == '__main__': # this is necessary because threading
     from cognite.replicator import assets, events, files, time_series, datapoints, sequences, sequence_rows
 
-    CLIENT_SRC = CogniteClient(api_key=SRC_API_KEY, client_name=SRC_PROJECT)
-
-    CLIENT_DST = CogniteClient(
-        token_url=TOKEN_URL,
-        token_client_id=CLIENT_ID,
-        token_client_secret=CLIENT_SECRET,
-        token_scopes=SCOPES,
-        project=DST_PROJECT,
-        base_url=f"https://{CLUSTER}.cognitedata.com",
-        client_name=CLIENT_NAME,
+    SOURCE_CLIENT = CogniteClient(
+        token_url=SOURCE_TOKEN_URL,
+        token_client_id=SOURCE_CLIENT_ID,
+        token_client_secret=SOURCE_CLIENT_SECRET,
+        token_scopes=SOURCE_SCOPES,
+        project=SOURCE_PROJECT,
+        base_url=f"https://{SOURCE_CLUSTER}.cognitedata.com",
+        client_name="cognite-replicator-source",
         debug=False,
     )
-    assets.replicate(CLIENT_SRC, CLIENT_DST)
-    events.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
-    files.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
-    time_series.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
-    datapoints.replicate(CLIENT_SRC, CLIENT_DST)
-    sequences.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
-    sequence_rows.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
-```
-
-### Setup as Python library with API keys
-```python
-import os
-
-from cognite.client import CogniteClient
-
-SRC_API_KEY = os.environ.get("COGNITE_SOURCE_API_KEY")
-DST_API_KEY = os.environ.get("COGNITE_DESTINATION_API_KEY")
-PROJECT_SRC = "Name of source tenant"
-PROJECT_DST = "Name of destination tenant"
-CLIENT_NAME = "cognite-replicator"
-BATCH_SIZE = 10000 # this is the max size of a batch to be posted
-NUM_THREADS= 10 # this is the max number of threads to be used
-SRC_BASE_URL = "https://api.cognitedata.com"
-DST_BASE_URL = "https://api.cognitedata.com"
-TIMEOUT = 90
-
-if __name__ == '__main__': # this is necessary because threading
-    from cognite.replicator import assets, events, files, time_series, datapoints, sequences, sequence_rows
-
-    CLIENT_SRC = CogniteClient(api_key=SRC_API_KEY, project=PROJECT_SRC, base_url=SRC_BASE_URL, client_name=CLIENT_NAME)
-    CLIENT_DST = CogniteClient(api_key=DST_API_KEY, project=PROJECT_DST, base_url=DST_BASE_URL, client_name=CLIENT_NAME, timeout=TIMEOUT)
-
-    assets.replicate(CLIENT_SRC, CLIENT_DST)
-    events.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
-    files.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
-    time_series.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
-    datapoints.replicate(CLIENT_SRC, CLIENT_DST)
-    sequences.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
-    sequence_rows.replicate(CLIENT_SRC, CLIENT_DST, BATCH_SIZE, NUM_THREADS)
-```
-
-### Run it from databricks notebook
-```python
-import logging
-
-from cognite.client import CogniteClient
-from cognite.replicator import assets, configure_databricks_logger
-
-SRC_API_KEY = dbutils.secrets.get("cdf-api-keys", "source-tenant")
-DST_API_KEY = dbutils.secrets.get("cdf-api-keys", "destination-tenant")
-
-CLIENT_SRC = CogniteClient(api_key=SRC_API_KEY, client_name="cognite-replicator")
-CLIENT_DST = CogniteClient(api_key=DST_API_KEY, client_name="cognite-replicator")
-
-configure_databricks_logger(log_level=logging.INFO)
-assets.replicate(CLIENT_SRC, CLIENT_DST)
+    DEST_CLIENT = CogniteClient(
+        token_url=DEST_TOKEN_URL,
+        token_client_id=DEST_CLIENT_ID,
+        token_client_secret=DEST_CLIENT_SECRET,
+        token_scopes=DEST_SCOPES,
+        project=DEST_PROJECT,
+        base_url=f"https://{DEST_CLUSTER}.cognitedata.com",
+        client_name="cognite-replicator-destination",
+        debug=False,
+    )
+    assets.replicate(SOURCE_CLIENT, DEST_CLIENT)
+    events.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
+    files.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
+    time_series.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
+    datapoints.replicate(SOURCE_CLIENT, DEST_CLIENT)
+    sequences.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
+    sequence_rows.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
 ```
 
 ### Development
