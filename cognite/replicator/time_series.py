@@ -210,8 +210,8 @@ def copy_ts(
 def replicate(
     client_src: CogniteClient,
     client_dst: CogniteClient,
-    src_dst_dataset_mapping: Dict[int, int],
     config: Dict,
+    src_dst_dataset_mapping: Dict[int, int] = {},
     batch_size: int = 10000,
     num_threads: int = 1,
     delete_replicated_if_not_in_src: bool = False,
@@ -229,8 +229,7 @@ def replicate(
         client_src: The client corresponding to the source project.
         client_dst: The client corresponding to the destination project.
         src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination ones
-                config: dict corresponding to the selected yaml config file
-
+        config: dict corresponding to the selected yaml config file
         batch_size: The biggest batch size to post chunks in.
         num_threads: The number of threads to be used.
         delete_replicated_if_not_in_src: If True, will delete replicated assets that are in the destination,
