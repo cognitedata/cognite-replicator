@@ -2,9 +2,12 @@
 """
 A tool for replicating data from one CDF tenant to another.
 
-To run, configure the source and destination CogniteClient with project and api_key.
-API keys can be set as environment variables COGNITE_SOURCE_API_KEY and
-COGNITE_DESTINATION_API_KEY or through command line arguments.
+To run, configure the source and destination CogniteClient with project and OIDC authentication.
+Client secrets can be set as environment variables:
+```bash
+$ export SOURCE_CLIENT_SECRET=<your source client secret>
+$ export DEST_CLIENT_SECRET=<your destination client secret>
+```
 
 You must provide a config file, give the path either in environment variable
 COGNITE_CONFIG_FILE or as command line argument.

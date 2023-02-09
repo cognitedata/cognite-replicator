@@ -282,7 +282,7 @@ def replicate(
         client_src: The client corresponding to the source project.
         client_dst: The client corresponding to the destination project.
         src_dst_datasets_mapping: dictionary mapping the source dataset ids to the destination ids.
-                config: dict corresponding to the selected yaml config file
+        config: dict corresponding to the selected yaml config file
         delete_replicated_if_not_in_src: If True, will delete replicated assets that are in the destination,
         but no longer in the source project (Default=False).
         delete_not_replicated_in_dst: If True, will delete assets from the destination if they were not replicated

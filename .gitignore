@@ -114,3 +114,4 @@ venv.bak/
 
 local
 config/config.yml
+test.py
