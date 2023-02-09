@@ -64,10 +64,10 @@ or alternatively via docker
 docker run -it cognite-replicator -e SOURCE_CLIENT_SECRET -e DEST_CLIENT_SECRET -v config/filepath.yml:/config.yml cognite-replicator /config.yml
 ```
 
-2. Setup as Python library with client secret
+### 2. Setup as Python library with client secret
 
-
-2.1 Without configuration file and interactive login (it will copy everything from source to destination and use your own credentials to run the code, you need to have the right permissions to read on the source project and write on the destination project)
+#### 2.1 Without configuration file and interactive login 
+It will copy everything from source to destination and use your own credentials to run the code, you need to have the right permissions to read on the source project and write on the destination project
 
 ```python
 import os
@@ -79,7 +79,6 @@ from cognite.replicator import assets, events, files, time_series, datapoints, s
 # SOURCE
 SOURCE_TENANT_ID = "48d5043c-cf70-4c49-881c-c638f5796997"
 SOURCE_CLIENT_ID = "1b90ede3-271e-401b-81a0-a4d52bea3273"
-# SOURCE_CLIENT_SECRET = os.environ.get("SOURCE_CLIENT_SECRET")
 SOURCE_PROJECT = "publicdata"
 SOURCE_CLUSTER = "api"
 
@@ -129,16 +128,18 @@ if __name__ == "__main__":  # this is necessary because threading
         )
     )
 
-    assets.replicate(SOURCE_CLIENT, DEST_CLIENT)
-    events.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
-    files.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
-    time_series.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
-    datapoints.replicate(SOURCE_CLIENT, DEST_CLIENT)
-    sequences.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
-    sequence_rows.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
+    #### Uncomment the resources you would like to copy
+    #assets.replicate(SOURCE_CLIENT, DEST_CLIENT)
+    #events.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
+    #files.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
+    #time_series.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
+    #datapoints.replicate(SOURCE_CLIENT, DEST_CLIENT)
+    #sequences.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
+    #sequence_rows.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
 ```
 
-2.2 Without configuration file and interactive login (it will copy everything from source to destination and use your own credentials to run the code, you need to have the right permissions to read on the source project and write on the destination project)
+#### 2.2 Without configuration file and with client credentials authentication
+It will copy everything from source to destination and use your own credentials to run the code, you need to have the right permissions to read on the source project and write on the destination project
 (in the example below, the secrets are stored as environment variables)
 
 ```python
@@ -206,18 +207,19 @@ if __name__ == "__main__":  # this is necessary because threading
         )
     )
 
-
-    assets.replicate(SOURCE_CLIENT, DEST_CLIENT)
-    events.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
-    files.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
-    time_series.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
-    datapoints.replicate(SOURCE_CLIENT, DEST_CLIENT)
-    sequences.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
-    sequence_rows.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
+    #### Uncomment the resources you would like to copy
+    #assets.replicate(SOURCE_CLIENT, DEST_CLIENT)
+    #events.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
+    #files.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
+    #time_series.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
+    #datapoints.replicate(SOURCE_CLIENT, DEST_CLIENT)
+    #sequences.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
+    #sequence_rows.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
 ```
 
 
-3. With configuration file (it will use the configuration file to determine what will be copied)
+### 3. With configuration file
+It will use the configuration file to determine what will be copied
 
 ```python
 import yaml
@@ -229,7 +231,9 @@ if __name__ == "__main__":  # this is necessary because threading
     os.environ["COGNITE_CONFIG_FILE"] = COGNITE_CONFIG_FILE
     main()
 ```
-### Development
+
+
+## Development
 
 Change the version in the files
 - cognite/replicator/_version.py
