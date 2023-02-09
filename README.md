@@ -236,9 +236,9 @@ if __name__ == "__main__":  # this is necessary because threading
 ## Development
 
 Change the version in the files
-- cognite/replicator/_version.py
-- pyproject.toml
-- .github/workflows/cd.yml
+- [_version.py](cognite/replicator/_version.py "Version in code")
+- [cd.yml](.github/workflows/cd.yml "Continuous deployment yaml file")
+- [pyproject.toml](pyproject.toml "Poetry configuration")
 
 
 ## Changelog
