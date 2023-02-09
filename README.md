@@ -18,13 +18,13 @@ Copyright 2023 Cognite AS
 
 ## Prerequisites
 In order to start using the Replicator, you need:
-* Python3 (>= 3.6)
-* Credentials for both the source and destination projects: 
-** CLIENT_ID ("Client ID from Azure")
-** CLIENT_SECRET ("Client secret", if necessary)
-** CLUSTER ("Name of CDF cluster")
-** TENANT_ID ("Tenant ID from Azure"
-** PROJECT ("Name of source project")
+- Python3 (>= 3.6)
+- Credentials for both the source and destination projects: 
+    - CLIENT_ID ("Client ID from Azure")
+    - CLIENT_SECRET ("Client secret from Azure", only if using authentication via secret)
+    - CLUSTER ("Name of CDF cluster")
+    - TENANT_ID ("Tenant ID from Azure"
+    - PROJECT ("Name of CDF project")
 
 This is how you set the client secret as an environment variable on Mac OS and Linux:
 ```bash
@@ -47,7 +47,7 @@ docker build -t cognite-replicator .
 
 ## Usage
 
-1. Run with a configuration file as a standalone script
+### 1. Run with a configuration file as a standalone script
 
 Create a configuration file based on the config/default.yml and update the values corresponding to your environment
 If no file is specified then replicator will use config/default.yml.
