@@ -8,7 +8,7 @@ from math import ceil, floor
 from typing import Any, Callable, List, Optional, Tuple, Union
 
 from cognite.client import CogniteClient
-from cognite.client.data_classes import Datapoint, Datapoints, DatapointsQuery
+from cognite.client.data_classes import Datapoint, Datapoints
 from cognite.client.exceptions import CogniteAPIError
 from cognite.client.utils._time import timestamp_to_ms
 
@@ -94,16 +94,16 @@ def replicate_datapoints_several_ts(
             external_id=ext_ids
         )  # getting the latest datapoints from the destination, timestamps
         src_datapoint_queries = [
-            DatapointsQuery(
-                external_id=dst_latest_dp.external_id,
-                start=start or dst_latest_dp[0].timestamp if len(dst_latest_dp) > 0 else "5w-ago",  # 4 years
-                end=end,
-            )
+            {
+                "external_id": dst_latest_dp.external_id,
+                "start": start or dst_latest_dp[0].timestamp if len(dst_latest_dp) > 0 else "5w-ago",
+                "end": end,
+            }
             for dst_latest_dp in dst_latest_datapoints
-        ]  # creating queries for the datapoints starting with the latest datapoint
+        ]
         print("Queries ready: ", time.ctime())
-        src_datapoints_to_insert = client_src.datapoints.query(
-            src_datapoint_queries
+        src_datapoints_to_insert = client_src.datapoints.retrieve(
+            external_id=src_datapoint_queries
         )  # querying the source for the datapoints matching this query
         print("Datapoints to insert ready", time.ctime())
         insert_format_datapoints = []

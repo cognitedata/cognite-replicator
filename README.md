@@ -64,7 +64,7 @@ or alternatively via docker
 docker run -it cognite-replicator -e SOURCE_CLIENT_SECRET -e DEST_CLIENT_SECRET -v config/filepath.yml:/config.yml cognite-replicator /config.yml
 ```
 
-### Setup as Python library
+### Setup as Python library with client secret
  ```python
 import os
 

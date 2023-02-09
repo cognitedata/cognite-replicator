@@ -2,17 +2,6 @@ resources:                                          # Which resource types to re
   - timeseries
   - datapoints
 
-#src_api_key_env_var: COGNITE_SOURCE_API_KEY         # Name of env variable for CDF API KEY of the source project
-#dst_api_key_env_var: COGNITE_DESTINATION_API_KEY    # Name of env variable for CDF API KEY of the destination project
-#src_project: source_project_name                    # Project that src_api_key belongs to
-#dst_project: dest_project_name                      # Project that dst_api_key belongs to
-#src_baseurl: https://greenfield.cognitedata.com     # Optional - source base url if not api.cognitedata.com
-#dst_baseurl: https://greenfield.cognitedata.com     # Optional - destination base url if not api.cognitedata.com
-
-# API Key or OIDC authentication
-src_authenticate_api_key: True                       # True if the source is authenticated by API keys, False if it is authenticated by OICD
-dst_authenticate_api_key: False                      # True if the destination is authenticated by API keys, False if it is authenticated by OICD
-
 # OIDC PROJECTS --------------------------------------------------------------------------------------------------------
 # source CDF project identity variables
 src_boolean_client_secret: True                     # OIDC: whether the source project is being authenticated through a client secret or not

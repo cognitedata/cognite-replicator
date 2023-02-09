@@ -1,0 +1,40 @@
+resources:                                          # Which resource types to replicate
+  - timeseries
+  - datapoints
+
+# OIDC PROJECTS --------------------------------------------------------------------------------------------------------
+# source CDF project identity variables for Open Industrial data project
+src_boolean_client_secret: False                     # OIDC: whether the source project is being authenticated through a client secret or not
+src_TENANT_ID: 48d5043c-cf70-4c49-881c-c638f5796997             # OIDC: azure AD tenant of the source CDF project
+src_CLIENT_ID: 1b90ede3-271e-401b-81a0-a4d52bea3273             # OIDC: Azure client app registration ID of the source CDF project
+src_CDF_CLUSTER: api                                      # cluster the source CDF project is running on
+src_COGNITE_PROJECT: publicdata                                    # name of the source project
+src_AUTHORITY_HOST_URI: "https://login.microsoftonline.com"       # login uri for the source project
+
+# destination CDF project variables
+dst_boolean_client_secret: False                        # OIDC: whether the destination project is being authenticated through a client secret or not
+dst_TENANT_ID: DEST_TENANT_ID            # OIDC: azure AD tenant of the source CDF project
+dst_CLIENT_ID: DEST_CLIENT_ID            # OIDC: without client secret a0ed92d8-dab1-4f73-acb1-3c3a0c8c7261"             # Azure client app registration ID of the source CDF project
+# dst_client_secret: DEST_CLIENT_SECRET              # OIDC: Name of env variable for Client secret of source project
+dst_CDF_CLUSTER: DEST_CLUSTER                                     # cluster the source CDF project is running on
+dst_COGNITE_PROJECT: DEST_PROJECT                                      # name of the source project
+dst_AUTHORITY_HOST_URI: "https://login.microsoftonline.com"       # login uri for the source project
+
+high_frequence_variability: false                   # True if there are many time series being replicated which have new datapoints coming at very different freqences
+delete_if_removed_in_source: false                  # Remove objects that were replicated and are now deleted in source
+delete_if_not_replicated: false                     # Remove all objects in destination that aren't from source
+batch_size: 10000                                   # Number of items in each batch 1-10000. Only applies to Raw, Events, Timeseries, and Files. (The SDK automatically chunks to 10000. This is used in conjuction with threads if you wanted smaller/more efficient threads for batches less than 10k. EX: 20 threads with 2000 batch sizes each.)
+batch_size_datapoints: 10000                        # Number of datapoints in each batch (The SDK will automatically paginate so it's generally not needed with a value here)
+number_of_threads: 10                               # Number of threads to use
+client_timeout: 120                                 # Seconds for clients to timeout
+client_name: cognite-replicator                     # Name of client
+log_path: log                                       # Folder to save logs to
+log_level: WARNING                                    # Logging level
+events_exclude_pattern:                             # Optional - Regex pattern to prevent replication of matching events. Example: ^SYN_
+timeseries_exclude_pattern:                         # Optional - Regex pattern to prevent replication of matching timeseries. Example: ^SYN_
+timeseries_exclude_fields:                          # Optional - List of metadata fields to exclude from the extraction
+files_exclude_pattern:                              # Optional - Regex pattern to prevent replication of matching files. Example: ^SYN_
+datapoints_start: 10d-ago                         # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
+datapoints_end: 9d-ago                              # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
+value_manipulation_lambda_fnc: # "lambda x: x*0.2"    # Lambda function as a string if value manipulation for datapoints is needed.
+dataset_support: false                              # Boolean to enable or not the dataset support

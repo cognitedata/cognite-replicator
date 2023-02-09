@@ -113,3 +113,4 @@ venv.bak/
 .mypy_cache/
 
 local
+config/config.yml

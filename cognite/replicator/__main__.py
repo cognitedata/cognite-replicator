@@ -191,8 +191,6 @@ def get_lines_in_file(config_file):
 
         line_counter += 1
 
-    print(len(lines))
-
     return lines
 
 
