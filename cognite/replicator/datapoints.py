@@ -114,7 +114,7 @@ def replicate_datapoints_several_ts(
             for datapoints in dplist:
                 # if there is not yet an entry for this specific time series
                 if "externalId" not in dict_to_insert.keys():
-                    dict_to_insert["externalId"] = datapoints.external_id
+                    dict_to_insert["externalId"] = dplist.external_id
 
                 # If datapoints should be transformed
                 transformed_dps = None
@@ -142,14 +142,13 @@ def replicate_datapoints_several_ts(
                                     f"Could not manipulate the datapoint (value={src_datapoint.value},"
                                     + f" timestamp={src_datapoint.timestamp}). Error: {e}"
                                 )
-                if transformed_dps is not None:
-                    list_of_datapoints = transformed_dps
-                else:
-                    list_of_datapoints = [
-                        {"timestamp": datapoints.timestamp[i], "value": datapoints.value[i]}
-                        for i in range(len(datapoints.timestamp))
-                    ]
-                logging.info(f"Ext id:  {datapoints.external_id} Number of datapoints: {len(list_of_datapoints)}")
+            if transformed_dps is not None:
+                list_of_datapoints = transformed_dps
+            else:
+                list_of_datapoints = [
+                    {"timestamp": dplist[i].timestamp, "value": dplist[i].value} for i in range(len(dplist))
+                ]
+            logging.info(f"Ext id:  {dplist.external_id} Number of datapoints: {len(list_of_datapoints)}")
 
             # This assertion needs to be in place, because the API call crashes if one ts has no datapoints to insert
             if len(list_of_datapoints) > 0:
