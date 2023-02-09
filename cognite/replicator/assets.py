@@ -267,7 +267,7 @@ def unlink_subtree_parents(
 def replicate(
     client_src: CogniteClient,
     client_dst: CogniteClient,
-    config: Dict,
+    config: Dict = None,
     src_dst_datasets_mapping: Dict[int, int] = {},
     delete_replicated_if_not_in_src: bool = False,
     delete_not_replicated_in_dst: bool = False,

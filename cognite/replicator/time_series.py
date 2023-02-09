@@ -210,7 +210,7 @@ def copy_ts(
 def replicate(
     client_src: CogniteClient,
     client_dst: CogniteClient,
-    config: Dict,
+    config: Dict = None,
     src_dst_dataset_mapping: Dict[int, int] = {},
     batch_size: int = 10000,
     num_threads: int = 1,
