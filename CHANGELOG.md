@@ -16,7 +16,13 @@ Changes are grouped as follows
 
 - Support for replicating file data
 
-## [1.2.1] - 2023-02-08
+## [1.2.2] - 2023-02-09
+
+## Fixed
+- Updated python sdk version
+- Bug fix
+
+## [1.2.1] - 2023-10-08
 
 ## Fixed
 - Datapoints copy update
