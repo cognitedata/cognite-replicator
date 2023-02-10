@@ -11,8 +11,8 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/cognite-replicator)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 
-Cognite Replicator is a Python package for replicating data across Cognite Data Fusion (CDF) projects. This package is
-built on top of the Cognite Python SDK.
+Cognite Replicator is a Python package for replicating data across Cognite Data Fusion (CDF) projects. This package is built on top of the Cognite Python SDK.
+This component is Community content and not officially supported by Cognite. Bugs and changes will be fixed on a best effort basis. Feel free to open issues and pull requests, we will review them as soon as we can. 
 
 Copyright 2023 Cognite AS
 
