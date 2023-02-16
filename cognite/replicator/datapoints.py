@@ -111,37 +111,37 @@ def replicate_datapoints_several_ts(
         # Written this way as the insert_multiple function in the sdk does not support to insert a Datapoints object directly
         for dplist in src_datapoints_to_insert:
             dict_to_insert = {}
-            # if there is not yet an entry for this specific time series
-            if "externalId" not in dict_to_insert.keys():
-                dict_to_insert["externalId"] = dplist.external_id
+            for datapoints in dplist:
+                # if there is not yet an entry for this specific time series
+                if "externalId" not in dict_to_insert.keys():
+                    dict_to_insert["externalId"] = dplist.external_id
 
                 # If datapoints should be transformed
-            transformed_dps = None
-            if src_datapoint_transform:
-                transformed_values = []
-                transformed_timestamps = []
-                for src_datapoint in dplist:
-                    transformed_datapoint = src_datapoint_transform(src_datapoint)
-                    transformed_timestamps.append(transformed_datapoint.timestamp)
-                    transformed_values.append(transformed_datapoint.value)
-                transformed_dps = Datapoints(timestamp=transformed_timestamps, value=transformed_values)
+                transformed_dps = None
+                if src_datapoint_transform:
+                    transformed_values = []
+                    transformed_timestamps = []
+                    for src_datapoint in datapoints:
+                        transformed_datapoint = src_datapoint_transform(src_datapoint)
+                        transformed_timestamps.append(transformed_datapoint.timestamp)
+                        transformed_values.append(transformed_datapoint.value)
+                    transformed_dps = Datapoints(timestamp=transformed_timestamps, value=transformed_values)
 
                 # If datapoints should get applied a lambda function
-            if value_manipulation_lambda_fnc:
-                transformed_values = []
-                transformed_timestamps = []
-                lambda_fnc = evaluate_lambda_function(value_manipulation_lambda_fnc)
-                if lambda_fnc:
-                    for src_datapoint in dplist:
-                        try:
-                            transformed_timestamps.append(src_datapoint.timestamp)
-                            transformed_values.append(lambda_fnc(src_datapoint.value))
-                        except Exception as e:
-                            logging.error(
-                                f"Could not manipulate the datapoint (value={src_datapoint.value},"
-                                + f" timestamp={src_datapoint.timestamp}). Error: {e}"
-                            )
-                    transformed_dps = Datapoints(timestamp=transformed_timestamps, value=transformed_values)
+                if value_manipulation_lambda_fnc:
+                    transformed_values = []
+                    transformed_timestamps = []
+                    lambda_fnc = evaluate_lambda_function(value_manipulation_lambda_fnc)
+                    if lambda_fnc:
+                        for src_datapoint in datapoints:
+                            try:
+                                transformed_timestamps.append(src_datapoint.timestamp)
+                                transformed_values.append(lambda_fnc(src_datapoint.value))
+                            except Exception as e:
+                                logging.error(
+                                    f"Could not manipulate the datapoint (value={src_datapoint.value},"
+                                    + f" timestamp={src_datapoint.timestamp}). Error: {e}"
+                                )
             if transformed_dps is not None:
                 list_of_datapoints = transformed_dps
             else:
