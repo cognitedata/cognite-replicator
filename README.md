@@ -217,10 +217,10 @@ if __name__ == "__main__":  # this is necessary because threading
 
 ### 2.3 Alternative by having some elements of the configuration file as variable
 
-refer to [default configuration file](config/default.yml) or [example configuration file](config/example.yml) for all keys in the configuration file
+Refer to [default configuration file](config/default.yml) or [example configuration file](config/example.yml) for all keys in the configuration file
+Start with client creation from either step 2.1 or 2.2
 
 ```python
-## Start with client creation from either step 2.1 or 2.2
 
 if __name__ == "__main__":  # this is necessary because threading
     config = {
