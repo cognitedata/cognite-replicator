@@ -199,8 +199,6 @@ def replicate(
     Args:
         client_src: The client corresponding to the source project.
         client_dst: The client corresponding to the destination project.
-        batch_size: The size of batches to split the external id list into. Defaults to num_threads.
-        num_threads: The number of threads to be used.
         limit: The maximum number of data points to copy per time series
         external_ids: A list of time series to replicate data points for
         mock_run: If true, runs the replication without insert, printing what would happen

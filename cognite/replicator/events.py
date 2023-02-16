@@ -212,10 +212,10 @@ def replicate(
     Args:
         client_src: The client corresponding to the source project.
         client_dst: The client corresponding to the destination project.
-        config: dict corresponding to the selected yaml config file
-        src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination ones
         batch_size: The biggest batch size to post chunks in.
         num_threads: The number of threads to be used.
+        config: dict corresponding to the selected yaml config file
+        src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination ones
         delete_replicated_if_not_in_src: If True, will delete replicated events that are in the destination,
         but no longer in the source project (Default=False).
         delete_not_replicated_in_dst: If True, will delete events from the destination if they were not replicated
