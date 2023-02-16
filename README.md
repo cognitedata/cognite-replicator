@@ -64,8 +64,7 @@ or alternatively via docker
 docker run -it cognite-replicator -e SOURCE_CLIENT_SECRET -e DEST_CLIENT_SECRET -v config/filepath.yml:/config.yml cognite-replicator /config.yml
 ```
 
-### 2. Setup as Python library with client secret
-
+### 2. Setup as Python library
 #### 2.1 Without configuration file and interactive login 
 It will copy everything from source to destination and use your own credentials to run the code, you need to have the right permissions to read on the source project and write on the destination project
 
@@ -144,7 +143,6 @@ It will copy everything from source to destination and use your own credentials 
 
 ```python
 import os
-import yaml
 from cognite.client.credentials import OAuthClientCredentials
 from cognite.client import CogniteClient, ClientConfig
 from cognite.replicator import assets, events, files, time_series, datapoints, sequences, sequence_rows
@@ -177,7 +175,6 @@ TIMEOUT = 90
 PORT = 53000
 
 if __name__ == "__main__":  # this is necessary because threading
-    config = yaml.safe_load("config/config.yml")
 
     SOURCE_CLIENT = CogniteClient(
         ClientConfig(
