@@ -32,7 +32,7 @@ number_of_threads: 10                               # Number of threads to use
 client_timeout: 120                                 # Seconds for clients to timeout
 client_name: cognite-replicator                     # Name of client
 log_path: log                                       # Folder to save logs to
-log_level: WARNING                                    # Logging level
+log_level: INFO                                    # Logging level
 events_exclude_pattern:                             # Optional - Regex pattern to prevent replication of matching events. Example: ^SYN_
 timeseries_exclude_pattern:                         # Optional - Regex pattern to prevent replication of matching timeseries. Example: ^SYN_
 timeseries_exclude_fields:                          # Optional - List of metadata fields to exclude from the extraction

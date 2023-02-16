@@ -101,34 +101,35 @@ NUM_THREADS = 10  # this is the max number of threads to be used
 TIMEOUT = 90
 PORT = 53000
 
+SOURCE_CLIENT = CogniteClient(
+    ClientConfig(
+        credentials=OAuthInteractive(
+            authority_url=SOURCE_AUTHORITY_URL,
+            client_id=SOURCE_CLIENT_ID,
+            scopes=SOURCE_SCOPES,
+        ),
+        project=SOURCE_PROJECT,
+        base_url=SOURCE_BASE_URL,
+        client_name="cognite-replicator-source",
+    )
+)
+DEST_CLIENT = CogniteClient(
+    ClientConfig(
+        credentials=OAuthInteractive(
+            authority_url=DEST_AUTHORITY_URL,
+            client_id=DEST_CLIENT_ID,
+            scopes=DEST_SCOPES,
+        ),
+        project=DEST_PROJECT,
+        base_url=DEST_BASE_URL,
+        client_name="cognite-replicator-destination",
+    )
+)
+
 if __name__ == "__main__":  # this is necessary because threading
-    SOURCE_CLIENT = CogniteClient(
-        ClientConfig(
-            credentials=OAuthInteractive(
-                authority_url=SOURCE_AUTHORITY_URL,
-                client_id=SOURCE_CLIENT_ID,
-                scopes=SOURCE_SCOPES,
-            ),
-            project=SOURCE_PROJECT,
-            base_url=SOURCE_BASE_URL,
-            client_name="cognite-replicator-source",
-        )
-    )
-    DEST_CLIENT = CogniteClient(
-        ClientConfig(
-            credentials=OAuthInteractive(
-                authority_url=DEST_AUTHORITY_URL,
-                client_id=DEST_CLIENT_ID,
-                scopes=DEST_SCOPES,
-            ),
-            project=DEST_PROJECT,
-            base_url=DEST_BASE_URL,
-            client_name="cognite-replicator-destination",
-        )
-    )
 
     #### Uncomment the resources you would like to copy
-    #assets.replicate(SOURCE_CLIENT, DEST_CLIENT)
+    assets.replicate(SOURCE_CLIENT, DEST_CLIENT)
     #events.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
     #files.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
     #time_series.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
@@ -174,38 +175,38 @@ NUM_THREADS = 10  # this is the max number of threads to be used
 TIMEOUT = 90
 PORT = 53000
 
+SOURCE_CLIENT = CogniteClient(
+    ClientConfig(
+        credentials=OAuthClientCredentials(
+            token_url=SOURCE_TOKEN_URL,
+            client_id=SOURCE_CLIENT_ID,
+            scopes=SOURCE_SCOPES,
+            client_secret=SOURCE_CLIENT_SECRET,
+        ),
+        project=SOURCE_PROJECT,
+        base_url=SOURCE_BASE_URL,
+        client_name="cognite-replicator-source",
+    )
+)
+
+DEST_CLIENT = CogniteClient(
+    ClientConfig(
+        credentials=OAuthClientCredentials(
+            token_url=DEST_TOKEN_URL,
+            client_id=DEST_CLIENT_ID,
+            scopes=DEST_SCOPES,
+            client_secret=DEST_CLIENT_SECRET,
+        ),
+        project=DEST_PROJECT,
+        base_url=DEST_BASE_URL,
+        client_name="cognite-replicator-destination",
+    )
+)
+
 if __name__ == "__main__":  # this is necessary because threading
 
-    SOURCE_CLIENT = CogniteClient(
-        ClientConfig(
-            credentials=OAuthClientCredentials(
-                token_url=SOURCE_TOKEN_URL,
-                client_id=SOURCE_CLIENT_ID,
-                scopes=SOURCE_SCOPES,
-                client_secret=SOURCE_CLIENT_SECRET,
-            ),
-            project=SOURCE_PROJECT,
-            base_url=SOURCE_BASE_URL,
-            client_name="cognite-replicator-source",
-        )
-    )
-
-    DEST_CLIENT = CogniteClient(
-        ClientConfig(
-            credentials=OAuthClientCredentials(
-                token_url=DEST_TOKEN_URL,
-                client_id=DEST_CLIENT_ID,
-                scopes=DEST_SCOPES,
-                client_secret=DEST_CLIENT_SECRET,
-            ),
-            project=DEST_PROJECT,
-            base_url=DEST_BASE_URL,
-            client_name="cognite-replicator-destination",
-        )
-    )
-
     #### Uncomment the resources you would like to copy
-    #assets.replicate(SOURCE_CLIENT, DEST_CLIENT)
+    assets.replicate(SOURCE_CLIENT, DEST_CLIENT)
     #events.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
     #files.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
     #time_series.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
@@ -214,9 +215,38 @@ if __name__ == "__main__":  # this is necessary because threading
     #sequence_rows.replicate(SOURCE_CLIENT, DEST_CLIENT, BATCH_SIZE, NUM_THREADS)
 ```
 
+### 2.3 Alternative by having some elements of the configuration file as variable
+
+refer to [default configuration file](config/default.yml) or [example configuration file](config/example.yml) for all keys in the configuration file
+
+```python
+## Start with client creation from either step 2.1 or 2.2
+
+if __name__ == "__main__":  # this is necessary because threading
+    config = {
+        "timeseries_external_ids": ["pi:160670", "pi:160623"],
+        "datapoints_start": "100d-ago",
+        "datapoints_end": "now",
+    }
+    time_series.replicate(
+        client_src=SOURCE_CLIENT,
+        client_dst=DEST_CLIENT,
+        batch_size=BATCH_SIZE,
+        num_threads=NUM_THREADS,
+        config=config,
+    )
+    datapoints.replicate(
+        client_src=SOURCE_CLIENT,
+        client_dst=DEST_CLIENT,
+        external_ids=config.get("timeseries_external_ids"),
+        start=config.get("datapoints_start"),
+        end=config.get("datapoints_end"),
+    )
+```
 
 ### 3. With configuration file
 It will use the configuration file to determine what will be copied
+In this case, no need to create the client, it will be created based on what is in the configuration file
 
 ```python
 import yaml
