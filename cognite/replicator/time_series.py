@@ -51,7 +51,7 @@ def create_time_series(
         security_categories=src_ts.security_categories,
         legacy_name=src_ts.external_id,
         data_set_id=datasets.replicate(src_client, dst_client, src_ts.data_set_id, src_dst_dataset_mapping)
-        if config.get("dataset_support", False)
+        if config and config.get("dataset_support", False)
         else None,
     )
 
@@ -210,10 +210,10 @@ def copy_ts(
 def replicate(
     client_src: CogniteClient,
     client_dst: CogniteClient,
-    config: Dict = None,
-    src_dst_dataset_mapping: Dict[int, int] = {},
     batch_size: int = 10000,
     num_threads: int = 1,
+    config: Dict = None,
+    src_dst_dataset_mapping: Dict[int, int] = {},
     delete_replicated_if_not_in_src: bool = False,
     delete_not_replicated_in_dst: bool = False,
     skip_unlinkable: bool = False,
