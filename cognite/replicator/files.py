@@ -197,10 +197,10 @@ def copy_files(
 def replicate(
     client_src: CogniteClient,
     client_dst: CogniteClient,
-    src_dst_dataset_mapping: Dict[int, int] = {},
     batch_size: int = 10000,
-    config: Dict = None,
     num_threads: int = 1,
+    config: Dict = None,
+    src_dst_dataset_mapping: Dict[int, int] = {},
     delete_replicated_if_not_in_src: bool = False,
     delete_not_replicated_in_dst: bool = False,
     skip_unlinkable: bool = False,
