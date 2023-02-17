@@ -190,7 +190,6 @@ def restore_fields(
         elif "metadata." in key:
             metadata_key = key[key.index(".") + 1 :]
             if not (metadata_key in replicator_metadata_fields):
-
                 if metadata_key in dst_obj_dump["metadata"]:
                     dst_obj.metadata[metadata_key] = dst_obj_dump["metadata"][metadata_key]
 

@@ -8,7 +8,7 @@ from math import ceil, floor
 from typing import Any, Callable, List, Optional, Tuple, Union
 
 from cognite.client import CogniteClient
-from cognite.client.data_classes import Datapoint, Datapoints, DatapointsQuery
+from cognite.client.data_classes import Datapoint, Datapoints
 from cognite.client.exceptions import CogniteAPIError
 from cognite.client.utils._time import timestamp_to_ms
 
@@ -94,16 +94,16 @@ def replicate_datapoints_several_ts(
             external_id=ext_ids
         )  # getting the latest datapoints from the destination, timestamps
         src_datapoint_queries = [
-            DatapointsQuery(
-                external_id=dst_latest_dp.external_id,
-                start=start or dst_latest_dp[0].timestamp if len(dst_latest_dp) > 0 else "5w-ago",  # 4 years
-                end=end,
-            )
+            {
+                "external_id": dst_latest_dp.external_id,
+                "start": start or dst_latest_dp[0].timestamp if len(dst_latest_dp) > 0 else "5w-ago",
+                "end": end,
+            }
             for dst_latest_dp in dst_latest_datapoints
-        ]  # creating queries for the datapoints starting with the latest datapoint
+        ]
         print("Queries ready: ", time.ctime())
-        src_datapoints_to_insert = client_src.datapoints.query(
-            src_datapoint_queries
+        src_datapoints_to_insert = client_src.datapoints.retrieve(
+            external_id=src_datapoint_queries
         )  # querying the source for the datapoints matching this query
         print("Datapoints to insert ready", time.ctime())
         insert_format_datapoints = []
@@ -111,45 +111,44 @@ def replicate_datapoints_several_ts(
         # Written this way as the insert_multiple function in the sdk does not support to insert a Datapoints object directly
         for dplist in src_datapoints_to_insert:
             dict_to_insert = {}
-            for datapoints in dplist:
-                # if there is not yet an entry for this specific time series
-                if "externalId" not in dict_to_insert.keys():
-                    dict_to_insert["externalId"] = datapoints.external_id
+            # if there is not yet an entry for this specific time series
+            if "externalId" not in dict_to_insert.keys():
+                dict_to_insert["externalId"] = dplist.external_id
 
                 # If datapoints should be transformed
-                transformed_dps = None
-                if src_datapoint_transform:
-                    transformed_values = []
-                    transformed_timestamps = []
-                    for src_datapoint in datapoints:
-                        transformed_datapoint = src_datapoint_transform(src_datapoint)
-                        transformed_timestamps.append(transformed_datapoint.timestamp)
-                        transformed_values.append(transformed_datapoint.value)
-                    transformed_dps = Datapoints(timestamp=transformed_timestamps, value=transformed_values)
+            transformed_dps = None
+            if src_datapoint_transform:
+                transformed_values = []
+                transformed_timestamps = []
+                for src_datapoint in dplist:
+                    transformed_datapoint = src_datapoint_transform(src_datapoint)
+                    transformed_timestamps.append(transformed_datapoint.timestamp)
+                    transformed_values.append(transformed_datapoint.value)
+                transformed_dps = Datapoints(timestamp=transformed_timestamps, value=transformed_values)
 
                 # If datapoints should get applied a lambda function
-                if value_manipulation_lambda_fnc:
-                    transformed_values = []
-                    transformed_timestamps = []
-                    lambda_fnc = evaluate_lambda_function(value_manipulation_lambda_fnc)
-                    if lambda_fnc:
-                        for src_datapoint in datapoints:
-                            try:
-                                transformed_timestamps.append(src_datapoint.timestamp)
-                                transformed_values.append(lambda_fnc(src_datapoint.value))
-                            except Exception as e:
-                                logging.error(
-                                    f"Could not manipulate the datapoint (value={src_datapoint.value},"
-                                    + f" timestamp={src_datapoint.timestamp}). Error: {e}"
-                                )
-                if transformed_dps is not None:
-                    list_of_datapoints = transformed_dps
-                else:
-                    list_of_datapoints = [
-                        {"timestamp": datapoints.timestamp[i], "value": datapoints.value[i]}
-                        for i in range(len(datapoints.timestamp))
-                    ]
-                logging.info(f"Ext id:  {datapoints.external_id} Number of datapoints: {len(list_of_datapoints)}")
+            if value_manipulation_lambda_fnc:
+                transformed_values = []
+                transformed_timestamps = []
+                lambda_fnc = evaluate_lambda_function(value_manipulation_lambda_fnc)
+                if lambda_fnc:
+                    for src_datapoint in dplist:
+                        try:
+                            transformed_timestamps.append(src_datapoint.timestamp)
+                            transformed_values.append(lambda_fnc(src_datapoint.value))
+                        except Exception as e:
+                            logging.error(
+                                f"Could not manipulate the datapoint (value={src_datapoint.value},"
+                                + f" timestamp={src_datapoint.timestamp}). Error: {e}"
+                            )
+                    transformed_dps = Datapoints(timestamp=transformed_timestamps, value=transformed_values)
+            if transformed_dps is not None:
+                list_of_datapoints = transformed_dps
+            else:
+                list_of_datapoints = [
+                    {"timestamp": dplist[i].timestamp, "value": dplist[i].value} for i in range(len(dplist))
+                ]
+            logging.info(f"Ext id:  {dplist.external_id} Number of datapoints: {len(list_of_datapoints)}")
 
             # This assertion needs to be in place, because the API call crashes if one ts has no datapoints to insert
             if len(list_of_datapoints) > 0:
@@ -200,8 +199,6 @@ def replicate(
     Args:
         client_src: The client corresponding to the source project.
         client_dst: The client corresponding to the destination project.
-        batch_size: The size of batches to split the external id list into. Defaults to num_threads.
-        num_threads: The number of threads to be used.
         limit: The maximum number of data points to copy per time series
         external_ids: A list of time series to replicate data points for
         mock_run: If true, runs the replication without insert, printing what would happen
