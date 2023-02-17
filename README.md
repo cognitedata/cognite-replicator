@@ -59,9 +59,10 @@ python -m cognite.replicator config/filepath.yml
 ```
 
 or alternatively via docker
+If no access to a browser, you should use the client secret authentication
 
 ```bash
-docker run -it cognite-replicator -e SOURCE_CLIENT_SECRET -e DEST_CLIENT_SECRET -v config/filepath.yml:/config.yml cognite-replicator /config.yml
+docker run -e SOURCE_CLIENT_SECRET -e DEST_CLIENT_SECRET -v /absolute/path/to/config/config.yml:/config.yml cognite-replicator /config.yml
 ```
 
 ### 2. Setup as Python library
