@@ -51,7 +51,7 @@ def create_time_series(
         security_categories=src_ts.security_categories,
         legacy_name=src_ts.external_id,
         data_set_id=datasets.replicate(src_client, dst_client, src_ts.data_set_id, src_dst_dataset_mapping)
-        if config.get("dataset_support", False)
+        if config and config.get("dataset_support", False)
         else None,
     )
 
@@ -210,10 +210,10 @@ def copy_ts(
 def replicate(
     client_src: CogniteClient,
     client_dst: CogniteClient,
-    src_dst_dataset_mapping: Dict[int, int],
-    config: Dict,
     batch_size: int = 10000,
     num_threads: int = 1,
+    config: Dict = None,
+    src_dst_dataset_mapping: Dict[int, int] = {},
     delete_replicated_if_not_in_src: bool = False,
     delete_not_replicated_in_dst: bool = False,
     skip_unlinkable: bool = False,
@@ -228,11 +228,10 @@ def replicate(
     Args:
         client_src: The client corresponding to the source project.
         client_dst: The client corresponding to the destination project.
-        src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination ones
-                config: dict corresponding to the selected yaml config file
-
         batch_size: The biggest batch size to post chunks in.
         num_threads: The number of threads to be used.
+        config: dict corresponding to the selected yaml config file
+        src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination ones
         delete_replicated_if_not_in_src: If True, will delete replicated assets that are in the destination,
         but no longer in the source project (Default=False).
         delete_not_replicated_in_dst: If True, will delete assets from the destination if they were not replicated

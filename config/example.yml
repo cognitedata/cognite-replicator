@@ -3,24 +3,21 @@ resources:                                          # Which resource types to re
   - datapoints
 
 # OIDC PROJECTS --------------------------------------------------------------------------------------------------------
-# source CDF project identity variables
-src_boolean_client_secret: True                     # OIDC: whether the source project is being authenticated through a client secret or not
-src_TENANT_ID: COGNITE_SOURCE_TENANT_ID             # OIDC: azure AD tenant of the source CDF project
-src_CLIENT_ID: COGNITE_SOURCE_CLIENT_ID             # OIDC: Azure client app registration ID of the source CDF project
-src_client_secret: COGNITE_SOURCE_CLIENT_SECRET                   # OIDC: Name of env variable for Client secret of source project
-src_api_key_env_var: COGNITE_SOURCE_API_KEY                       # Api Key: Name of env variable for CDF API KEY of the source project
-src_CDF_CLUSTER: COGNITE_SOURCE_CDF_CLUSTER                                      # cluster the source CDF project is running on
-src_COGNITE_PROJECT: COGNITE_SOURCE_CDF_PROJECT                                    # name of the source project
+# source CDF project identity variables for Open Industrial data project
+src_boolean_client_secret: False                     # OIDC: whether the source project is being authenticated through a client secret or not
+src_TENANT_ID: 48d5043c-cf70-4c49-881c-c638f5796997             # OIDC: azure AD tenant of the source CDF project
+src_CLIENT_ID: 1b90ede3-271e-401b-81a0-a4d52bea3273             # OIDC: Azure client app registration ID of the source CDF project
+src_CDF_CLUSTER: api                                      # cluster the source CDF project is running on
+src_COGNITE_PROJECT: publicdata                                    # name of the source project
 src_AUTHORITY_HOST_URI: "https://login.microsoftonline.com"       # login uri for the source project
 
 # destination CDF project variables
 dst_boolean_client_secret: False                        # OIDC: whether the destination project is being authenticated through a client secret or not
-dst_TENANT_ID: COGNITE_DESTINATION_TENANT_ID            # OIDC: azure AD tenant of the source CDF project
-dst_CLIENT_ID: COGNITE_DESTINATION_CLIENT_ID            # OIDC: without client secret a0ed92d8-dab1-4f73-acb1-3c3a0c8c7261"             # Azure client app registration ID of the source CDF project
-dst_client_secret: COGNITE_DESTINATION_CLIENT_SECRET              # OIDC: Name of env variable for Client secret of source project
-dst_api_key_env_var: COGNITE_DESTINATION_API_KEY                  # Api Key: Name of env variable for CDF API KEY of the destination project
-dst_CDF_CLUSTER: COGNITE_DESTINATION_CDF_CLUSTER                                     # cluster the source CDF project is running on
-dst_COGNITE_PROJECT: COGNITE_DESTINATION_CDF_PROJECT                                      # name of the source project
+dst_TENANT_ID: DEST_TENANT_ID            # OIDC: azure AD tenant of the source CDF project
+dst_CLIENT_ID: DEST_CLIENT_ID            # OIDC: without client secret a0ed92d8-dab1-4f73-acb1-3c3a0c8c7261"             # Azure client app registration ID of the source CDF project
+# dst_client_secret: DEST_CLIENT_SECRET              # OIDC: Name of env variable for Client secret of source project
+dst_CDF_CLUSTER: DEST_CLUSTER                                     # cluster the source CDF project is running on
+dst_COGNITE_PROJECT: DEST_PROJECT                                      # name of the source project
 dst_AUTHORITY_HOST_URI: "https://login.microsoftonline.com"       # login uri for the source project
 
 high_frequence_variability: false                   # True if there are many time series being replicated which have new datapoints coming at very different freqences
@@ -37,20 +34,7 @@ events_exclude_pattern:                             # Optional - Regex pattern t
 timeseries_exclude_pattern:                         # Optional - Regex pattern to prevent replication of matching timeseries. Example: ^SYN_
 timeseries_exclude_fields:                          # Optional - List of metadata fields to exclude from the extraction
 files_exclude_pattern:                              # Optional - Regex pattern to prevent replication of matching files. Example: ^SYN_
-datapoints_start: 1546297200                        # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
-datapoints_end: 1d-ago                              # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
+datapoints_start: 10d-ago                         # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
+datapoints_end: now                             # Must be an integer timestamp or a "time-ago string" on the format: <integer>(s|m|h|d|w)-ago or 'now'. E.g. '3d-ago' or '1w-ago'
 value_manipulation_lambda_fnc: # "lambda x: x*0.2"    # Lambda function as a string if value manipulation for datapoints is needed.
 dataset_support: false                              # Boolean to enable or not the dataset support
-
-events_external_ids:                                # Optional - List of events external_ids to replicate
-  #- external-id-1
-  #- external-id-2
-  #- external-id-3
-timeseries_external_ids:                            # Optional - List of timeseries external_ids to replicate
-  #- external-id-1
-  #- external-id-2
-  #- external-id-3
-files_external_ids:                                 # Optional - List of files external_ids to replicate
-  #- external-id-1
-  #- external-id-2
-  #- external-id-3
