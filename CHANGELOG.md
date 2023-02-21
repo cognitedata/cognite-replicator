@@ -16,6 +16,16 @@ Changes are grouped as follows
 
 - Support for replicating file data
 
+## [1.2.4] - 2023-02-21
+
+## Fixed
+- Bug fix on dataset id
+
+## [1.2.3] - 2023-02-21
+
+## Fixed
+- Bug fix on parameters
+
 ## [1.2.2] - 2023-02-09
 
 ## Fixed
