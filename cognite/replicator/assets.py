@@ -95,7 +95,7 @@ def build_asset_update(
     dst_asset.data_set_id = (
         datasets.replicate(src_client, dst_client, src_asset.data_set_id, src_dst_dataset_mapping)
         if config.get("dataset_support", False)
-        else None,
+        else None
     )
     return dst_asset
 
