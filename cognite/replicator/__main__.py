@@ -399,10 +399,10 @@ def main():
     if Resource.ASSETS in resources_to_replicate:
         print("Replicating assets...")
         cognite.replicator.assets.replicate(
-            src_client,
-            dst_client,
-            src_dst_dataset_mapping,
-            config,
+            client_src=src_client,
+            client_dst=dst_client,
+            config=config,
+            src_dst_datasets_mapping=src_dst_dataset_mapping,
             delete_replicated_if_not_in_src=delete_replicated_if_not_in_src,
             delete_not_replicated_in_dst=delete_not_replicated_in_dst,
         )
@@ -410,12 +410,12 @@ def main():
     if Resource.EVENTS in resources_to_replicate:
         print("Replicating events...")
         cognite.replicator.events.replicate(
-            src_client,
-            dst_client,
-            src_dst_dataset_mapping,
-            config,
-            config.get("batch_size"),
-            config.get("number_of_threads"),
+            client_src=src_client,
+            client_dst=dst_client,
+            batch_size=config.get("batch_size"),
+            num_threads=config.get("number_of_threads"),
+            config=config,
+            src_dst_dataset_mapping=src_dst_dataset_mapping,
             delete_replicated_if_not_in_src=delete_replicated_if_not_in_src,
             delete_not_replicated_in_dst=delete_not_replicated_in_dst,
             target_external_ids=config.get("events_external_ids"),
@@ -425,12 +425,12 @@ def main():
     if Resource.TIMESERIES in resources_to_replicate:
         print("Replicating time series...")
         cognite.replicator.time_series.replicate(
-            src_client,
-            dst_client,
-            src_dst_dataset_mapping,
-            config,
-            config.get("batch_size"),
-            config.get("number_of_threads"),
+            client_src=src_client,
+            client_dst=dst_client,
+            batch_size=config.get("batch_size"),
+            num_threads=config.get("number_of_threads"),
+            config=config,
+            src_dst_dataset_mapping=src_dst_dataset_mapping,
             delete_replicated_if_not_in_src=delete_replicated_if_not_in_src,
             delete_not_replicated_in_dst=delete_not_replicated_in_dst,
             target_external_ids=config.get("timeseries_external_ids"),
@@ -441,12 +441,12 @@ def main():
     if Resource.FILES in resources_to_replicate:
         print("Replicating files...")
         cognite.replicator.files.replicate(
-            src_client,
-            dst_client,
-            src_dst_dataset_mapping,
-            config,
-            config.get("batch_size"),
-            config.get("number_of_threads"),
+            client_src=src_client,
+            client_dst=dst_client,
+            batch_size=config.get("batch_size"),
+            num_threads=config.get("number_of_threads"),
+            config=config,
+            src_dst_dataset_mapping=src_dst_dataset_mapping,
             delete_replicated_if_not_in_src=delete_replicated_if_not_in_src,
             delete_not_replicated_in_dst=delete_not_replicated_in_dst,
             target_external_ids=config.get("files_external_ids"),
@@ -455,7 +455,11 @@ def main():
 
     if Resource.RAW in resources_to_replicate:
         print("Replicating raw...")
-        cognite.replicator.raw.replicate(src_client, dst_client, config.get("batch_size"))
+        cognite.replicator.raw.replicate(
+            client_src=src_client,
+            client_dst=dst_client,
+            batch_size=config.get("batch_size"),
+        )
 
     if Resource.DATAPOINTS in resources_to_replicate:
         print("Replicating datapoints...")
