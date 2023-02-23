@@ -98,7 +98,7 @@ def update_time_series(
     dst_ts.security_categories = src_ts.security_categories
     dst_ts.data_set_id = (
         datasets.replicate(src_client, dst_client, src_ts.data_set_id, src_dst_dataset_mapping)
-        if config.get("dataset_support", False)
+        if config and config.get("dataset_support", False)
         else None
     )
     return dst_ts

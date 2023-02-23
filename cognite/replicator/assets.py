@@ -47,7 +47,7 @@ def build_asset_create(
         source=src_asset.source,
         parent_id=src_id_dst_map[src_asset.parent_id] if depth > 0 else None,
         data_set_id=datasets.replicate(src_client, dst_client, src_asset.data_set_id, src_dst_dataset_mapping)
-        if config.get("dataset_support", False)
+        if config and config.get("dataset_support", False)
         else None,
     )
 
@@ -94,7 +94,7 @@ def build_asset_update(
     dst_asset.parent_id = src_id_dst_map[src_asset.parent_id] if depth > 0 else None  # when asset hierarchy is mutable
     dst_asset.data_set_id = (
         datasets.replicate(src_client, dst_client, src_asset.data_set_id, src_dst_dataset_mapping)
-        if config.get("dataset_support", False)
+        if config and config.get("dataset_support", False)
         else None
     )
     return dst_asset

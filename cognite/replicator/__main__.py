@@ -40,7 +40,9 @@ import cognite.replicator.files
 import cognite.replicator.raw
 import cognite.replicator.replication
 import cognite.replicator.sequences
+import cognite.replicator.sequence_rows
 import cognite.replicator.time_series
+import cognite.replicator.relationships
 
 ENV_VAR_FOR_CONFIG_FILE_PATH = "COGNITE_CONFIG_FILE"
 
@@ -55,6 +57,8 @@ class Resource(Enum):
     ASSETS = auto()
     EVENTS = auto()
     RAW = auto()
+    SEQUENCES = auto()
+    RELATIONSHIPS = auto()
     TIMESERIES = auto()
     DATAPOINTS = auto()
     FILES = auto()
@@ -118,20 +122,19 @@ def _validate_capabilities_oidc(
         check_for_capabilities.append("timeSeriesAcl")
     if "sequences" in needed_capabilities:
         check_for_capabilities.append("sequencesAcl")
+    if "relationships" in needed_capabilities:
+        check_for_capabilities.append("relationshipsAcl")
     if "files" in needed_capabilities:
         check_for_capabilities.append("filesAcl")
     if "raw" in needed_capabilities:
         check_for_capabilities.append("rawAcl")
+    if "datasets" in needed_capabilities:
+        check_for_capabilities.append("datasetsAcl")
 
-    # TODO: add, so that these resources can be replicated as well
-    # if 'relationships' in needed_capabilities:
-    #    check_for_capabilities.append('relationshipsAcl')
     # if 'labels' in needed_capabilities:
     #    check_for_capabilities.append('labelsAcl')
     # if 'types' in needed_capabilities:
     #    check_for_capabilities.append('typesAcl')
-    # if 'datasets' in needed_capabilities:
-    #    check_for_capabilities.append('datasetsAcl')
 
     try:
         if src_api_authentication:
@@ -472,6 +475,42 @@ def main():
             end=config.get("datapoints_end"),
             exclude_pattern=config.get("timeseries_exclude_pattern"),
             value_manipulation_lambda_fnc=config.get("value_manipulation_lambda_fnc"),
+        )
+
+    if Resource.SEQUENCES in resources_to_replicate:
+        print("Replicating sequences...")
+        cognite.replicator.sequences.replicate(
+            client_src=src_client,
+            client_dst=dst_client,
+            batch_size=config.get("batch_size"),
+            num_threads=config.get("number_of_threads"),
+            config=config,
+            src_dst_dataset_mapping=src_dst_dataset_mapping,
+            delete_replicated_if_not_in_src=delete_replicated_if_not_in_src,
+            delete_not_replicated_in_dst=delete_not_replicated_in_dst,
+            target_external_ids=config.get("sequences_external_ids"),
+            exclude_pattern=config.get("events_exclude_pattern"),
+        )
+        print("Replicating sequences rows...")
+        cognite.replicator.sequence_rows.replicate(
+            client_src=src_client,
+            client_dst=dst_client,
+            batch_size=config.get("batch_size"),
+            num_threads=config.get("number_of_threads"),
+        )
+
+    if Resource.RELATIONSHIPS in resources_to_replicate:
+        print("Replicating relationships...")
+        cognite.replicator.relationships.replicate(
+            client_src=src_client,
+            client_dst=dst_client,
+            batch_size=config.get("batch_size"),
+            num_threads=config.get("number_of_threads"),
+            config=config,
+            src_dst_dataset_mapping=src_dst_dataset_mapping,
+            delete_replicated_if_not_in_src=delete_replicated_if_not_in_src,
+            delete_not_replicated_in_dst=delete_not_replicated_in_dst,
+            target_external_ids=config.get("relationships_external_ids"),
         )
 
 
