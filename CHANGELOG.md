@@ -16,10 +16,13 @@ Changes are grouped as follows
 
 - Support for replicating file data
 
-## [1.2.4] - 2023-02-21
+## [1.2.4] - 2023-03-10
 
+## Added
+- Adding replication for relationships
 ## Fixed
 - Bug fix on dataset id
+- Fixed replication for sequences
 
 ## [1.2.3] - 2023-02-21
 
