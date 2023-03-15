@@ -260,6 +260,22 @@ if __name__ == "__main__":  # this is necessary because threading
     main()
 ```
 
+### 4. Local testing
+It will use the configuration file to determine what will be copied
+In this case, no need to create the client, it will be created based on what is in the configuration file
+
+```python
+import yaml
+import sys
+sys.path.append("cognite-replicator") ### Path of the local version of the replicator. Importing from outside of the current working directory requires sys.path, which is a list of all directories Python searches through.
+import os
+
+if __name__ == "__main__":  # this is necessary because threading
+    COGNITE_CONFIG_FILE = yaml.safe_load("config/config.yml")
+    os.environ["COGNITE_CONFIG_FILE"] = COGNITE_CONFIG_FILE
+    main()
+    sys.path.remove("cognite-replicator")  ## Python will also search these paths for future projects unless they are removed. Removes unwanted search paths
+```
 
 ## Development
 

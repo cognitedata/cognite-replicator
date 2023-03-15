@@ -49,7 +49,7 @@ def create_file(
         metadata=replication.new_metadata(src_file, project_src, runtime),
         asset_ids=replication.get_asset_ids(src_file.asset_ids, src_dst_ids_assets),
         data_set_id=datasets.replicate(src_client, dst_client, src_file.data_set_id, src_dst_dataset_mapping)
-        if config.get("dataset_support", False)
+        if config and config.get("dataset_support", False)
         else None,
     )
 
@@ -92,7 +92,7 @@ def update_file(
     dst_file.source_modified_time = src_file.source_modified_time
     dst_file.data_set_id = (
         datasets.replicate(src_client, dst_client, src_file.data_set_id, src_dst_dataset_mapping)
-        if config.get("dataset_support", False)
+        if config and config.get("dataset_support", False)
         else None,
     )
     return dst_file
@@ -316,15 +316,17 @@ def replicate(
 
     if delete_replicated_if_not_in_src:
         ids_to_delete = replication.find_objects_to_delete_if_not_in_src(files_src, files_dst)
-        client_dst.files.delete(id=ids_to_delete)
-        logging.info(
-            f"Deleted {len(ids_to_delete)} files in destination ({project_dst})"
-            f" because they were no longer in source ({project_src})   "
-        )
+        if ids_to_delete:
+            client_dst.files.delete(id=ids_to_delete)
+            logging.info(
+                f"Deleted {len(ids_to_delete)} files in destination ({project_dst})"
+                f" because they were no longer in source ({project_src})   "
+            )
     if delete_not_replicated_in_dst:
         ids_to_delete = replication.find_objects_to_delete_not_replicated_in_dst(files_dst)
-        client_dst.files.delete(id=ids_to_delete)
-        logging.info(
-            f"Deleted {len(ids_to_delete)} files in destination ({project_dst}) because"
-            f"they were not replicated from source ({project_src})   "
-        )
+        if ids_to_delete:
+            client_dst.files.delete(id=ids_to_delete)
+            logging.info(
+                f"Deleted {len(ids_to_delete)} files in destination ({project_dst}) because"
+                f"they were not replicated from source ({project_src})   "
+            )

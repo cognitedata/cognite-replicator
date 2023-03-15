@@ -47,7 +47,7 @@ def build_asset_create(
         source=src_asset.source,
         parent_id=src_id_dst_map[src_asset.parent_id] if depth > 0 else None,
         data_set_id=datasets.replicate(src_client, dst_client, src_asset.data_set_id, src_dst_dataset_mapping)
-        if config.get("dataset_support", False)
+        if config and config.get("dataset_support", False)
         else None,
     )
 
@@ -94,8 +94,8 @@ def build_asset_update(
     dst_asset.parent_id = src_id_dst_map[src_asset.parent_id] if depth > 0 else None  # when asset hierarchy is mutable
     dst_asset.data_set_id = (
         datasets.replicate(src_client, dst_client, src_asset.data_set_id, src_dst_dataset_mapping)
-        if config.get("dataset_support", False)
-        else None,
+        if config and config.get("dataset_support", False)
+        else None
     )
     return dst_asset
 
@@ -342,15 +342,17 @@ def replicate(
 
     if delete_replicated_if_not_in_src:
         ids_to_delete = replication.find_objects_to_delete_if_not_in_src(assets_src, assets_dst)
-        client_dst.assets.delete(id=ids_to_delete)
-        logging.info(
-            f"Deleted {len(ids_to_delete)} assets in destination ({project_dst})"
-            f" because they were no longer in source ({project_src})   "
-        )
+        if ids_to_delete:
+            client_dst.assets.delete(id=ids_to_delete)
+            logging.info(
+                f"Deleted {len(ids_to_delete)} assets in destination ({project_dst})"
+                f" because they were no longer in source ({project_src})   "
+            )
     if delete_not_replicated_in_dst:
         ids_to_delete = replication.find_objects_to_delete_not_replicated_in_dst(assets_dst)
-        client_dst.assets.delete(id=ids_to_delete)
-        logging.info(
-            f"Deleted {len(ids_to_delete)} assets in destination ({project_dst}) because"
-            f"they were not replicated from source ({project_src})   "
-        )
+        if ids_to_delete:
+            client_dst.assets.delete(id=ids_to_delete)
+            logging.info(
+                f"Deleted {len(ids_to_delete)} assets in destination ({project_dst}) because"
+                f"they were not replicated from source ({project_src})   "
+            )

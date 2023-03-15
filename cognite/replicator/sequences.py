@@ -8,10 +8,19 @@ from cognite.client import CogniteClient
 from cognite.client.data_classes import Sequence, SequenceList
 from cognite.client.exceptions import CogniteAPIError, CogniteNotFoundError
 
-from . import replication
+from . import replication, datasets
 
 
-def create_sequence(src_seq: Sequence, src_dst_ids_assets: Dict[int, int], project_src: str, runtime: int) -> Sequence:
+def create_sequence(
+    src_seq: Sequence,
+    src_dst_ids_assets: Dict[int, int],
+    project_src: str,
+    runtime: int,
+    src_client: CogniteClient,
+    dst_client: CogniteClient,
+    src_dst_dataset_mapping: dict[int, int],
+    config: Dict,
+) -> Sequence:
     """
     Make a new copy of the sequence to be replicated based on a source sequence.
 
@@ -20,24 +29,55 @@ def create_sequence(src_seq: Sequence, src_dst_ids_assets: Dict[int, int], proje
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
+        src_client: The client corresponding to the source project.
+        dst_client: The client corresponding to the destination project.
+        src_dst_dataset_mapping: Dictionary that maps source dataset ids to destination dataset ids
+        config: dict corresponding to the selected yaml config file
 
     Returns:
         The replicated sequence to be created in the destination.
     """
     logging.debug(f"Creating a new sequence based on source sequence id {src_seq.id}")
-    # TODO: Bug happens at line 29 get_asset_ids returns empty list
-    return Sequence(
-        name=src_seq.name,
-        description=src_seq.description,
-        asset_id=replication.get_asset_ids([src_seq.asset_id], src_dst_ids_assets)[0] if src_seq.asset_id else None,
-        external_id=src_seq.external_id,
-        metadata=replication.new_metadata(src_seq, project_src, runtime),
-        columns=src_seq.columns,
-    )
+    asset_id = None
+    if src_seq.asset_id:
+        asset_ids = replication.get_asset_ids([src_seq.asset_id], src_dst_ids_assets)
+        if len(asset_ids) > 0:
+            asset_id = asset_ids[0]
+    if asset_id:
+        return Sequence(
+            name=src_seq.name,
+            description=src_seq.description,
+            asset_id=asset_id,
+            external_id=src_seq.external_id,
+            metadata=replication.new_metadata(src_seq, project_src, runtime),
+            columns=src_seq.columns,
+            data_set_id=datasets.replicate(src_client, dst_client, src_seq.data_set_id, src_dst_dataset_mapping)
+            if config and config.get("dataset_support", False)
+            else None,
+        )
+    else:
+        return Sequence(
+            name=src_seq.name,
+            description=src_seq.description,
+            external_id=src_seq.external_id,
+            metadata=replication.new_metadata(src_seq, project_src, runtime),
+            columns=src_seq.columns,
+            data_set_id=datasets.replicate(src_client, dst_client, src_seq.data_set_id, src_dst_dataset_mapping)
+            if config and config.get("dataset_support", False)
+            else None,
+        )
 
 
 def update_sequence(
-    src_seq: Sequence, dst_seq: Sequence, src_dst_ids_assets: Dict[int, int], project_src: str, runtime: int
+    src_seq: Sequence,
+    dst_seq: Sequence,
+    src_dst_ids_assets: Dict[int, int],
+    project_src: str,
+    runtime: int,
+    src_client: CogniteClient,
+    dst_client: CogniteClient,
+    src_dst_dataset_mapping: dict[int, int],
+    config: Dict,
 ) -> Sequence:
     """
     Makes an updated version of the destination sequence based on the corresponding source sequence.
@@ -49,6 +89,10 @@ def update_sequence(
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
+        src_client: The client corresponding to the source project.
+        dst_client: The client corresponding to the destination project.
+        src_dst_dataset_mapping: Dictionary that maps source dataset ids to destination dataset ids
+        config: dict corresponding to the selected yaml config file
 
     Returns:
         The updated sequence object for the replication destination.
@@ -62,6 +106,11 @@ def update_sequence(
     )
     dst_seq.external_id = src_seq.external_id
     dst_seq.metadata = replication.new_metadata(src_seq, project_src, runtime)
+    dst_seq.data_set_id = (
+        datasets.replicate(src_client, dst_client, src_seq.data_set_id, src_dst_dataset_mapping)
+        if config and config.get("dataset_support", False)
+        else None,
+    )
     return dst_seq
 
 
@@ -71,10 +120,12 @@ def copy_seq(
     src_dst_ids_assets: Dict[int, int],
     project_src: str,
     runtime: int,
-    client: CogniteClient,
+    src_client: CogniteClient,
+    dst_client: CogniteClient,
+    src_dst_dataset_mapping: Dict[int, int],
+    config: Dict,
     src_filter: List[Sequence],
     jobs: queue.Queue = None,
-    exclude_fields: Optional[List[str]] = None,
 ):
     """
     Creates/updates sequence objects and then attempts to create and update these sequence in the destination.
@@ -85,7 +136,11 @@ def copy_seq(
         src_dst_ids_assets: A dictionary of all the mappings of source asset id to destination asset id.
         project_src: The name of the project the object is being replicated from.
         runtime: The timestamp to be used in the new replicated metadata.
-        client: The client corresponding to the destination project.
+        src_client: The client corresponding to the source project.
+        dst_client: The client corresponding to the destination project.
+        src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination ones
+         config: dict corresponding to the selected yaml config file
+        src_filter: List of events in the destination - Will be used for comparison if current events were not copied by the replicator.
         src_filter: List of sequences in the destination - Will be used for comparison if current sequence were not copied by the replicator.
         jobs: Shared job queue, this is initialized and managed by replication.py.
         exclude_fields: List of fields:  Only support name, description, metadata and metadata.customfield.
@@ -108,13 +163,17 @@ def copy_seq(
         logging.info(f"Starting to replicate {len(chunk_seq)} sequence.")
 
         create_seq, update_seq, unchanged_seq = replication.make_objects_batch(
-            chunk_seq,
-            src_id_dst_seq,
-            src_dst_ids_assets,
-            create_sequence,
-            update_sequence,
-            project_src,
-            runtime,
+            src_objects=chunk_seq,
+            src_id_dst_map=src_id_dst_seq,
+            src_dst_ids_assets=src_dst_ids_assets,
+            create=create_sequence,
+            update=update_sequence,
+            project_src=project_src,
+            replicated_runtime=runtime,
+            src_client=src_client,
+            dst_client=dst_client,
+            src_dst_dataset_mapping=src_dst_dataset_mapping,
+            config=config,
             src_filter=src_filter,
         )
 
@@ -122,12 +181,12 @@ def copy_seq(
 
         if create_seq:
             logging.info(f"Creating {len(create_seq)} sequence.")
-            created_seq = replication.retry(client.sequences.create, create_seq)
+            created_seq = replication.retry(dst_client.sequences.create, create_seq)
             logging.info(f"Successfully created {len(created_seq)} sequence.")
 
         if update_seq:
             logging.info(f"Updating {len(update_seq)} sequence.")
-            updated_seq = replication.retry(client.sequences.update, update_seq)
+            updated_seq = replication.retry(dst_client.sequences.update, update_seq)
             logging.info(f"Successfully updated {len(updated_seq)} sequence.")
 
         logging.info(f"Created {len(create_seq)} new sequences and updated {len(update_seq)} existing sequences.")
@@ -144,6 +203,8 @@ def replicate(
     client_dst: CogniteClient,
     batch_size: int = 10000,
     num_threads: int = 1,
+    config: Dict = None,
+    src_dst_dataset_mapping: Dict[int, int] = {},
     delete_replicated_if_not_in_src: bool = False,
     delete_not_replicated_in_dst: bool = False,
     skip_unlinkable: bool = False,
@@ -159,6 +220,8 @@ def replicate(
         client_dst: The client corresponding to the destination project.
         batch_size: The biggest batch size to post chunks in.
         num_threads: The number of threads to be used.
+        config: dict corresponding to the selected yaml config file
+        src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination ones
         delete_replicated_if_not_in_src: If True, will delete replicated assets that are in the destination,
         but no longer in the source project (Default=False).
         delete_not_replicated_in_dst: If True, will delete assets from the destination if they were not replicated
@@ -230,7 +293,10 @@ def replicate(
             src_dst_ids_assets=src_dst_ids_assets,
             project_src=project_src,
             replicated_runtime=replicated_runtime,
-            client=client_dst,
+            src_client=client_src,
+            dst_client=client_dst,
+            src_dst_dataset_mapping=src_dst_dataset_mapping,
+            config=config,
             src_filter=seq_dst,
         )
     else:
@@ -240,8 +306,11 @@ def replicate(
             src_dst_ids_assets=src_dst_ids_assets,
             project_src=project_src,
             runtime=replicated_runtime,
-            client=client_dst,
             src_filter=seq_dst,
+            src_client=client_src,
+            dst_client=client_dst,
+            src_dst_dataset_mapping=src_dst_dataset_mapping,
+            config=config,
         )
 
     logging.info(
@@ -249,20 +318,24 @@ def replicate(
         f"source ({project_src}) to destination ({project_dst})."
     )
 
+    # replicate_rows(client_src=client_src, client_dst=client_dst)
+
     if delete_replicated_if_not_in_src:
         ids_to_delete = replication.find_objects_to_delete_if_not_in_src(seq_src, seq_dst)
-        client_dst.sequences.delete(id=ids_to_delete)
-        logging.info(
-            f"Deleted {len(ids_to_delete)} sequence destination ({project_dst})"
-            f" because they were no longer in source ({project_src})   "
-        )
+        if ids_to_delete:
+            client_dst.sequences.delete(id=ids_to_delete)
+            logging.info(
+                f"Deleted {len(ids_to_delete)} sequence destination ({project_dst})"
+                f" because they were no longer in source ({project_src})   "
+            )
     if delete_not_replicated_in_dst:
         ids_to_delete = replication.find_objects_to_delete_not_replicated_in_dst(seq_dst)
-        client_dst.sequences.delete(id=ids_to_delete)
-        logging.info(
-            f"Deleted {len(ids_to_delete)} sequence in destination ({project_dst}) because"
-            f"they were not replicated from source ({project_src})   "
-        )
+        if ids_to_delete:
+            client_dst.sequences.delete(id=ids_to_delete)
+            logging.info(
+                f"Deleted {len(ids_to_delete)} sequence in destination ({project_dst}) because"
+                f"they were not replicated from source ({project_src})   "
+            )
 
 
 def replicate_rows(client_src, client_dst):

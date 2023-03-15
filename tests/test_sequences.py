@@ -1,9 +1,10 @@
 from cognite.client.data_classes import Sequence
-
+from cognite.client.testing import monkeypatch_cognite_client
 from cognite.replicator.sequences import create_sequence, update_sequence
 
 
 def test_create_sequence():
+    client = monkeypatch_cognite_client()
     src_sequences = [
         Sequence(metadata={}, id=1007, asset_id=3),
         Sequence(metadata={"arbitrary_1": 12, "arbitrary_2": "some text"}, id=2007, asset_id=7),
@@ -20,7 +21,9 @@ def test_create_sequence():
     runtime = 10000000
     id_mapping = {3: 333, 7: 777, 5: 555}
     for i, src_sequence in enumerate(src_sequences):
-        created_sequence = create_sequence(src_sequence, id_mapping, f"source project name {i}", runtime)
+        created_sequence = create_sequence(
+            src_sequence, id_mapping, f"source project name {i}", runtime, client, client, {}, {}
+        )
 
         assert created_sequence.metadata["_replicatedInternalId"] == src_sequences[i].id
         assert created_sequence.metadata["_replicatedSource"] == f"source project name {i}"
@@ -34,6 +37,7 @@ def test_create_sequence():
 
 
 def test_update_sequence():
+    client = monkeypatch_cognite_client()
     src_sequences = [
         Sequence(metadata={}, id=1007, asset_id=3),
         Sequence(metadata={}, id=2007, asset_id=7),
@@ -49,7 +53,7 @@ def test_update_sequence():
 
     for i in range(len(src_sequences)):
         updated_sequence = update_sequence(
-            src_sequences[i], dst_sequences[i], id_mapping, "source project name", runtime
+            src_sequences[i], dst_sequences[i], id_mapping, "source project name", runtime, client, client, {}, {}
         )
 
         assert updated_sequence.metadata["_replicatedInternalId"] == src_sequences[i].id
