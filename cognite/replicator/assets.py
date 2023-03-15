@@ -342,15 +342,17 @@ def replicate(
 
     if delete_replicated_if_not_in_src:
         ids_to_delete = replication.find_objects_to_delete_if_not_in_src(assets_src, assets_dst)
-        client_dst.assets.delete(id=ids_to_delete)
-        logging.info(
-            f"Deleted {len(ids_to_delete)} assets in destination ({project_dst})"
-            f" because they were no longer in source ({project_src})   "
-        )
+        if ids_to_delete:
+            client_dst.assets.delete(id=ids_to_delete)
+            logging.info(
+                f"Deleted {len(ids_to_delete)} assets in destination ({project_dst})"
+                f" because they were no longer in source ({project_src})   "
+            )
     if delete_not_replicated_in_dst:
         ids_to_delete = replication.find_objects_to_delete_not_replicated_in_dst(assets_dst)
-        client_dst.assets.delete(id=ids_to_delete)
-        logging.info(
-            f"Deleted {len(ids_to_delete)} assets in destination ({project_dst}) because"
-            f"they were not replicated from source ({project_src})   "
-        )
+        if ids_to_delete:
+            client_dst.assets.delete(id=ids_to_delete)
+            logging.info(
+                f"Deleted {len(ids_to_delete)} assets in destination ({project_dst}) because"
+                f"they were not replicated from source ({project_src})   "
+            )

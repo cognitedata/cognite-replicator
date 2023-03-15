@@ -116,3 +116,4 @@ local
 config/config.yml
 test.py
 local_testing/*
+log/cognite-replicator.log.*

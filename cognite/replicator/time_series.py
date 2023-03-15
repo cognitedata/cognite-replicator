@@ -334,15 +334,17 @@ def replicate(
 
     if delete_replicated_if_not_in_src:
         ids_to_delete = replication.find_objects_to_delete_if_not_in_src(ts_src, ts_dst)
-        client_dst.time_series.delete(id=ids_to_delete)
-        logging.info(
-            f"Deleted {len(ids_to_delete)} time series destination ({project_dst})"
-            f" because they were no longer in source ({project_src})   "
-        )
+        if ids_to_delete:
+            client_dst.time_series.delete(id=ids_to_delete)
+            logging.info(
+                f"Deleted {len(ids_to_delete)} time series destination ({project_dst})"
+                f" because they were no longer in source ({project_src})   "
+            )
     if delete_not_replicated_in_dst:
         ids_to_delete = replication.find_objects_to_delete_not_replicated_in_dst(ts_dst)
-        client_dst.time_series.delete(id=ids_to_delete)
-        logging.info(
-            f"Deleted {len(ids_to_delete)} time series in destination ({project_dst}) because"
-            f"they were not replicated from source ({project_src})   "
-        )
+        if ids_to_delete:
+            client_dst.time_series.delete(id=ids_to_delete)
+            logging.info(
+                f"Deleted {len(ids_to_delete)} time series in destination ({project_dst}) because"
+                f"they were not replicated from source ({project_src})   "
+            )

@@ -322,18 +322,20 @@ def replicate(
 
     if delete_replicated_if_not_in_src:
         ids_to_delete = replication.find_objects_to_delete_if_not_in_src(seq_src, seq_dst)
-        client_dst.sequences.delete(id=ids_to_delete)
-        logging.info(
-            f"Deleted {len(ids_to_delete)} sequence destination ({project_dst})"
-            f" because they were no longer in source ({project_src})   "
-        )
+        if ids_to_delete:
+            client_dst.sequences.delete(id=ids_to_delete)
+            logging.info(
+                f"Deleted {len(ids_to_delete)} sequence destination ({project_dst})"
+                f" because they were no longer in source ({project_src})   "
+            )
     if delete_not_replicated_in_dst:
         ids_to_delete = replication.find_objects_to_delete_not_replicated_in_dst(seq_dst)
-        client_dst.sequences.delete(id=ids_to_delete)
-        logging.info(
-            f"Deleted {len(ids_to_delete)} sequence in destination ({project_dst}) because"
-            f"they were not replicated from source ({project_src})   "
-        )
+        if ids_to_delete:
+            client_dst.sequences.delete(id=ids_to_delete)
+            logging.info(
+                f"Deleted {len(ids_to_delete)} sequence in destination ({project_dst}) because"
+                f"they were not replicated from source ({project_src})   "
+            )
 
 
 def replicate_rows(client_src, client_dst):
