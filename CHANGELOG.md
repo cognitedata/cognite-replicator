@@ -23,6 +23,7 @@ Changes are grouped as follows
 ## Fixed
 - Bug fix on dataset id
 - Fixed replication for sequences
+- Bug fix on deletion of objects not in source or destination
 
 ## [1.2.3] - 2023-02-21
 
