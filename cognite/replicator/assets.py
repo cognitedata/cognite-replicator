@@ -268,7 +268,7 @@ def replicate(
     client_src: CogniteClient,
     client_dst: CogniteClient,
     config: Dict = None,
-    src_dst_datasets_mapping: Dict[int, int] = {},
+    src_dst_dataset_mapping: Dict[int, int] = {},
     delete_replicated_if_not_in_src: bool = False,
     delete_not_replicated_in_dst: bool = False,
     subtree_ids: Optional[Union[int, List[int]]] = None,
@@ -282,7 +282,7 @@ def replicate(
         client_src: The client corresponding to the source project.
         client_dst: The client corresponding to the destination project.
         config: dict corresponding to the selected yaml config file
-        src_dst_datasets_mapping: dictionary mapping the source dataset ids to the destination ids.
+        src_dst_dataset_mapping: dictionary mapping the source dataset ids to the destination ids.
         delete_replicated_if_not_in_src: If True, will delete replicated assets that are in the destination,
         but no longer in the source project (Default=False).
         delete_not_replicated_in_dst: If True, will delete assets from the destination if they were not replicated
@@ -328,7 +328,7 @@ def replicate(
         replicated_runtime,
         client_src,
         client_dst,
-        src_dst_datasets_mapping,
+        src_dst_dataset_mapping,
         config,
         subtree_ids,
         subtree_external_ids,

@@ -16,6 +16,16 @@ Changes are grouped as follows
 
 - Support for replicating file data
 
+## [1.2.6] - 2023-03-20
+
+## Fixed
+- naming convention fixed
+
+## [1.2.5] - 2023-03-15
+
+## Fixed
+- typo fix
+
 ## [1.2.4] - 2023-03-10
 
 ## Added
