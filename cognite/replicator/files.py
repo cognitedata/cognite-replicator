@@ -169,13 +169,31 @@ def copy_files(
             for file in create_files:
                 response = None
                 try:
+                    logging.info(f"Attempting to create {file.name}")
                     response = replication.retry(dst_client.files.create, file)
+
+                    logging.info(f"Attempting to create content for file: {file.name}")
+                    created_file = dst_client.files.retrieve(external_id=file.external_id)
+                    file_bytes = src_client.files.download_bytes(external_id=created_file.external_id)
+                    dst_client.files.upload_bytes(
+                        file_bytes,
+                        name=created_file.name,
+                        external_id=created_file.external_id,
+                        overwrite=True,
+                    )
                 except CogniteAPIError as exc:
                     logging.error(f"Failed to create file {file.name}. {exc}")
                     if "Invalid MIME type" in exc.message:
                         file.mime_type = None
                         response = replication.retry(dst_client.files.create, file)
-
+                        created_file = dst_client.files.retrieve(external_id=file.external_id)
+                        file_bytes = src_client.files.download_bytes(external_id=created_file.external_id)
+                        dst_client.files.upload_bytes(
+                            file_bytes,
+                            name=created_file.name,
+                            external_id=created_file.external_id,
+                            overwrite=True,
+                        )
                 if response:
                     create_urls.append(response)
             logging.debug(f"Successfully created {len(create_urls)} files.")
@@ -245,12 +263,13 @@ def replicate(
     src_id_dst_file = replication.make_id_object_map(files_dst)
 
     assets_dst = client_dst.assets.list(limit=None)
-    src_dst_ids_assets = replication.existing_mapping(*assets_dst)
+    src_dst_ids_assets = None
+    # src_dst_ids_assets = replication.existing_mapping(*assets_dst)
 
     if not src_dst_ids_assets:
         assets_src = client_src.assets.list(limit=None)
-        src_assets_map = replication.make_external_id_obj_map(assets_src)
-        src_dst_ids_assets = replication.map_ids_from_external_ids(src_assets_map, assets_dst)
+        src_assets_map = replication.make_asset_name_obj_map(assets_src)
+        src_dst_ids_assets = replication.map_ids_from_asset_names(src_assets_map, assets_dst)
 
     logging.info(
         f"If a files asset ids is one of the {len(src_dst_ids_assets)} assets "

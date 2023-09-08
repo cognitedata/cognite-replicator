@@ -504,6 +504,27 @@ def map_ids_from_external_ids(src_asset_map: Dict[str, Asset], dst_assets: List[
     return ids
 
 
+def map_ids_from_asset_names(src_asset_map: Dict[str, Asset], dst_assets: List[Asset]):
+    """
+    Alternative to the existing_mapping for the cases when src and dst have the same assets
+    but dst assets don't have replication metadata
+
+    Parameters:
+        src_asset_map: a dict which maps external id to the asset object
+        dst_assets: a list of assets in the destination
+    """
+    ids = {}
+
+    for dst in dst_assets:
+        if src_asset_map.get(dst.name):
+            if ids.get(src_asset_map.get(dst.name)):
+                # asset already exists in mapping
+                print(f"Asset already exists in assetmap {src_asset_map.get(dst.name)}")
+            else:
+                ids[src_asset_map[dst.name].id] = dst.id
+    return ids
+
+
 def make_external_id_obj_map(assets: List[Union[Asset, Sequence]]):
     """
     Creates a map of external_id to asset from a list of assets
@@ -514,5 +535,19 @@ def make_external_id_obj_map(assets: List[Union[Asset, Sequence]]):
     asset_map = {}
     for asset in assets:
         asset_map[asset.external_id] = asset
+
+    return asset_map
+
+
+def make_asset_name_obj_map(assets: List[Union[Asset, Sequence]]):
+    """
+    Creates a map of asset names to asset from a list of assets
+
+    Parameters:
+        assets: a list of assets from which a map will be created
+    """
+    asset_map = {}
+    for asset in assets:
+        asset_map[asset.name] = asset
 
     return asset_map

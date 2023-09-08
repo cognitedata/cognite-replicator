@@ -27,8 +27,9 @@ classifiers = [
 cognite-sdk = "^5.4.4"
 google-cloud-logging = "^1.12"
 python = "^3.10"
-pyyaml = "^5.1.0"
 protobuf = "^4.0.0"
+pyyaml = "^6.0.1"
+pandas = "^2.0.3"
 
 [tool.poetry.dev-dependencies]
 black = "^22.8"

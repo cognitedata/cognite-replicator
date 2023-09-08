@@ -12,14 +12,14 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 
 Cognite Replicator is a Python package for replicating data across Cognite Data Fusion (CDF) projects. This package is built on top of the Cognite Python SDK.
-This component is Community content and not officially supported by Cognite. Bugs and changes will be fixed on a best effort basis. Feel free to open issues and pull requests, we will review them as soon as we can. 
+This component is Community content and not officially supported by Cognite. Bugs and changes will be fixed on a best effort basis. Feel free to open issues and pull requests, we will review them as soon as we can.
 
 Copyright 2023 Cognite AS
 
 ## Prerequisites
 In order to start using the Replicator, you need:
 - Python3 (>= 3.6)
-- Credentials for both the source and destination projects: 
+- Credentials for both the source and destination projects:
     - CLIENT_ID ("Client ID from Azure")
     - CLIENT_SECRET ("Client secret from Azure", only if using authentication via secret)
     - CLUSTER ("Name of CDF cluster")
@@ -52,7 +52,7 @@ docker build -t cognite-replicator .
 Create a configuration file based on the config/default.yml and update the values corresponding to your environment
 If no file is specified then replicator will use config/default.yml.
 
-via Python 
+via Python
 
 ```bash
 python -m cognite.replicator config/filepath.yml
@@ -66,7 +66,7 @@ docker run -e SOURCE_CLIENT_SECRET -e DEST_CLIENT_SECRET -v /absolute/path/to/co
 ```
 
 ### 2. Setup as Python library
-#### 2.1 Without configuration file and interactive login 
+#### 2.1 Without configuration file and interactive login
 It will copy everything from source to destination and use your own credentials to run the code, you need to have the right permissions to read on the source project and write on the destination project
 
 ```python
