@@ -504,6 +504,35 @@ def map_ids_from_external_ids(src_asset_map: Dict[str, Asset], dst_assets: List[
     return ids
 
 
+def map_ids_from_asset_external_ids(src_asset_map: Dict[str, Asset], dst_assets: List[Asset]):
+    """
+    Alternative to the existing_mapping for the cases when src and dst have the same assets
+    but dst assets don't have replication metadata
+
+    Parameters:
+        src_asset_map: a dict which maps external id to the asset object
+        dst_assets: a list of assets in the destination
+    """
+    ids = {}
+    for dst in dst_assets:
+        trimmed_external_id = trim_external_ids(dst.external_id)
+
+        if src_asset_map.get(trimmed_external_id):
+            if ids.get(src_asset_map.get(trimmed_external_id)):
+                ids[src_asset_map[trimmed_external_id].id] = dst.id
+            else:
+                ids[src_asset_map[trimmed_external_id].id] = dst.id
+    return ids
+
+
+# There is a mismatch between external ids between 2 projects, trim the mismatch portion
+def trim_external_ids(asset_external_id: str) -> str:
+    trimmed_external_id = asset_external_id.split(":")
+    if len(trimmed_external_id) > 0:
+        return trimmed_external_id.pop()
+    return asset_external_id
+
+
 def map_ids_from_asset_names(src_asset_map: Dict[str, Asset], dst_assets: List[Asset]):
     """
     Alternative to the existing_mapping for the cases when src and dst have the same assets

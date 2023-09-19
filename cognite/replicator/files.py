@@ -40,7 +40,6 @@ def create_file(
     """
     logging.debug(f"Creating a new file based on source file id {src_file.id}")
     mime_type = mimetypes.types_map.get(f".{src_file.mime_type}", src_file.mime_type)
-
     return FileMetadata(
         external_id=src_file.external_id,
         name=src_file.name,
@@ -49,7 +48,7 @@ def create_file(
         metadata=replication.new_metadata(src_file, project_src, runtime),
         asset_ids=replication.get_asset_ids(src_file.asset_ids, src_dst_ids_assets),
         data_set_id=datasets.replicate(src_client, dst_client, src_file.data_set_id, src_dst_dataset_mapping)
-        if config and config.get("dataset_support", False)
+        if True
         else None,
     )
 
@@ -170,6 +169,13 @@ def copy_files(
                 response = None
                 try:
                     logging.info(f"Attempting to create {file.name}")
+                    if (
+                        hasattr(file, "metadata")
+                        and file.metadata != None
+                        and "asset_id" in file.metadata
+                        and len(file.asset_ids) > 0
+                    ):
+                        file.metadata["asset_id"] = file.asset_ids[0]
                     response = replication.retry(dst_client.files.create, file)
 
                     logging.info(f"Attempting to create content for file: {file.name}")
@@ -222,9 +228,10 @@ def replicate(
     delete_replicated_if_not_in_src: bool = False,
     delete_not_replicated_in_dst: bool = False,
     skip_unlinkable: bool = False,
-    skip_nonasset: bool = False,
+    skip_nonasset: bool = True,
     target_external_ids: Optional[List[str]] = None,
     exclude_pattern: str = None,
+    dataset_ids: Optional[List[str]] = [],
 ):
     """
     Replicates all the files from the source project into the destination project.
@@ -255,7 +262,11 @@ def replicate(
         except CogniteNotFoundError:
             files_dst = FileMetadataList([])
     else:
-        files_src = client_src.files.list(limit=None)
+        if len(dataset_ids) > 0:
+            files_src = client_src.files.list(limit=None, data_set_ids=dataset_ids)
+        else:
+            files_src = client_src.files.list(limit=None)
+
         files_dst = client_dst.files.list(limit=None)
         logging.info(f"There are {len(files_src)} existing files in source ({project_src}).")
         logging.info(f"There are {len(files_dst)} existing files in destination ({project_dst}).")
@@ -268,8 +279,8 @@ def replicate(
 
     if not src_dst_ids_assets:
         assets_src = client_src.assets.list(limit=None)
-        src_assets_map = replication.make_asset_name_obj_map(assets_src)
-        src_dst_ids_assets = replication.map_ids_from_asset_names(src_assets_map, assets_dst)
+        src_assets_map = replication.make_external_id_obj_map(assets_src)
+        src_dst_ids_assets = replication.map_ids_from_asset_external_ids(src_assets_map, assets_dst)
 
     logging.info(
         f"If a files asset ids is one of the {len(src_dst_ids_assets)} assets "

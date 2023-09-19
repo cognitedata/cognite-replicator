@@ -454,6 +454,8 @@ def main():
             delete_not_replicated_in_dst=delete_not_replicated_in_dst,
             target_external_ids=config.get("files_external_ids"),
             exclude_pattern=config.get("files_exclude_pattern"),
+            skip_nonasset=True,
+            dataset_ids=config.get("dataset_ids"),
         )
 
     if Resource.RAW in resources_to_replicate:

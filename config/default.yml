@@ -42,6 +42,9 @@ datapoints_end: 1d-ago                              # Must be an integer timesta
 value_manipulation_lambda_fnc: # "lambda x: x*0.2"    # Lambda function as a string if value manipulation for datapoints is needed.
 dataset_support: false                              # Boolean to enable or not the dataset support
 
+dataset_ids:                                        # Optional - List of dataset ids to consider for replication
+  # - dataset-id-1
+
 events_external_ids:                                # Optional - List of events external_ids to replicate
   #- external-id-1
   #- external-id-2
