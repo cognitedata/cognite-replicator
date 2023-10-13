@@ -1,4 +1,4 @@
-FROM python:slim
+FROM python:3.11-slim of FROM python:3.11.6-slim
 
 LABEL maintainer="support@cognite.com"
 
