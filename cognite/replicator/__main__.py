@@ -392,8 +392,8 @@ def main():
         ):
             sys.exit(2)
 
-    print(f'Source project: {src_client.config.project}')
-    print(f'Destination project: {dst_client.config.project}')
+    print(f"Source project: {src_client.config.project}")
+    print(f"Destination project: {dst_client.config.project}")
 
     # REPLICATION PROCESS
     print("Starting replication of resources")
