@@ -140,7 +140,7 @@ colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [[package]]
 name = "cognite-sdk"
-version = "5.7.3"
+version = "5.12.0"
 description = "Cognite Python SDK"
 category = "main"
 optional = false
@@ -152,13 +152,14 @@ protobuf = ">=3.16.0"
 requests = ">=2,<3"
 requests_oauthlib = ">=1,<2"
 sortedcontainers = ">=2.2,<3.0"
+tzdata = {version = ">=2023.3", markers = "sys_platform == \"win32\""}
 
 [package.extras]
-all = ["geopandas (>=0.10.0)", "pandas (>=1.4)", "pip (>=20.0.0)", "shapely (>=1.7.0)", "sympy"]
+all = ["backports-zoneinfo[tzdata] (>=0.2.1)", "geopandas (>=0.10.0)", "pandas (>=1.4)", "pip (>=20.0.0)", "shapely (>=1.7.0)", "sympy"]
 functions = ["pip (>=20.0.0)"]
 geo = ["geopandas (>=0.10.0)", "shapely (>=1.7.0)"]
 numpy = ["numpy (>=1.20,<2.0)"]
-pandas = ["pandas (>=1.4)"]
+pandas = ["backports-zoneinfo[tzdata] (>=0.2.1)", "pandas (>=1.4)"]
 pyodide = ["pyodide-http (>=0.2.0,<0.3.0)"]
 sympy = ["sympy"]
 
@@ -1079,6 +1080,14 @@ tqdm = ">=4.14"
 urllib3 = ">=1.26.0"
 
 [[package]]
+name = "tzdata"
+version = "2023.3"
+description = "Provider of IANA time zone data"
+category = "main"
+optional = false
+python-versions = ">=2"
+
+[[package]]
 name = "urllib3"
 version = "1.26.15"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
@@ -1331,8 +1340,8 @@ click = [
     {file = "click-8.1.3.tar.gz", hash = "sha256:7682dc8afb30297001674575ea00d1814d808d6a36af415a82bd481d37ba7b8e"},
 ]
 cognite-sdk = [
-    {file = "cognite_sdk-5.7.3-py3-none-any.whl", hash = "sha256:efb5e33af2fa241de3a53a89f444daee2833e6293008c5c6169843cc78aad987"},
-    {file = "cognite_sdk-5.7.3.tar.gz", hash = "sha256:05a567635bd4d1d2b0cfa17159a827870545850d70790f2d7705991bdf93ada4"},
+    {file = "cognite_sdk-5.12.0-py3-none-any.whl", hash = "sha256:587dd1c1d98d33a1fead9ff9c388e6c841ab68e0b02952af8193ca5250fbd92e"},
+    {file = "cognite_sdk-5.12.0.tar.gz", hash = "sha256:db972e875e17f4ce0f7f3ca3d945293e670133d18854debad44de8d312f696b6"},
 ]
 colorama = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
@@ -1824,6 +1833,10 @@ tqdm = [
 twine = [
     {file = "twine-3.8.0-py3-none-any.whl", hash = "sha256:d0550fca9dc19f3d5e8eadfce0c227294df0a2a951251a4385797c8a6198b7c8"},
     {file = "twine-3.8.0.tar.gz", hash = "sha256:8efa52658e0ae770686a13b675569328f1fba9837e5de1867bfe5f46a9aefe19"},
+]
+tzdata = [
+    {file = "tzdata-2023.3-py2.py3-none-any.whl", hash = "sha256:7e65763eef3120314099b6939b5546db7adce1e7d6f2e179e3df563c70511eda"},
+    {file = "tzdata-2023.3.tar.gz", hash = "sha256:11ef1e08e54acb0d4f95bdb1be05da659673de4acbd21bf9c69e94cc5e907a3a"},
 ]
 urllib3 = [
     {file = "urllib3-1.26.15-py2.py3-none-any.whl", hash = "sha256:aa751d169e23c7479ce47a0cb0da579e3ede798f994f5816a74e4f4500dcea42"},
