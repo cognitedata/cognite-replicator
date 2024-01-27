@@ -51,9 +51,11 @@ def create_sequence(
             external_id=src_seq.external_id,
             metadata=replication.new_metadata(src_seq, project_src, runtime),
             columns=src_seq.columns,
-            data_set_id=datasets.replicate(src_client, dst_client, src_seq.data_set_id, src_dst_dataset_mapping)
-            if config and config.get("dataset_support", False)
-            else None,
+            data_set_id=(
+                datasets.replicate(src_client, dst_client, src_seq.data_set_id, src_dst_dataset_mapping)
+                if config and config.get("dataset_support", False)
+                else None
+            ),
         )
     else:
         return Sequence(
@@ -62,9 +64,11 @@ def create_sequence(
             external_id=src_seq.external_id,
             metadata=replication.new_metadata(src_seq, project_src, runtime),
             columns=src_seq.columns,
-            data_set_id=datasets.replicate(src_client, dst_client, src_seq.data_set_id, src_dst_dataset_mapping)
-            if config and config.get("dataset_support", False)
-            else None,
+            data_set_id=(
+                datasets.replicate(src_client, dst_client, src_seq.data_set_id, src_dst_dataset_mapping)
+                if config and config.get("dataset_support", False)
+                else None
+            ),
         )
 
 
@@ -107,9 +111,11 @@ def update_sequence(
     dst_seq.external_id = src_seq.external_id
     dst_seq.metadata = replication.new_metadata(src_seq, project_src, runtime)
     dst_seq.data_set_id = (
-        datasets.replicate(src_client, dst_client, src_seq.data_set_id, src_dst_dataset_mapping)
-        if config and config.get("dataset_support", False)
-        else None,
+        (
+            datasets.replicate(src_client, dst_client, src_seq.data_set_id, src_dst_dataset_mapping)
+            if config and config.get("dataset_support", False)
+            else None
+        ),
     )
     return dst_seq
 
