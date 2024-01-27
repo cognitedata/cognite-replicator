@@ -41,9 +41,11 @@ def create_event(
 
     return Event(
         external_id=src_event.external_id,
-        start_time=src_event.start_time
-        if src_event.start_time and src_event.end_time and src_event.start_time < src_event.end_time
-        else src_event.end_time,
+        start_time=(
+            src_event.start_time
+            if src_event.start_time and src_event.end_time and src_event.start_time < src_event.end_time
+            else src_event.end_time
+        ),
         end_time=src_event.end_time,
         type=src_event.type,
         subtype=src_event.subtype,
@@ -51,9 +53,11 @@ def create_event(
         metadata=replication.new_metadata(src_event, project_src, runtime),
         asset_ids=replication.get_asset_ids(src_event.asset_ids, src_dst_ids_assets),
         source=src_event.source,
-        data_set_id=datasets.replicate(src_client, dst_client, src_event.data_set_id, src_dst_dataset_mapping)
-        if config and config.get("dataset_support", False)
-        else None,
+        data_set_id=(
+            datasets.replicate(src_client, dst_client, src_event.data_set_id, src_dst_dataset_mapping)
+            if config and config.get("dataset_support", False)
+            else None
+        ),
     )
 
 
@@ -101,9 +105,11 @@ def update_event(
     dst_event.asset_ids = replication.get_asset_ids(src_event.asset_ids, src_dst_ids_assets)
     dst_event.source = src_event.source
     dst_event.data_set_id = (
-        datasets.replicate(src_client, dst_client, src_event.data_set_id, src_dst_dataset_mapping)
-        if config and config.get("dataset_support", False)
-        else None,
+        (
+            datasets.replicate(src_client, dst_client, src_event.data_set_id, src_dst_dataset_mapping)
+            if config and config.get("dataset_support", False)
+            else None
+        ),
     )
     return dst_event
 

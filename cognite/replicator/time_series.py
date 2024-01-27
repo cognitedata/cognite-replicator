@@ -50,9 +50,11 @@ def create_time_series(
         description=src_ts.description,
         security_categories=src_ts.security_categories,
         legacy_name=src_ts.external_id,
-        data_set_id=datasets.replicate(src_client, dst_client, src_ts.data_set_id, src_dst_dataset_mapping)
-        if config and config.get("dataset_support", False)
-        else None,
+        data_set_id=(
+            datasets.replicate(src_client, dst_client, src_ts.data_set_id, src_dst_dataset_mapping)
+            if config and config.get("dataset_support", False)
+            else None
+        ),
     )
 
 
