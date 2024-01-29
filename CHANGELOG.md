@@ -16,6 +16,11 @@ Changes are grouped as follows
 
 - Support for replicating file data
 
+## [1.3.0] - 2023-01-29
+- python upgrade to ^3.11
+- pyyaml upgrade to ^6.0.1
+- cognite-sdk-upgrade to ^7.13.8
+
 ## [1.2.6] - 2023-03-20
 
 ## Fixed
