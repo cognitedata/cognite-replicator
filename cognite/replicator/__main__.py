@@ -28,7 +28,7 @@ import getpass
 import yaml
 from cognite.client import CogniteClient, ClientConfig
 from cognite.client.exceptions import CogniteAPIError
-from cognite.client.credentials import OAuthClientCredentials, Token, OAuthInteractive, APIKey
+from cognite.client.credentials import OAuthClientCredentials, Token, OAuthInteractive
 from cognite.client.data_classes import assets, datapoints, events, files, raw, time_series
 
 # import __init__
@@ -266,7 +266,6 @@ def main():
         src_api_key = os.environ.get(config.get("src_api_key_env_var", "COGNITE_SOURCE_API_KEY"))
         src_client = CogniteClient(
             ClientConfig(
-                credentials=APIKey(src_api_key),
                 project=config.get("src_COGNITE_PROJECT"),
                 client_name=config.get("client_name"),
                 base_url=config.get("src_baseurl", "https://api.cognitedata.com"),
@@ -318,7 +317,6 @@ def main():
         dst_api_key = os.environ.get(config.get("dst_api_key_env_var", "COGNITE_DESTINATION_API_KEY"))
         dst_client = CogniteClient(
             ClientConfig(
-                credentials=APIKey(dst_api_key),
                 project=config.get("dst_COGNITE_PROJECT"),
                 client_name=config.get("client_name"),
                 base_url=config.get("dst_baseurl", "https://api.cognitedata.com"),
