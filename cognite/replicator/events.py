@@ -54,9 +54,9 @@ def create_event(
         asset_ids=replication.get_asset_ids(src_event.asset_ids, src_dst_ids_assets),
         source=src_event.source,
         data_set_id=(
-        datasets.replicate(src_client, dst_client, src_event.data_set_id, src_dst_dataset_mapping)
-        if config and config.get("dataset_support", False)
-        else None
+            datasets.replicate(src_client, dst_client, src_event.data_set_id, src_dst_dataset_mapping)
+            if config and config.get("dataset_support", False)
+            else None
         ),
     )
 

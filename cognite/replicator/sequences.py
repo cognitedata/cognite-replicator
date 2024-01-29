@@ -52,9 +52,9 @@ def create_sequence(
             metadata=replication.new_metadata(src_seq, project_src, runtime),
             columns=src_seq.columns,
             data_set_id=(
-            datasets.replicate(src_client, dst_client, src_seq.data_set_id, src_dst_dataset_mapping)
-            if config and config.get("dataset_support", False)
-            else None
+                datasets.replicate(src_client, dst_client, src_seq.data_set_id, src_dst_dataset_mapping)
+                if config and config.get("dataset_support", False)
+                else None
             ),
         )
     else:
@@ -65,9 +65,9 @@ def create_sequence(
             metadata=replication.new_metadata(src_seq, project_src, runtime),
             columns=src_seq.columns,
             data_set_id=(
-            datasets.replicate(src_client, dst_client, src_seq.data_set_id, src_dst_dataset_mapping)
-            if config and config.get("dataset_support", False)
-            else None
+                datasets.replicate(src_client, dst_client, src_seq.data_set_id, src_dst_dataset_mapping)
+                if config and config.get("dataset_support", False)
+                else None
             ),
         )
 
