@@ -46,9 +46,11 @@ def build_asset_create(
         metadata=replication.new_metadata(src_asset, project_src, runtime),
         source=src_asset.source,
         parent_id=src_id_dst_map[src_asset.parent_id] if depth > 0 else None,
-        data_set_id=datasets.replicate(src_client, dst_client, src_asset.data_set_id, src_dst_dataset_mapping)
-        if config and config.get("dataset_support", False)
-        else None,
+        data_set_id=(
+            datasets.replicate(src_client, dst_client, src_asset.data_set_id, src_dst_dataset_mapping)
+            if config and config.get("dataset_support", False)
+            else None
+        ),
     )
 
 

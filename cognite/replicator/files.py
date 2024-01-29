@@ -48,9 +48,11 @@ def create_file(
         mime_type=mime_type,
         metadata=replication.new_metadata(src_file, project_src, runtime),
         asset_ids=replication.get_asset_ids(src_file.asset_ids, src_dst_ids_assets),
-        data_set_id=datasets.replicate(src_client, dst_client, src_file.data_set_id, src_dst_dataset_mapping)
-        if config and config.get("dataset_support", False)
-        else None,
+        data_set_id=(
+            datasets.replicate(src_client, dst_client, src_file.data_set_id, src_dst_dataset_mapping)
+            if config and config.get("dataset_support", False)
+            else None
+        ),
     )
 
 
@@ -91,9 +93,11 @@ def update_file(
     dst_file.source_created_time = src_file.source_created_time
     dst_file.source_modified_time = src_file.source_modified_time
     dst_file.data_set_id = (
-        datasets.replicate(src_client, dst_client, src_file.data_set_id, src_dst_dataset_mapping)
-        if config and config.get("dataset_support", False)
-        else None,
+        (
+            datasets.replicate(src_client, dst_client, src_file.data_set_id, src_dst_dataset_mapping)
+            if config and config.get("dataset_support", False)
+            else None
+        ),
     )
     return dst_file
 

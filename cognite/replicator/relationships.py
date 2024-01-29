@@ -41,16 +41,20 @@ def create_relationship(
         target_external_id=src_relationship.target_external_id,
         target_type=src_relationship.target_type,
         target=src_relationship.target,
-        start_time=src_relationship.start_time
-        if src_relationship.start_time
-        and src_relationship.end_time
-        and src_relationship.start_time < src_relationship.end_time
-        else src_relationship.end_time,
+        start_time=(
+            src_relationship.start_time
+            if src_relationship.start_time
+            and src_relationship.end_time
+            and src_relationship.start_time < src_relationship.end_time
+            else src_relationship.end_time
+        ),
         end_time=src_relationship.end_time,
         confidence=src_relationship.confidence,
-        data_set_id=datasets.replicate(src_client, dst_client, src_relationship.data_set_id, src_dst_dataset_mapping)
-        if config and config.get("dataset_support", False)
-        else None,
+        data_set_id=(
+            datasets.replicate(src_client, dst_client, src_relationship.data_set_id, src_dst_dataset_mapping)
+            if config and config.get("dataset_support", False)
+            else None
+        ),
     )
 
 
@@ -97,9 +101,11 @@ def update_relationship(
     dst_relationship.end_time = src_relationship.end_time
     dst_relationship.confidence = src_relationship.confidence
     dst_relationship.data_set_id = (
-        datasets.replicate(src_client, dst_client, src_relationship.data_set_id, src_dst_dataset_mapping)
-        if config and config.get("dataset_support", False)
-        else None,
+        (
+            datasets.replicate(src_client, dst_client, src_relationship.data_set_id, src_dst_dataset_mapping)
+            if config and config.get("dataset_support", False)
+            else None
+        ),
     )
     return dst_relationship
 
