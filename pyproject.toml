@@ -24,10 +24,10 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-cognite-sdk = "^5.4.4"
+cognite-sdk = "^7.13.8"
 google-cloud-logging = "^1.12"
-python = "^3.10"
-pyyaml = "^5.1.0"
+python = "^3.11"
+pyyaml = "^6.0.1"
 protobuf = "^4.0.0"
 
 [tool.poetry.dev-dependencies]
