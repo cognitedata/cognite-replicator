@@ -158,7 +158,7 @@ def replicate_datapoints_several_ts(
         print("Ready to insert datapoints...", time.ctime())
         # insert the multiple lists of datapoints into CDF
         if not mock_run:
-            client_dst.datapoints.insert_multiple(insert_format_datapoints)
+            client_dst.time_series.data.insert_multiple(insert_format_datapoints)
             print("DATAPOINTS INSERTED AT: ", time.ctime())
 
     except CogniteAPIError as exc:
