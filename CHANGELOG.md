@@ -19,7 +19,7 @@ Changes are grouped as follows
 ## [1.3.2] - 2023-01-30
 
 ## Fixed
-- Obsolete datapoints insert API fixed.
+- Obsolete datapoints insert API usage fixed.
 
 ## [1.3.1] - 2023-01-30
 
