@@ -15,8 +15,13 @@ Changes are grouped as follows
 ## [Planned]
 
 - Support for replicating file data
-- 
-## [1.3.1] - 2023-01-29
+
+## [1.3.2] - 2023-01-30
+
+## Fixed
+- Obsolete datapoints insert API fixed.
+
+## [1.3.1] - 2023-01-30
 
 ## Fixed
 - Obsolete datapoints API usage fixed.
