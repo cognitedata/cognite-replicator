@@ -90,7 +90,7 @@ def replicate_datapoints_several_ts(
     start_time = datetime.now()
 
     try:
-        dst_latest_datapoints = client_dst.datapoints.retrieve_latest(
+        dst_latest_datapoints = client_dst.time_series.data.retrieve_latest(
             external_id=ext_ids
         )  # getting the latest datapoints from the destination, timestamps
         src_datapoint_queries = [
@@ -102,7 +102,7 @@ def replicate_datapoints_several_ts(
             for dst_latest_dp in dst_latest_datapoints
         ]
         print("Queries ready: ", time.ctime())
-        src_datapoints_to_insert = client_src.datapoints.retrieve(
+        src_datapoints_to_insert = client_src.time_series.data.retrieve(
             external_id=src_datapoint_queries
         )  # querying the source for the datapoints matching this query
         print("Datapoints to insert ready", time.ctime())

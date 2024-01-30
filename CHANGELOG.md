@@ -15,6 +15,11 @@ Changes are grouped as follows
 ## [Planned]
 
 - Support for replicating file data
+- 
+## [1.3.1] - 2023-01-29
+
+## Fixed
+- Obsolete datapoints API usage fixed.
 
 ## [1.3.0] - 2023-01-29
 - python upgrade to ^3.11
