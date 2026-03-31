@@ -11,7 +11,7 @@ from cognite.client.data_classes.raw import Row
 
 
 def make_id_object_map(
-    objects: List[Union[Asset, Event, FileMetadata, Relationship, Sequence, TimeSeries]]
+    objects: List[Union[Asset, Event, FileMetadata, Relationship, Sequence, TimeSeries]],
 ) -> Dict[int, Union[Asset, Event, FileMetadata, Relationship, Sequence, TimeSeries]]:
     """
     Makes a dictionary with the source object id as the key and the object as the value for objects
@@ -448,7 +448,7 @@ def clear_replication_metadata(client: CogniteClient):
 
 
 def find_objects_to_delete_not_replicated_in_dst(
-    dst_objects: List[Union[Asset, Event, FileMetadata, TimeSeries]]
+    dst_objects: List[Union[Asset, Event, FileMetadata, TimeSeries]],
 ) -> List[int]:
     """
     Deleting all the assets in the destination that do not have the "_replicatedSource" in metadata, which
