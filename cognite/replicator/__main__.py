@@ -14,6 +14,7 @@ COGNITE_CONFIG_FILE or as command line argument.
 
 Example usage: poetry run replicator
 """
+
 import argparse
 import logging
 import os
