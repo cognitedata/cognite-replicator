@@ -20,7 +20,7 @@ podTemplate(
             ttyEnabled: true),
         containerTemplate(name: 'docker',
             command: '/bin/cat -',
-            image: 'docker:18.06.1-ce',
+            image: 'docker:18.06.3-ce',
             resourceLimitCpu: '1000m',
             resourceLimitMemory: '1000Mi',
             ttyEnabled: true),
