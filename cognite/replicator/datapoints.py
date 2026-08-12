@@ -12,7 +12,6 @@ from cognite.client.data_classes import Datapoint, Datapoints
 from cognite.client.exceptions import CogniteAPIError
 from cognite.client.utils._time import timestamp_to_ms
 
-
 """ This is useful if there are many time series coming in at very different frequences """
 # def _get_time_range(src_datapoint: Datapoints, dst_datapoint: Datapoints) -> Tuple[int, int]:
 #    # +1 because datapoint retrieval time ranges are inclusive on start and exclusive on end
