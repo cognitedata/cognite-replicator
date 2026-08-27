@@ -12,10 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: '3.11'
 
@@ -24,7 +24,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install isort flake8 black mypy
       - name: Run linters
-        uses: cognitedata/lint-action@v1.6.0
+        uses: cognitedata/lint-action@90d9f188f0092ae6a0a39c4b07b70f6f1f988140 # v1.6.0
         with: #Black for linting, flake8 linting currently disabled, mypy for type hinting
           github_token: ${{ secrets.github_token }}
           black: true
@@ -37,10 +37,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: '3.11'
 
@@ -54,7 +54,7 @@ jobs:
           poetry run pytest -v --cov-report xml:coverage.xml --cov
           coverage xml
       - name: Codecov report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457 # v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
